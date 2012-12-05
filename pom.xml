@@ -423,6 +423,7 @@
 
   <modules>
     <module>analytics</module>
+    <module>cluster</module>
     <module>csv</module>
     <module>importer</module>
     <module>printng</module>
