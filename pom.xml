@@ -425,6 +425,7 @@
     <module>analytics</module>
     <module>csv</module>
     <module>importer</module>
+    <module>metrics</module>
     <module>printng</module>
     <module>web</module>
   </modules>
