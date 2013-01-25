@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -9,47 +10,35 @@
     <version>2.3-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.opengeo.geoserver</groupId>
-  <artifactId>analytics</artifactId>
+  <groupId>org.opengeo.console</groupId>
+  <artifactId>monitor-console</artifactId>
   <packaging>jar</packaging>
-  <name>GeoServer Analytics Module</name>
+  <name>Console Monitoring Extension</name>
 
-  <!-- declare depenency on geoserver main -->
   <dependencies>
     <dependency>
       <groupId>org.geoserver.extension</groupId>
-      <artifactId>monitor-hibernate</artifactId>
+      <artifactId>monitor-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>joda-time</groupId>
-      <artifactId>joda-time</artifactId>
-      <version>1.6.2</version>
+      <groupId>commons-httpclient</groupId>
+      <artifactId>commons-httpclient</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.geoserver.community</groupId>
-      <artifactId>monitoring</artifactId>
-      <version>${gs.version}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-     <groupId>com.mockrunner</groupId>
-     <artifactId>mockrunner</artifactId>
-     <scope>test</scope>
-    </dependency>
-    <dependency>
-     <groupId>xmlunit</groupId>
-     <artifactId>xmlunit</artifactId>
-     <scope>test</scope>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
     </dependency>
   </dependencies>
 
   <build>
+    <testResources>
+      <testResource>
+        <directory>${basedir}/src/test/resources</directory>
+        <includes>
+          <include>**/*</include>
+        </includes>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -71,5 +60,5 @@
       </plugin>
     </plugins>
   </build>
-  
+
 </project>
