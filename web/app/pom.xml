@@ -98,4 +98,16 @@
   </plugins>
  </build>
 
+ <profiles>
+   <profile>
+     <id>control-flow</id>
+     <dependencies>
+       <dependency>
+         <groupId>org.geoserver.extension</groupId>
+         <artifactId>control-flow</artifactId>
+       </dependency>
+     </dependencies>
+   </profile>
+ </profiles>
+
 </project>
