@@ -46,7 +46,7 @@ public class MosaicFormat extends GridFormat {
                 dim.setEnabled(true);
                 dim.setAttribute("time");
                 dim.setPresentation(DimensionPresentation.LIST);
-                dim.setUnits("ISO8601"); //TODO: is there an enumeration for this?
+                //dim.setUnits("ISO8601"); //TODO: is there an enumeration for this?
 
                 ResourceInfo r = item.getLayer().getResource();
                 r.getMetadata().put(ResourceInfo.TIME, dim);
