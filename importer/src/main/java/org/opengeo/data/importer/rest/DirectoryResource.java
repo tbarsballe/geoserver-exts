@@ -153,7 +153,7 @@ public class DirectoryResource extends BaseResource {
     };
 
     Directory lookupDirectory() {
-        ImportContext context = lookupContext();
+        ImportContext context = context();
         if (!(context.getData() instanceof Directory)) {
             throw new RestletException("Data is not a directory", Status.CLIENT_ERROR_BAD_REQUEST);    
         }

@@ -38,12 +38,26 @@
   <bean id="importTaskFinder" class="org.geoserver.rest.BeanResourceFinder">
       <constructor-arg value="importTaskResource"/>
   </bean>
-  
+
+  <bean id="taskTargetResource" class="org.opengeo.data.importer.rest.TaskTargetResource">
+    <constructor-arg ref="importer"/>
+  </bean>
+  <bean id="taskTargetFinder" class="org.geoserver.rest.BeanResourceFinder">
+    <constructor-arg value="taskTargetResource"/>
+  </bean>
+
   <bean id="importItemResource" class="org.opengeo.data.importer.rest.ItemResource">
     <constructor-arg ref="importer"/>
   </bean>
   <bean id="importItemFinder" class="org.geoserver.rest.BeanResourceFinder">
       <constructor-arg value="importItemResource"/>
+  </bean>
+
+  <bean id="itemLayerResource" class="org.opengeo.data.importer.rest.ItemLayerResource">
+    <constructor-arg ref="importer"/>
+  </bean>
+  <bean id="itemLayerFinder" class="org.geoserver.rest.BeanResourceFinder">
+      <constructor-arg value="itemLayerResource"/>
   </bean>
 
   <bean id="importDataResource" class="org.opengeo.data.importer.rest.DataResource">
@@ -107,6 +121,12 @@
         </entry>
         <entry>
           <key>
+            <value>/imports/{import}/tasks/{task}/target</value>
+          </key>
+          <value>taskTargetFinder</value>
+        </entry>
+        <entry>
+          <key>
             <value>/imports/{import}/tasks/{task}/items</value>
           </key>
           <value>importItemFinder</value>
@@ -123,6 +143,13 @@
           </key>
           <value>importItemFinder</value>
         </entry>
+        <entry>
+          <key>
+            <value>/imports/{import}/tasks/{task}/items/{item}/layer</value>
+          </key>
+          <value>itemLayerFinder</value>
+        </entry>
+
       </map>
     </property>
   </bean>

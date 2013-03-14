@@ -63,7 +63,7 @@ public class ItemResourceTest extends ImporterTestSupport {
         JSONObject json = (JSONObject) getAsJSON("/rest/imports/1/tasks/0/items/0");
         JSONObject item = json.getJSONObject("item");
         assertEquals("NO_CRS", item.get("state"));
-        assertFalse(item.getJSONObject("resource").getJSONObject("featureType").containsKey("srs"));
+        assertFalse(item.getJSONObject("layer").containsKey("srs"));
 
         // verify invalid SRS handling
         MockHttpServletResponse resp = setSRSRequest("/rest/imports/1/tasks/0/items/0","26713");
@@ -80,8 +80,9 @@ public class ItemResourceTest extends ImporterTestSupport {
         json = (JSONObject) getAsJSON("/rest/imports/1/tasks/0/items/0");
         item = json.getJSONObject("item");
         assertEquals("READY", item.get("state"));
+        
         assertEquals("EPSG:26713", 
-            item.getJSONObject("resource").getJSONObject("featureType").getString("srs"));
+            item.getJSONObject("layer").getString("srs"));
         State state = context.getState();
         assertEquals("Invalid context state", State.READY, state);
     }
@@ -125,5 +126,23 @@ public class ItemResourceTest extends ImporterTestSupport {
         JSONArray items = json.getJSONArray("items");
         assertEquals(1, items.size());
         assertEquals(1, items.getJSONObject(0).getInt("id"));
+    }
+
+    public void testGetLayer() throws Exception {
+        String path = "/rest/imports/0/tasks/0/items/0";
+        JSONObject json = ((JSONObject) getAsJSON(path)).getJSONObject("item");
+        
+        assertTrue(json.has("layer"));
+        JSONObject layer = json.getJSONObject("layer");
+        assertTrue(layer.has("name"));
+        assertTrue(layer.has("href"));
+        assertTrue(layer.getString("href").endsWith(path+"/layer"));
+
+        json = (JSONObject) getAsJSON(path+"/layer");
+        print(json);
+        assertTrue(layer.has("name"));
+        assertTrue(layer.has("href"));
+        assertTrue(layer.getString("href").endsWith(path+"/layer"));
+
     }
 }

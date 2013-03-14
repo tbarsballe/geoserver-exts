@@ -92,29 +92,25 @@ public class RESTDataTest extends ImporterTestSupport {
         String json = 
         "{" +
           "\"item\": {" +
-            "\"resource\": {" +
-                "\"featureType\": {" +
+            "\"layer\": {" +
                     "\"srs\": \"EPSG:4326\"" + 
-                 "}" +
              "}" +
            "}" + 
         "}";
         putItem(i, t, 0, json);
 
         item = getItem(i, t, 0);
+        print(item);
         assertEquals("READY", item.getString("state"));
-        assertEquals("gs_archsites", item.getJSONObject("layer").getJSONObject("layer")
-                .getJSONObject("defaultStyle").getString("name"));
+        assertEquals("gs_archsites", item.getJSONObject("layer").getJSONObject("style").getString("name"));
         json = 
         "{" +
           "\"item\": {" +
             "\"layer\": {" +
-              "\"layer\": {" +
-                "\"defaultStyle\": {" +
+              "\"style\": {" +
                     "\"name\": \"point\"" + 
                  "}" +
                "}" +
-             "}" +
            "}" + 
         "}";
         putItem(i, t, 0, json);
@@ -122,8 +118,7 @@ public class RESTDataTest extends ImporterTestSupport {
         item = getItem(i, t, 0);
         
         assertEquals("READY", item.getString("state"));
-        assertEquals("point", item.getJSONObject("layer").getJSONObject("layer")
-            .getJSONObject("defaultStyle").getString("name"));
+        assertEquals("point", item.getJSONObject("layer").getJSONObject("style").getString("name"));
 
         postImport(i);
         runChecks("archsites");
@@ -207,7 +202,7 @@ public class RESTDataTest extends ImporterTestSupport {
         JSONObject item = getItem(0, 0, 0);
         assertEquals("NO_CRS", item.get("state"));
 
-        String json = "{\"id\":0,\"resource\":{\"featureType\":{\"srs\":\"EPSG:26713\"}}}";
+        String json = "{\"id\":0,\"layer\":{\"srs\":\"EPSG:26713\"}}";
         putItem(0, 0, 0, json);
 
         item = getItem(0, 0, 0);

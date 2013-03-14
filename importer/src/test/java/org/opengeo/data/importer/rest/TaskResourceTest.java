@@ -400,4 +400,41 @@ public class TaskResourceTest extends ImporterTestSupport {
         FileInputStream fis = new FileInputStream(tiff);
         uploadGeotiffAndVerify(tifname, fis, "image/tiff");
     }
+
+    public void testGetTarget() throws Exception {
+        JSONObject json = ((JSONObject) getAsJSON("/rest/imports/0/tasks/0")).getJSONObject("task");
+        print(json);
+        JSONObject target = json.getJSONObject("target");
+        assertTrue(target.has("dataStore"));
+
+        target = target.getJSONObject("dataStore");
+        assertTrue(target.has("name"));
+        assertTrue(target.has("href"));
+        assertTrue(target.getString("href").endsWith("/rest/imports/0/tasks/0/target"));
+        
+        json = (JSONObject) getAsJSON("/rest/imports/0/tasks/0/target");
+        assertNotNull(json.get("dataStore"));
+    }
+
+    public void testPutTarget() throws Exception {
+        JSONObject json = (JSONObject) getAsJSON("/rest/imports/0/tasks/0/target");
+        assertEquals("archsites", json.getJSONObject("dataStore").getString("name"));
+
+        String update = "{\"dataStore\": { \"type\": \"foo\" }}";
+        put("/rest/imports/0/tasks/0/target", update, MediaType.APPLICATION_JSON.toString());
+
+        json = (JSONObject) getAsJSON("/rest/imports/0/tasks/0/target");
+        assertEquals("foo", json.getJSONObject("dataStore").getString("type"));
+    }
+
+    public void testPutTargetExisting() throws Exception {
+        createH2DataStore(getCatalog().getDefaultWorkspace().getName(), "foo");
+
+        String update = "{\"dataStore\": { \"name\": \"foo\" }}";
+        put("/rest/imports/0/tasks/0/target", update, MediaType.APPLICATION_JSON.toString());
+
+        JSONObject json = (JSONObject) getAsJSON("/rest/imports/0/tasks/0/target");
+        assertEquals("foo", json.getJSONObject("dataStore").getString("name"));
+        assertEquals("H2", json.getJSONObject("dataStore").getString("type"));
+    }
 }
