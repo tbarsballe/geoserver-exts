@@ -26,7 +26,7 @@ public class ImportContext implements Serializable {
     private static final long serialVersionUID = 8790675013874051197L;
 
     public static enum State {
-        PENDING, READY, RUNNING, INCOMPLETE, COMPLETE, CANCELLED;
+        PENDING, RUNNING, COMPLETE;
     }
 
     /** identifier */
@@ -180,15 +180,14 @@ public class ImportContext implements Serializable {
         State newState = tasks.isEmpty() ? State.PENDING : State.COMPLETE;
      O: for (ImportTask task : tasks) {
             switch(task.getState()) {
-                case PENDING:
-                case RUNNING:
-                case INCOMPLETE:
-                    newState = State.INCOMPLETE;
-                    break O;
-                case COMPLETE:
-                    continue;
-                case READY:
-                    newState = State.READY; 
+            case COMPLETE:
+                continue;
+            case RUNNING:
+                newState = State.RUNNING;
+                break O;
+            default: 
+                newState = State.PENDING;
+                break O;
             }
         }
         state = newState;

@@ -330,7 +330,9 @@ public class Directory extends FileData {
     }
 
     public Directory filter(List<FileData> files) {
-        return new Filtered(file, files);
+        Filtered f = new Filtered(file, files);
+        f.setFormat(getFormat());
+        return f;
     }
 
     @Override

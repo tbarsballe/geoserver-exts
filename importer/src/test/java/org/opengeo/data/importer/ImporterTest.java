@@ -26,7 +26,7 @@ public class ImporterTest extends ImporterTestSupport {
 
         Directory d = new Directory(dir);
         ImportContext context = importer.createContext(d);
-        assertEquals(1, context.getTasks().size());
+        assertEquals(2, context.getTasks().size());
 
         ImportTask task = context.getTasks().get(0);
         assertEquals(d, task.getData());
@@ -54,8 +54,6 @@ public class ImporterTest extends ImporterTestSupport {
         
         ImportContext context = importer.createContext(arch);
         assertEquals(1, context.getTasks().size());
-
-        assertEquals(1, context.getTasks().get(0).getItems().size());
     }
 
     public void testCreateContextIgnoreHidden() throws Exception {
