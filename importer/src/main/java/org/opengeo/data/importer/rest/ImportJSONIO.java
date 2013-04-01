@@ -23,16 +23,22 @@ import net.sf.json.JSONSerializer;
 import net.sf.json.util.JSONBuilder;
 
 import org.apache.commons.io.IOUtils;
+import org.geoserver.catalog.CatalogFactory;
+import org.geoserver.catalog.CoverageStoreInfo;
 import org.geoserver.catalog.DataStoreInfo;
 import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.catalog.LayerInfo;
 import org.geoserver.catalog.ResourceInfo;
 import org.geoserver.catalog.StoreInfo;
+import org.geoserver.catalog.StyleInfo;
 import org.geoserver.catalog.WorkspaceInfo;
 import org.geoserver.config.util.XStreamPersister;
+import org.geoserver.config.util.XStreamPersister.Callback;
 import org.geoserver.config.util.XStreamPersisterFactory;
 import org.geoserver.rest.PageInfo;
 import org.geoserver.rest.RestletException;
+import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.geotools.referencing.CRS;
 import org.opengeo.data.importer.Archive;
 import org.opengeo.data.importer.Database;
 import org.opengeo.data.importer.Directory;
@@ -50,6 +56,9 @@ import org.opengeo.data.importer.mosaic.Granule;
 import org.opengeo.data.importer.mosaic.Mosaic;
 import org.opengeo.data.importer.mosaic.TimeMode;
 import org.opengeo.data.importer.transform.*;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.NoSuchAuthorityCodeException;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.restlet.data.Status;
 import org.restlet.ext.json.JsonRepresentation;
 
@@ -198,7 +207,7 @@ public class ImportJSONIO {
         }
         json.object();
         json.key("id").value(id);
-        json.key("href").value(page.rootURI("/imports/" + task.getContext().getId() + "/tasks/" + id));
+        json.key("href").value(page.rootURI(pathTo(task)));
         json.key("state").value(task.getState());
         if (task.getUpdateMode() != null) {
             json.key("updateMode").value(task.getUpdateMode().name());
@@ -212,7 +221,8 @@ public class ImportJSONIO {
         //target
         StoreInfo store = task.getStore();
         if (store != null) {
-            json.key("target").value(toJSON(store));
+            json.key("target");
+            store(store, task, page, json);
         }
 
         //items
@@ -226,6 +236,21 @@ public class ImportJSONIO {
         json.flush();
     }
 
+    void store(StoreInfo store, ImportTask task, PageInfo page, FlushableJSONBuilder json) {
+        String type = store instanceof DataStoreInfo ? "dataStore" : 
+                      store instanceof CoverageStoreInfo ? "coverageStore" : "store";
+
+        json.object();
+
+        json.key(type).object()
+            .key("name").value(store.getName())
+            .key("type").value(store.getType())
+            .key("href").value(page.rootURI(pathTo(task) + "/target"))
+            .endObject();
+
+        json.endObject();
+    }
+
     public void item(ImportItem item, PageInfo page, OutputStream out) throws IOException {
         item(item, page, builder(out));
     }
@@ -236,8 +261,7 @@ public class ImportJSONIO {
     
     public void item(ImportItem item, boolean inline, PageInfo page, FlushableJSONBuilder json) throws IOException {
         long id = item.getId();
-        ImportTask task = item.getTask();
-        
+
         LayerInfo layer = item.getLayer();
         if (!inline) {
             json.object().key("item");
@@ -246,17 +270,21 @@ public class ImportJSONIO {
         // @todo don't know why catalog isn't set here, thought this was set during load from BDBImportStore
         layer.getResource().setCatalog(importer.getCatalog());
         
-        String itemHREF = page.rootURI(String.format("/imports/%d/tasks/%d/items/%d", 
-              task.getContext().getId(), task.getId(), id));
+        String itemHREF = page.rootURI(pathTo(item));
         
         json.object()
           .key("id").value(id)
           .key("href").value(itemHREF)
           .key("state").value(item.getState())
           .key("progress").value(itemHREF + "/progress")
-          .key("originalName").value(item.getOriginalName())
-          .key("resource").value(toJSON(layer.getResource()))
-          .key("layer").value(toJSON(layer));
+          .key("originalName").value(item.getOriginalName());
+
+        if (item.getLayer() != null) {
+            json.key("layer");
+            layer(item, page, json);
+        }
+          //.key("resource").value(toJSON(layer.getResource()))
+          //.key("layer").value(toJSON(layer));
 
         if (item.getUpdateMode() != null) {
             json.key("updateMode").value(item.getUpdateMode().name());
@@ -265,7 +293,7 @@ public class ImportJSONIO {
             json.key("errorMessage").value(concatErrorMessages(item.getError()));
         }
         json.key("transformChain");
-        transformChain(item.getTransform(), json);        
+        transformChain(item.getTransform(), json);
         messages(json,item.getImportMessages());
         json.endObject();
 
@@ -274,7 +302,117 @@ public class ImportJSONIO {
         }
         json.flush();
     }
-    
+
+    void layer(ImportItem item, PageInfo page, OutputStream out) throws IOException {
+        layer(item, page, builder(out));
+    }
+
+    void layer(ImportItem item, PageInfo page, FlushableJSONBuilder json) throws IOException {
+        LayerInfo layer = item.getLayer();
+        ResourceInfo r = layer.getResource();
+
+        json.object().key("name").value(layer.getName());
+        if (r != null) {
+            json.key("nativeName").value(r.getNativeName());
+
+            if (r.getSRS() != null) {
+                json.key("srs").value(r.getSRS());
+            }
+            if (r.getNativeBoundingBox() != null) {
+                json.key("bbox");
+                bbox(json, r.getNativeBoundingBox());
+            }
+        }
+        StyleInfo s = layer.getDefaultStyle();
+        if (s != null) {
+            json.key("style").value(toJSON(s).getJSONObject("style"));
+        }
+
+        json.key("href").value(page.rootURI(pathTo(item) + "/layer"));
+        json.endObject();
+        json.flush();
+    }
+
+    LayerInfo layer(InputStream in) throws IOException {
+        return layer(parse(in));
+    }
+
+    LayerInfo layer(JSONObject json) throws IOException {
+        CatalogFactory f = importer.getCatalog().getFactory();
+        
+        ResourceInfo r = f.createFeatureType();
+        if (json.has("name")) {
+            r.setName(json.getString("name"));
+        }
+        if (json.has("nativeName")) {
+            r.setNativeName(json.getString("nativeName"));
+        }
+        if (json.has("srs")) {
+            r.setSRS(json.getString("srs"));
+            try {
+                r.setNativeCRS(CRS.decode(json.getString("srs")));
+            }
+            catch(Exception e) {
+                //should fail later
+            }
+            
+        }
+        if (json.has("bbox")) {
+            r.setNativeBoundingBox(bbox(json.getJSONObject("bbox")));
+        }
+
+        LayerInfo l = f.createLayer();
+        l.setResource(r);
+        //l.setName(); don't need to this, layer.name just forwards to name of underlying resource
+        
+        if (json.has("style")) {
+            JSONObject sobj = new JSONObject();
+            sobj.put("defaultStyle", json.get("style"));
+
+            JSONObject lobj = new JSONObject();
+            lobj.put("layer", sobj);
+
+            LayerInfo tmp = fromJSON(lobj, LayerInfo.class);
+            if (tmp.getDefaultStyle() != null) {
+                l.setDefaultStyle(tmp.getDefaultStyle());
+            }
+            else {
+                sobj = new JSONObject();
+                sobj.put("style", json.get("style"));
+                
+                l.setDefaultStyle(fromJSON(sobj, StyleInfo.class));
+            }
+
+        }
+        return l;
+    }
+
+    ReferencedEnvelope bbox(JSONObject json) {
+        CoordinateReferenceSystem crs = null;
+        if (json.has("crs")) {
+            crs = (CoordinateReferenceSystem) 
+                new XStreamPersister.CRSConverter().fromString(json.getString("crs"));
+        }
+
+        return new ReferencedEnvelope(json.getDouble("minx"), json.getDouble("maxx"), 
+            json.getDouble("miny"), json.getDouble("maxy"), crs);
+    }
+
+    void bbox(JSONBuilder json, ReferencedEnvelope bbox) {
+        json.object()
+            .key("minx").value(bbox.getMinX())
+            .key("miny").value(bbox.getMinY())
+            .key("maxx").value(bbox.getMaxX())
+            .key("maxy").value(bbox.getMaxY());
+
+        CoordinateReferenceSystem crs = bbox.getCoordinateReferenceSystem(); 
+        if (crs != null) {
+            json.key("crs").value(crs.toWKT());
+        }
+
+        json.endObject();
+    }
+
     void messages(FlushableJSONBuilder json,List<LogRecord> records) {
         if (!records.isEmpty()) {
             json.key("messages");
@@ -356,8 +494,7 @@ public class ImportJSONIO {
                 }
             }
             if (json.has("target")) {
-                JSONObject x = json.getJSONObject("target");
-                task.setStore(fromJSON(json.getJSONObject("target"), DataStoreInfo.class));
+                task.setStore(fromJSON(json.getJSONObject("target"), StoreInfo.class));
             }
             if (json.has("items")) {
                 JSONArray items = json.getJSONArray("items");
@@ -379,18 +516,13 @@ public class ImportJSONIO {
 
         LayerInfo layer = null; 
         if (json.has("layer")) {
-            layer = fromJSON(json.getJSONObject("layer"), LayerInfo.class);
+            layer = layer(json.getJSONObject("layer"));
         } else {
             layer = importer.getCatalog().getFactory().createLayer();
         }
         
         ImportItem importItem = new ImportItem(layer);
 
-        //parse the resource if specified
-        if (json.has("resource")) {
-            ResourceInfo resource = fromJSON(json.getJSONObject("resource"), ResourceInfo.class);
-            layer.setResource(resource);
-        }
         
         if (json.has("transformChain")) {
             importItem.setTransform(transformChain(json.getJSONObject("transformChain")));
@@ -683,14 +815,30 @@ public class ImportJSONIO {
 
     JSONObject toJSON(Object o) throws IOException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
-        XStreamPersister xp = persister();
-        xp.save(o, out);
+        toJSON(o, out);
         return (JSONObject) JSONSerializer.toJSON(new String(out.toByteArray()));
     }
 
-    <T> T fromJSON(JSONObject json, Class<T> clazz) throws IOException {
+    void toJSON(Object o, OutputStream out) throws IOException {
+        toJSON(o, out, null);
+    }
+    
+    void toJSON(Object o, OutputStream out, Callback callback) throws IOException {
         XStreamPersister xp = persister();
-        return (T) xp.load(new ByteArrayInputStream(json.toString().getBytes()), clazz);
+        if (callback != null) {
+            xp.setCallback(callback);
+        }
+        xp.save(o, out);
+        out.flush();
+    }
+
+    <T> T fromJSON(JSONObject json, Class<T> clazz) throws IOException {
+        return fromJSON(new ByteArrayInputStream(json.toString().getBytes()), clazz);
+    }
+
+    <T> T fromJSON(InputStream json, Class<T> clazz) throws IOException {
+        XStreamPersister xp = persister();
+        return (T) xp.load(json, clazz);
     }
 
     XStreamPersister persister() {
@@ -699,6 +847,7 @@ public class ImportJSONIO {
         
         xp.setReferenceByName(true);
         xp.setExcludeIds();
+
         //xp.setCatalog(importer.getCatalog());
         xp.setHideFeatureTypeAttributes();
         // @todo this is copy-and-paste from org.geoserver.catalog.rest.FeatureTypeResource
@@ -777,6 +926,16 @@ public class ImportJSONIO {
         json.endObject();
     }
     
+    String pathTo(ImportTask task) {
+        return "/imports/" + task.getContext().getId() + "/tasks/" + task.getId();
+    }
+
+    String pathTo(ImportItem item) {
+        return pathTo(item.getTask()) + "/items/" + item.getId();
+        //String.format("/imports/%d/tasks/%d/items/%d", 
+        //        task.getContext().getId(), task.getId(), id)
+    }
+
     static RestletException badRequest(String error) {
         JSONObject errorResponse = new JSONObject();
         JSONArray errors = new JSONArray();

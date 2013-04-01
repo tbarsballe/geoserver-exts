@@ -72,7 +72,7 @@ public class TaskResource extends BaseResource {
         //file posted from form
         MediaType mimeType = getRequest().getEntity().getMediaType(); 
         if (MediaType.MULTIPART_FORM_DATA.equals(mimeType, true)) {
-            data = handleMultiPartFormUpload(lookupContext());
+            data = handleMultiPartFormUpload(context());
         }
         else if (MediaType.APPLICATION_WWW_FORM.equals(mimeType, true)) {
             data = handleFormPost();
@@ -86,7 +86,7 @@ public class TaskResource extends BaseResource {
     }
 
     private void acceptData(ImportData data) {
-        ImportContext context = lookupContext();
+        ImportContext context = context();
         List<ImportTask> newTasks = null;
         try {
             newTasks = importer.update(context, data);
@@ -175,29 +175,20 @@ public class TaskResource extends BaseResource {
         if (getRequest().getEntity().getMediaType().equals(MediaType.APPLICATION_JSON)) {
             handleTaskPut();
         } else {
-            acceptData(handleFileUpload(lookupContext()));
+            acceptData(handleFileUpload(context()));
         }
     }
 
     Object lookupTask(boolean allowAll) {
-        ImportContext context = lookupContext();
+        ImportTask task = task(true);
 
-        String t = getAttribute("task");
-        if (t != null) {
-            int id = Integer.parseInt(t);
-            if (id >= context.getTasks().size()) {
-                throw new RestletException("No such task: " + id + " for import: " + context.getId(),
-                    Status.CLIENT_ERROR_NOT_FOUND);
-            }
-
-            return context.getTasks().get(id);
-        }
-        else {
+        if (task == null) {
             if (allowAll) {
-                return context.getTasks();
+                return context().getTasks();
             }
-            throw new RestletException("No task specified", Status.CLIENT_ERROR_BAD_REQUEST);
+            throw new RestletException("No task specified", Status.CLIENT_ERROR_BAD_REQUEST);        
         }
+        return task;
     }
 
     void handleTaskPut() {        
@@ -206,7 +197,8 @@ public class TaskResource extends BaseResource {
         
         boolean change = false;
         if (task.getStore() != null) {
-            updateStoreInfo(orig, task.getStore());
+            //JD: moved to TaskTargetResource, but handle here for backward compatability
+            TaskTargetResource.updateStoreInfo(orig, task.getStore(), importer);
             change = true;
         }
         if (task.getData() != null) {
@@ -226,37 +218,6 @@ public class TaskResource extends BaseResource {
         }
     }
     
-    void updateStoreInfo(ImportTask orig, StoreInfo update) {
-        // allow an existing store to be referenced as the target
-        StoreInfo newTargetRequested = (StoreInfo) update;
-        StoreInfo existing = orig.getStore();
-        
-        if (existing == null) {
-            assert existing != null : "Expected existing store";
-        }
-        Class storeType = existing instanceof DataStoreInfo
-                ? DataStoreInfo.class : null;
-        if (storeType == null) {
-            assert storeType != null : "Cannot handle " + existing.getClass();
-        }
-        
-        StoreInfo requestedExisting = importer.getCatalog().getStoreByName(
-                newTargetRequested.getWorkspace(), 
-                newTargetRequested.getName(), 
-                storeType);
-        
-        if (requestedExisting != null && storeType == DataStoreInfo.class) {
-            CatalogBuilder cb = new CatalogBuilder(importer.getCatalog());
-            DataStoreInfo clone = cb.buildDataStore(requestedExisting.getName());
-            cb.updateDataStore(clone, (DataStoreInfo) requestedExisting);
-            ((StoreInfoImpl) clone).setId(requestedExisting.getId());
-            orig.setStore(clone);
-            orig.setDirect(false);
-        } else {
-            throw new RestletException("Can only set target to existing datastore", Status.CLIENT_ERROR_BAD_REQUEST);
-        }
-    }
-
     private ImportData handleFormPost() {
         Form form = getRequest().getEntityAsForm();
         String url = form.getFirstValue("url", null);

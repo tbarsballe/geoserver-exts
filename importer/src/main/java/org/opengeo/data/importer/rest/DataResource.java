@@ -40,7 +40,7 @@ public class DataResource extends BaseResource {
             formatGet = new ImportDataJSONFormat();
         }
 
-        getResponse().setEntity(formatGet.toRepresentation(lookupContext().getData()));
+        getResponse().setEntity(formatGet.toRepresentation(context().getData()));
     }
 
     public class ImportDataJSONFormat extends StreamDataFormat {

@@ -105,81 +105,14 @@ public class ItemResource extends BaseResource {
             throw ImportJSONIO.badRequest(ve.getMessage());
         }
 
-        //update the original layer and resource from the new
-        LayerInfo l = item.getLayer();
-        ResourceInfo r = l.getResource();
-        TransformChain chain = item.getTransform();
-        
-        //TODO: this is not thread safe, clone the object before overwriting it
-        //save the existing resource, which will be overwritten below,  
-        ResourceInfo resource = orig.getLayer().getResource();
-        
-        CatalogBuilder cb = new CatalogBuilder(importer.getCatalog());
-        if (l != null) {
-            l.setResource(resource);
-            // @hack workaround OWSUtils bug - trying to copy null collections
-            // why these are null in the first place is a different question
-            LayerInfoImpl impl = (LayerInfoImpl) orig.getLayer();
-            if (impl.getAuthorityURLs() == null) {
-                impl.setAuthorityURLs(new ArrayList(1));
-            }
-            if (impl.getIdentifiers() == null) {
-                impl.setIdentifiers(new ArrayList(1));
-            }
-            // @endhack
-            cb.updateLayer(orig.getLayer(), l);
-        }
-        
-        // validate SRS - an invalid one will destroy capabilities doc and make
-        // the layer totally broken in UI
-        CoordinateReferenceSystem newRefSystem = null;
-        if (r instanceof FeatureTypeInfo) {
-            String srs = ((FeatureTypeInfo) r).getSRS();
-            if (srs != null) {
-                try {
-                    newRefSystem = CRS.decode(srs);
-                } catch (NoSuchAuthorityCodeException ex) {
-                    String msg = "Invalid SRS " + srs;
-                    getLogger().warning(msg + " in PUT request");
-                    throw ImportJSONIO.badRequest(msg);
-                } catch (FactoryException ex) {
-                    throw new RestletException("Error with referencing",Status.SERVER_ERROR_INTERNAL,ex);
-                }
-                // make this the specified native if none exists
-                // useful for csv or other files
-                if (resource.getNativeCRS() == null) {
-                    resource.setNativeCRS(newRefSystem);
-                }
-            }
-        }
+        //now handled by ItemLayerResource, but handle here for backwards compatability
+        ItemLayerResource.updateLayer(orig, item.getLayer(), importer);
 
-        //update the resource
-        if (r != null) {
-            if (r instanceof FeatureTypeInfo) {
-                cb.updateFeatureType((FeatureTypeInfo) resource, (FeatureTypeInfo) r);
-            }
-            else if (r instanceof CoverageInfo) {
-                cb.updateCoverage((CoverageInfo) resource, (CoverageInfo) r);
-            }
-        }
-        
-        // have to do this after updating the original
-        //JD: not actually sure this should be here... it doesn't work in the indirect case since
-        // we don't have the physical feature type yet... i think it might be better to just to 
-        // null and let the importer recalculate on the fly
-        if (newRefSystem != null && orig.getTask().isDirect()) {
-            try {
-                ReferencedEnvelope nativeBounds = cb.getNativeBounds(resource);
-                resource.setLatLonBoundingBox(cb.getLatLonBounds(nativeBounds, newRefSystem));
-            } catch (IOException ex) {
-                throw new RestletException("Error with bounds computation",Status.SERVER_ERROR_INTERNAL,ex);
-            }
-        }
-        
         if (item.getUpdateMode() != null) {
             orig.setUpdateMode(item.getUpdateMode());
         }
 
+        TransformChain chain = item.getTransform();
         if (chain != null) {
             orig.setTransform(chain);
         }
@@ -203,33 +136,18 @@ public class ItemResource extends BaseResource {
     }
 
     Object lookupItem(boolean allowAll) {
-        ImportContext context = lookupContext();
+        ImportContext context = context();
         Long imprt = context.getId();
 
-        int t = Integer.parseInt(getAttribute("task"));
-        if (t >= context.getTasks().size()) {
-            throw new RestletException("No such task: " + t + " for import: " + imprt,
-                    Status.CLIENT_ERROR_NOT_FOUND);
-        }
-
-        ImportTask task = context.getTasks().get(t);
-
-        String i = getAttribute("item");
-        if (i != null) {
-            int id = Integer.parseInt(i);
-            if (id >= task.getItems().size()) {
-                throw new RestletException("No such item: " + id + " for import: " + imprt + 
-                    ", task: " + t, Status.CLIENT_ERROR_NOT_FOUND);
-            }
-
-            return task.getItems().get(id);
-        }
-        else {
+        ImportItem item = item(true);
+        if (item == null) {
             if (allowAll) {
-                return task.getItems();
+                return task().getItems();
             }
             throw new RestletException("No item specified", Status.CLIENT_ERROR_BAD_REQUEST);
         }
+        
+        return item;
     }
 
     class ImportItemJSONFormat extends StreamDataFormat {
