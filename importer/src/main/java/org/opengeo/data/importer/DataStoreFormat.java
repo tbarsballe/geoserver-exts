@@ -128,7 +128,7 @@ public class DataStoreFormat extends VectorFormat {
     
                     LayerInfo layer = cb.buildLayer((ResourceInfo)featureType);
     
-                    ImportTask task = new ImportTask(data);
+                    ImportTask task = new ImportTask(data.part(typeName));
                     task.setLayer(layer);
                     task.getMetadata().put(FeatureType.class, schema);
     

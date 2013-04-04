@@ -22,7 +22,7 @@ import org.geoserver.rest.format.StreamDataFormat;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
 import org.geotools.util.logging.Logging;
-import org.opengeo.data.importer.ImportItem;
+import org.opengeo.data.importer.ImportTask;
 import org.opengeo.data.importer.Importer;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.NoSuchAuthorityCodeException;
@@ -32,11 +32,11 @@ import org.restlet.data.Request;
 import org.restlet.data.Response;
 import org.restlet.data.Status;
 
-public class ItemLayerResource extends BaseResource {
+public class LayerResource extends BaseResource {
 
-    static Logger LOGGER = Logging.getLogger(ItemLayerResource.class);
+    static Logger LOGGER = Logging.getLogger(LayerResource.class);
 
-    public ItemLayerResource(Importer importer) {
+    public LayerResource(Importer importer) {
         super(importer);
     }
 
@@ -47,8 +47,8 @@ public class ItemLayerResource extends BaseResource {
 
     @Override
     public void handleGet() {
-        ImportItem item = item();
-        getResponse().setEntity(getFormatGet().toRepresentation(item.getLayer()));
+        ImportTask task = task();
+        getResponse().setEntity(getFormatGet().toRepresentation(task.getLayer()));
     }
 
     @Override
@@ -58,15 +58,18 @@ public class ItemLayerResource extends BaseResource {
 
     @Override
     public void handlePut() {
-        ImportItem item = item();
+        ImportTask task = task();
 
         LayerInfo layer = (LayerInfo) getFormatPostOrPut().toObject(getRequest().getEntity());
         
-        updateLayer(item, layer, importer);
-        importer.changed(item);
+        updateLayer(task, layer, importer);
+        importer.changed(task);
+
+        getResponse().setStatus(Status.SUCCESS_ACCEPTED);
+        getResponse().setEntity(getFormatGet().toRepresentation(task()));
     }
     
-    static void updateLayer(ImportItem orig, LayerInfo l, Importer importer) {
+    static void updateLayer(ImportTask orig, LayerInfo l, Importer importer) {
         //update the original layer and resource from the new
 
         ResourceInfo r = l.getResource();
@@ -102,7 +105,7 @@ public class ItemLayerResource extends BaseResource {
                 } catch (NoSuchAuthorityCodeException ex) {
                     String msg = "Invalid SRS " + srs;
                     LOGGER.warning(msg + " in PUT request");
-                    throw ImportJSONIO.badRequest(msg);
+                    throw ImportJSONWriter.badRequest(msg);
                 } catch (FactoryException ex) {
                     throw new RestletException("Error with referencing",Status.SERVER_ERROR_INTERNAL,ex);
                 }
@@ -128,7 +131,7 @@ public class ItemLayerResource extends BaseResource {
         //JD: not actually sure this should be here... it doesn't work in the indirect case since
         // we don't have the physical feature type yet... i think it might be better to just to 
         // null and let the importer recalculate on the fly
-        if (newRefSystem != null && orig.getTask().isDirect()) {
+        if (newRefSystem != null && orig.isDirect()) {
             try {
                 ReferencedEnvelope nativeBounds = cb.getNativeBounds(resource);
                 resource.setLatLonBoundingBox(cb.getLatLonBounds(nativeBounds, newRefSystem));
@@ -147,12 +150,12 @@ public class ItemLayerResource extends BaseResource {
     
         @Override
         protected Object read(InputStream in) throws IOException {
-            return new ImportJSONIO(importer).layer(in);
+            return newReader(in).layer();
         }
     
         @Override
         protected void write(Object object, OutputStream out) throws IOException {
-            new ImportJSONIO(importer).layer(item(), getPageInfo(), out);
+            newWriter(out).layer(task(), true, expand(1));
         }
     }
 }

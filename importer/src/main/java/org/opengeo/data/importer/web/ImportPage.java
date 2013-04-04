@@ -48,7 +48,6 @@ import org.opengeo.data.importer.Directory;
 import org.opengeo.data.importer.FileData;
 import org.opengeo.data.importer.ImportContext;
 import org.opengeo.data.importer.ImportData;
-import org.opengeo.data.importer.ImportItem;
 import org.opengeo.data.importer.ImportTask;
 import org.opengeo.data.importer.ImportTask.State;
 import org.opengeo.data.importer.RasterFormat;
@@ -93,7 +92,7 @@ public class ImportPage extends GeoServerSecuredPage {
                 dialog.showOkCancel(target, new DialogDelegate() {
                     @Override
                     protected Component getContents(String id) {
-                        XStreamPersister xp = importer().createXStreamPersister();
+                        XStreamPersister xp = importer().createXStreamPersisterXML();
                         ByteArrayOutputStream bout = new ByteArrayOutputStream();
                         try {
                             xp.save(model.getObject(), bout);
@@ -177,28 +176,13 @@ public class ImportPage extends GeoServerSecuredPage {
                     }.add(new Label("name", "")).setVisible(false));
                 }
 
-                //ImportItemProvider provider = new ImportItemProvider(item.getModelObject());
-                GeoServerDataProvider<ImportItem> provider = new GeoServerDataProvider<ImportItem>() {
-
-                    @Override
-                    protected List<Property<ImportItem>> getProperties() {
-                        return new ImportItemProvider((IModel)null).getProperties();
-                    }
-
-                    @Override
-                    protected List<ImportItem> getItems() {
-                        return item.getModelObject().getItems();
-                    }
-                    
-                };
-
                 boolean selectable = task.getState() != ImportTask.State.COMPLETE;
-                final ImportItemTable itemTable = new ImportItemTable("items", provider, selectable) {
+                final ImportItemTable itemTable = null; /*new ImportItemTable("items", provider, selectable) {
                     @Override
                     protected void onSelectionUpdate(AjaxRequestTarget target) {
                         updateImportLink((AjaxLink) item.get("import"), this, target);
                     }
-                }.setFeedbackPanel(feedbackPanel);
+                }.setFeedbackPanel(feedbackPanel);*/
                 item.add(itemTable);
                 
                 itemTable.setOutputMarkupId(true);
@@ -216,7 +200,7 @@ public class ImportPage extends GeoServerSecuredPage {
                         ImportTask task = item.getModelObject();
 
                         BasicImportFilter filter = new BasicImportFilter();
-                        filter.add(task, itemTable.getSelection());
+                        filter.add(task);
 
                         final Long jobid = 
                             importer().runAsync(task.getContext(), filter);
@@ -351,8 +335,8 @@ public class ImportPage extends GeoServerSecuredPage {
         boolean enable = !table.getSelection().isEmpty();
         if (enable) {
             boolean allComplete = true;
-            for (ImportItem item : table.getSelection()) {
-                allComplete = item.getState() == ImportItem.State.COMPLETE;
+            for (ImportTask task : table.getSelection()) {
+                allComplete = task.getState() == ImportTask.State.COMPLETE;
             }
             enable = !allComplete;
         }
@@ -371,20 +355,7 @@ public class ImportPage extends GeoServerSecuredPage {
 
     boolean doSelectReady(ImportTask task, ImportItemTable table, AjaxRequestTarget target) {
         boolean empty = true;
-        List<ImportItem> items = task.getItems();
-        
-        for (int i = 0; i < items.size() && i < 25; i++) {
-            ImportItem item = items.get(i);
-            if (item.getState() == ImportItem.State.READY) {
-                //table.selectObject(item);
-                table.selectIndex(i);
-                empty = false;
-            }
-        }
-        if (target != null) {
-            target.addComponent(table);
-        }
-        return !empty;
+        return task.getState() == ImportTask.State.READY;
     }
 
     @Override
@@ -512,9 +483,6 @@ public class ImportPage extends GeoServerSecuredPage {
         public List<ImportTask> getObject() {
             List<ImportTask> tasks = new ArrayList();
             for (ImportTask task : taskModel.getObject()) {
-                if (empty != task.getItems().isEmpty()) {
-                    continue;
-                }
                 tasks.add(task);
             }
             return tasks;

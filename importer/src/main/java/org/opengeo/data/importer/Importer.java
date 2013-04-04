@@ -1,6 +1,5 @@
 package org.opengeo.data.importer;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -122,7 +121,7 @@ public class Importer implements InitializingBean, DisposableBean {
         return contextStore;
     }
 
-    public ImportTask getCurrentlyProcessingItem(long contextId) {
+    public ImportTask getCurrentlyProcessingTask(long contextId) {
         return currentlyProcessing.get(new Long(contextId));
     }
 
@@ -158,36 +157,13 @@ public class Importer implements InitializingBean, DisposableBean {
                     ResourceInfo r = l.getResource();
                     r.setCatalog(catalog);
 
-                    if (r.getStore() == null) {
+                    if (r.getStore() == null && resourceMatchesStore(r, store)) {
                         r.setStore(store);
                     }
 
-                    if (r.getStore().getCatalog() == null) {
-                        //((StoreInfoImpl) r.getStore()).setCatalog(catalog);
-                    }
                 }
             }
-//            for (ImportItem item : task.getItems()) {
-//                if (item.getLayer() != null) {
-//                    LayerInfo l = item.getLayer();
-//                    if (l.getDefaultStyle() != null && l.getDefaultStyle().getId() != null) {
-//                        l.setDefaultStyle(catalog.getStyle(l.getDefaultStyle().getId()));
-//                    }
-//                    if (l.getResource() != null) {
-//                        ResourceInfo r = l.getResource();
-//                        r.setCatalog(catalog);
-//
-//                        if (r.getStore() == null) {
-//                            r.setStore(store);
-//                        }
-//
-//                        if (r.getStore().getCatalog() == null) {
-//                            //((StoreInfoImpl) r.getStore()).setCatalog(catalog);
-//                        }
-//
-//                    }
-//                }
-//            }
+
         }
         return context;
     }
@@ -299,15 +275,6 @@ public class Importer implements InitializingBean, DisposableBean {
         });
     }
 
-//    public List<ImportTask> update(ImportContext context, ImportData data) throws IOException {
-//        List<ImportTask> tasks = init(context, data, true);
-//        
-//        prep(context);
-//        changed(context);
-//
-//        return tasks;
-//    }
-
     public void init(ImportContext context) throws IOException {
         init(context, true);
     }
@@ -317,35 +284,46 @@ public class Importer implements InitializingBean, DisposableBean {
 
         ImportData data = context.getData();
         if (data != null) {
-            init(context, data, prepData); 
+            addTasks(context, data, prepData); 
         }
     }
 
-    void init(ImportContext context, ImportData data, boolean prepData) throws IOException {
+    public List<ImportTask> update(ImportContext context, ImportData data) throws IOException {
+        List<ImportTask> tasks = addTasks(context, data, true);
+        
+        //prep(context);
+        changed(context);
+
+        return tasks;
+    }
+
+    List<ImportTask> addTasks(ImportContext context, ImportData data, boolean prepData) throws IOException {
         if (data == null) {
-            return;
+            return Collections.emptyList();
         }
+
         if (prepData) {
             data.prepare(context.progress());
         }
 
         if (data instanceof FileData) {
             if (data instanceof Mosaic) {
-                initForMosaic(context, (Mosaic)data);
+                return initForMosaic(context, (Mosaic)data);
             }
             else if (data instanceof Directory) {
-                initForDirectory(context, (Directory)data);
+                return initForDirectory(context, (Directory)data);
             }
             else {
-                initForFile(context, (FileData)data);
+                return initForFile(context, (FileData)data);
             }
         }
         else if (data instanceof Table) {
         }
         else if (data instanceof Database) {
-            initForDatabase(context, (Database)data);
+            return initForDatabase(context, (Database)data);
         }
 
+        throw new IllegalStateException();
         /*for (ImportTask t : tasks) {
             context.addTask(t);
         }
@@ -359,17 +337,19 @@ public class Importer implements InitializingBean, DisposableBean {
      * Mosaics only support direct import (context.targetStore must be null) and 
      * </p>
      */
-    void initForMosaic(ImportContext context, Mosaic mosaic) throws IOException {
+    List<ImportTask> initForMosaic(ImportContext context, Mosaic mosaic) throws IOException {
 
         if (context.getTargetStore() != null) {
             throw new IllegalArgumentException("ingest not supported for mosaics");
         }
 
-        createTasks(mosaic, context);
+        return createTasks(mosaic, context);
         //tasks.add(createTask(mosaic, context, context.getTargetStore()));
     }
 
-    void initForDirectory(ImportContext context, Directory data) throws IOException {
+    List<ImportTask> initForDirectory(ImportContext context, Directory data) throws IOException {
+        List<ImportTask> tasks = new ArrayList<ImportTask>();
+
         //flatten out the directory into itself and all sub directories and process in order
         for (Directory dir : data.flatten()) {
             //ignore empty directories
@@ -387,6 +367,10 @@ public class Importer implements InitializingBean, DisposableBean {
                 files.add(f);
             }
     
+            //handle case of importing a single file that we don't know the format of, in this
+            // case rather than ignore it we wnat to rpocess it and ssets its state to "NO_FORMAT"
+            boolean skipNoFormat = !(map.size() == 1 && map.containsKey(null));
+            
             // if no target store specified group the directory into pieces that can be 
             // processed as a single task
             StoreInfo targetStore = context.getTargetStore();
@@ -399,10 +383,10 @@ public class Importer implements InitializingBean, DisposableBean {
                         if (files.size() == 1) {
                             //use the file directly
                             //createTasks(files.get(0), format, context, null));
-                            createTasks(files.get(0), format, context);
+                            tasks.addAll(createTasks(files.get(0), format, context));
                         }
                         else {
-                            createTasks(dir.filter(files), format, context);
+                            tasks.addAll(createTasks(dir.filter(files), format, context));
                             //tasks.addAll(createTasks(dir.filter(files), format, context, null));
                         }
                         
@@ -414,80 +398,70 @@ public class Importer implements InitializingBean, DisposableBean {
                 for (List<FileData> files : map.values()) {
                     for (FileData file : files) {
                         //tasks.add(createTask(file, context, null));
-                        createTasks(file, context);
+                        tasks.addAll(createTasks(file, file.getFormat(), context, skipNoFormat));
                     }
                 }
-    
+
             }
             else {
                 for (FileData file : dir.getFiles()) {
-                    createTasks(file, context);
+                    tasks.addAll(createTasks(file, file.getFormat(), context, skipNoFormat));
                 }
-//                for (DataFormat format: new ArrayList<DataFormat>(map.keySet())) {
-//                    List<FileData> files = map.get(format);
-//                    if (files.size() == 1) {
-//                        //use the file directly
-//                        createTasks(files.get(0), format, context);
-//                    }
-//                    else {
-//                        createTasks(dir.filter(files), format, context);
-//                    }
-//                }
-                
             }
         }
+
+        return tasks;
     }
 
-    void initForFile(ImportContext context, FileData file) throws IOException {
-        createTasks(file, context);
+    List<ImportTask>  initForFile(ImportContext context, FileData file) throws IOException {
+        return createTasks(file, context);
     }
 
-    void initForDatabase(ImportContext context, Database db) throws IOException {
+    List<ImportTask>  initForDatabase(ImportContext context, Database db) throws IOException {
         //JD: we use check for direct vs non-direct in order to determine if there should be 
         // one task with many items, or one task per table... can;t think of the use case for
         //many tasks
 
         //tasks.add(createTask(db, context, targetStore));
-        createTasks(db, context);
+        return createTasks(db, context);
     }
     
-//    ImportTask createTask(ImportData data, ImportContext context, StoreInfo targetStore) {
-//        // @revisit - why was this temporary
-//        //if (data instanceof ASpatialFile) return; // this is temporary
-//        ImportTask task = new ImportTask(data);
-//        task.setStore(targetStore);
-//        task.setDirect(targetStore == null);
-//        context.addTask(task);
-//        return task;
-//    }
-
     List<ImportTask> createTasks(ImportData data, ImportContext context) throws IOException {
         return createTasks(data, data.getFormat(), context);
     }
     
+
     List<ImportTask> createTasks(ImportData data, DataFormat format, ImportContext context) 
-            throws IOException {
+        throws IOException {
+        return createTasks(data, format, context, true);
+    }
+
+    List<ImportTask> createTasks(ImportData data, DataFormat format, ImportContext context, 
+        boolean skipNoFormat) throws IOException {
 
         List<ImportTask> tasks = new ArrayList<ImportTask>();
 
-        if (format != null) {
-            //determine the target store for the format
-            boolean direct = false;
-            StoreInfo targetStore = context.getTargetStore();
-            if (targetStore == null) {
-                //direct import, use the format to create a store
-                direct = true;
+        boolean direct = false;
 
-                targetStore = format.createStore(data, context.getTargetWorkspace(), catalog);
-                if (targetStore == null) {
-                    //format unable to create store, switch to indirect import and use 
-                    // default store from catalog
-                    targetStore = lookupDefaultStore();
+        StoreInfo targetStore = context.getTargetStore();
+        if (targetStore == null) {
+            //direct import, use the format to create a store
+            direct = true;
 
-                    direct = targetStore == null;
-                }
+            if (format != null) {
+                targetStore = format.createStore(data, context.getTargetWorkspace(), catalog);    
             }
+            
+            if (targetStore == null) {
+                //format unable to create store, switch to indirect import and use 
+                // default store from catalog
+                targetStore = lookupDefaultStore();
 
+                direct = targetStore == null;
+            }
+        }
+
+        if (format != null) {
             // create the set of tasks by having the format list the avialable items
             // from the input data
             for (ImportTask t : format.list(data, catalog, context.progress())) {
@@ -497,43 +471,16 @@ public class Importer implements InitializingBean, DisposableBean {
                 t.setDirect(direct);
                 t.setStore(targetStore);
 
-                LayerInfo layer = t.getLayer();
-                ResourceInfo resource = layer.getResource();
-
-                //initialize resource references
-                resource.setStore(t.getStore());
-                resource.setNamespace(
-                    catalog.getNamespaceByPrefix(t.getStore().getWorkspace().getName()));
-
-                //assign a default style to the layer if not already done 
-                if (layer.getDefaultStyle() == null) {
-                    StyleInfo style = null;
-                    if (resource instanceof FeatureTypeInfo) {
-                        //since this resource is still detached from the catalog we can't call
-                        // through to get it's underlying resource, so we depend on the "native"
-                        // type provided from the format
-                        FeatureType featureType = 
-                            (FeatureType) t.getMetadata().get(FeatureType.class);
-                        if (featureType != null) {
-                            style = styleGen.createStyle((FeatureTypeInfo) resource, featureType);
-                        }
-
-                    }
-                    else if (resource instanceof CoverageInfo) {
-                        style = styleGen.createStyle((CoverageInfo) resource);
-                    }
-                    else {
-                        //hmmm....
-                    }
-                    layer.setDefaultStyle(style);
-                }
-
                 prep(t);
                 tasks.add(t);
             }
         }
-        else {
-            //do nothing ,perhaps set a special state flag here
+        else if (!skipNoFormat) {
+            ImportTask t = new ImportTask(data);
+            t.setDirect(direct);
+            t.setStore(targetStore);
+            prep(t);
+            tasks.add(t);
         }
 
         for (ImportTask t : tasks) {
@@ -542,121 +489,9 @@ public class Importer implements InitializingBean, DisposableBean {
         return tasks;
     }
 
-    /*public void prep(ImportContext context) throws IOException {
-        prep(context, true);
-    }
-
-    void prep(ImportContext context, boolean prepData) throws IOException {
-        boolean ready = true;
-        for (ImportTask task : context.getTasks()) {
-            ImportData data = task.getData();
-            if (prepData) {
-                data.prepare(context.progress());
-            }
-
-            DataFormat format = data.getFormat();
-
-            if (format == null) {
-                //set state to unknown format
-                task.setState(State.NO_FORMAT);
-                continue;
-            }
-
-            if (task.getStore() == null) {
-                StoreInfo store = format.createStore(data, context.getTargetWorkspace(), catalog);
-                if (store == null) {
-                    //can't do a direct import with this format, use the default store in catalog
-                    // if configured (and if this a vector layer)
-                    if (format instanceof VectorFormat) {
-                        store = lookupDefaultStore();
-                    }
-
-                    if (store == null) {
-                      //unable to import, no direct import and no default store
-                        task.setError(new Exception(
-                            "Could not create store for direct import from :" + data));
-                        task.setState(State.ERROR);
-                        continue;
-                    }
-                }
-
-                // @todo revisit - thought this was needed or shapefile errors were occuring
-                task.setDirect(true);
-                task.setStore(store);
-            }
-            else {
-                //check for a mismatch between store and format
-                if ((format instanceof GridFormat && task.getStore() instanceof DataStoreInfo) || 
-                    (format instanceof VectorFormat && task.getStore() instanceof CoverageStoreInfo)) {
-                    String msg = task.getStore() instanceof DataStoreInfo ? 
-                            "Unable to import raster data into vector store" : 
-                            "Unable to import vector data into raster store";
-
-                    task.setStore(null);
-                    task.setError(new Exception(msg));
-                    task.setState(State.ERROR);
-                    continue;
-                }
-            }
-
-            LayerInfo layer = task.getLayer();
-            ResourceInfo resource = layer.getResource();
-
-            //initialize resource references
-            resource.setStore(task.getStore());
-            resource.setNamespace(
-                catalog.getNamespaceByPrefix(task.getStore().getWorkspace().getName()));
-
-            //assign a default style to the layer if not already done 
-            if (layer.getDefaultStyle() == null) {
-                StyleInfo style = null;
-                if (resource instanceof FeatureTypeInfo) {
-                    //since this resource is still detached from the catalog we can't call
-                    // through to get it's underlying resource, so we depend on the "native"
-                    // type provided from the format
-                    FeatureType featureType = 
-                        (FeatureType) task.getMetadata().get(FeatureType.class);
-                    if (featureType != null) {
-                        style = styleGen.createStyle((FeatureTypeInfo) resource, featureType);
-                    }
-
-                }
-                else if (resource instanceof CoverageInfo) {
-                    style = styleGen.createStyle((CoverageInfo) resource);
-                }
-                else {
-                    //hmmm....
-                }
-                layer.setDefaultStyle(style);
-            }
-
-            ready = prep(task) && ready;
-        }
-
-        context.setState(ImportContext.State.PENDING);
-//        if (ready) {
-//            context.setState(ImportContext.State.PENDING);
-//        }
-//        else {
-//            context.setState(ImportContext.State.INCOMPLETE);
-//        }
-
-        //only save if not a new context
-        if (context.getId() != null) {
-            contextStore.save(context);
-        }
-    }
-    */
     boolean prep(ImportTask task) {
         if (task.getState() == ImportTask.State.COMPLETE) {
             return true;
-        }
-
-        //check the target
-        if (task.getStore() == null) {
-            task.setError(new Exception("No target store for task"));
-            task.setState(State.ERROR);
-            return false;
         }
 
         //check the format
@@ -666,9 +501,16 @@ public class Importer implements InitializingBean, DisposableBean {
             return false;
         }
 
+        
+        //check the target
+        if (task.getStore() == null) {
+            task.setError(new Exception("No target store for task"));
+            task.setState(State.ERROR);
+            return false;
+        }
+
         //check for a mismatch between store and format
-        if ((format instanceof GridFormat && task.getStore() instanceof DataStoreInfo) || 
-            (format instanceof VectorFormat && task.getStore() instanceof CoverageStoreInfo)) {
+        if (!formatMatchesStore(format, task.getStore())) {
             String msg = task.getStore() instanceof DataStoreInfo ? 
                     "Unable to import raster data into vector store" : 
                     "Unable to import vector data into raster store";
@@ -686,6 +528,11 @@ public class Importer implements InitializingBean, DisposableBean {
 
         LayerInfo l = task.getLayer();
         ResourceInfo r = l.getResource();
+        
+        //initialize resource references
+        r.setStore(task.getStore());
+        r.setNamespace(
+            catalog.getNamespaceByPrefix(task.getStore().getWorkspace().getName()));
         
         //srs
         if (r.getSRS() == null) {
@@ -714,8 +561,59 @@ public class Importer implements InitializingBean, DisposableBean {
             return false;
         }
         
+        //style
+        //assign a default style to the layer if not already done 
+        if (l.getDefaultStyle() == null) {
+            try {
+                StyleInfo style = null;
+                if (r instanceof FeatureTypeInfo) {
+                    //since this resource is still detached from the catalog we can't call
+                    // through to get it's underlying resource, so we depend on the "native"
+                    // type provided from the format
+                    FeatureType featureType = 
+                        (FeatureType) task.getMetadata().get(FeatureType.class);
+                    if (featureType != null) {
+                        style = styleGen.createStyle((FeatureTypeInfo) r, featureType);
+                    }
+    
+                }
+                else if (r instanceof CoverageInfo) {
+                    style = styleGen.createStyle((CoverageInfo) r);
+                }
+                else {
+                    //hmmm....
+                }
+                l.setDefaultStyle(style);
+            }
+            catch(Exception e) {
+                task.setError(e);
+                task.setState(ImportTask.State.ERROR);
+                return false;
+            }
+        }
+
         task.setState(ImportTask.State.READY);
         return true;
+    }
+
+    boolean formatMatchesStore(DataFormat format, StoreInfo store) {
+        if (format instanceof VectorFormat) {
+            return store instanceof DataStoreInfo;
+        }
+        if (format instanceof GridFormat) {
+            return store instanceof CoverageStoreInfo;
+        }
+        return false;
+    }
+
+    boolean resourceMatchesStore(ResourceInfo resource, StoreInfo store) {
+        if (resource instanceof FeatureTypeInfo) {
+            return store instanceof DataStoreInfo;
+        }
+        if (resource instanceof CoverageInfo) {
+            return store instanceof CoverageStoreInfo;
+        }
+        return false;
     }
 
     public void run(ImportContext context) throws IOException {
@@ -1369,10 +1267,14 @@ public class Importer implements InitializingBean, DisposableBean {
         }
     }
 
-    public XStreamPersister createXStreamPersister() {
+    public XStreamPersister createXStreamPersisterXML() {
         return initXStreamPersister(new XStreamPersisterFactory().createXMLPersister());
     }
-    
+
+    public XStreamPersister createXStreamPersisterJSON() {
+        return initXStreamPersister(new XStreamPersisterFactory().createJSONPersister());
+    }
+
     public XStreamPersister initXStreamPersister(XStreamPersister xp) {
         xp.setCatalog(catalog);
         //xp.setReferenceByName(true);

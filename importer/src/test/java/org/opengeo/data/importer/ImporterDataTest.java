@@ -178,6 +178,18 @@ public class ImporterDataTest extends ImporterTestSupport {
         assertNull(task.getData().getFormat());
     }
 
+    public void testImportUnknownFileIndirect() throws Exception {
+        
+        DataStoreInfo ds = createH2DataStore(null, "foo");
+        File dir = unpack("gml/states_wfs11.xml.gz");
+        ImportContext context = importer.createContext(new Directory(dir), ds); 
+        assertEquals(1, context.getTasks().size());
+
+        ImportTask task = context.getTasks().get(0);
+        assertEquals(ImportTask.State.NO_FORMAT, task.getState());
+        assertNull(task.getData().getFormat());
+    }
+
     public void testImportDatabase() throws Exception {
         File dir = unpack("h2/cookbook.zip");
 
@@ -435,6 +447,7 @@ public class ImporterDataTest extends ImporterTestSupport {
         
         ImportContext context = 
             importer.createContext(new SpatialFile(new File(dir, "archsites.shp")), ds);
+        context.setArchive(true);
         importer.run(context);
         assertFalse(dir.exists());
 
@@ -569,5 +582,66 @@ public class ImporterDataTest extends ImporterTestSupport {
         FeatureSource<? extends FeatureType, ? extends Feature> featureSource = fti
                 .getFeatureSource(null, null);
         assertEquals("Unexpected feature count", 20, featureSource.getCount(Query.ALL));
+    }
+
+    public void testImportDirectoryWithRasterIndirect() throws Exception {
+        
+        DataStoreInfo ds = createH2DataStore(getCatalog().getDefaultWorkspace().getName(), "shapes");
+
+        File dir = tmpDir();
+        unpack("shape/archsites_epsg_prj.zip", dir);
+        unpack("shape/bugsites_esri_prj.tar.gz", dir);
+        unpack("geotiff/EmissiveCampania.tif.bz2", dir);
+        
+        ImportContext context = importer.createContext(new Directory(dir), ds);
+        assertEquals(3, context.getTasks().size());
+        assertTrue(context.getData() instanceof Directory);
+
+        ImportTask task = context.getTasks().get(0);
+        assertEquals(ImportTask.State.READY, task.getState());
+        assertEquals("archsites", task.getLayer().getResource().getName());
+        assertTrue(task.getData() instanceof SpatialFile);
+        assertEquals("Shapefile", task.getData().getFormat().getName());
+        
+        task = context.getTasks().get(1);
+        assertEquals(ImportTask.State.READY, task.getState());
+        assertEquals("bugsites", task.getLayer().getResource().getName());
+        assertTrue(task.getData() instanceof SpatialFile);
+        assertEquals("Shapefile", task.getData().getFormat().getName());
+        
+        task = context.getTasks().get(2);
+        assertEquals(ImportTask.State.ERROR, task.getState());
+        assertEquals("EmissiveCampania", task.getLayer().getResource().getName());
+        assertTrue(task.getData() instanceof SpatialFile);
+        assertEquals("GeoTIFF", task.getData().getFormat().getName());
+    }
+    
+    public void testImportDirectoryWithRasterDirect() throws Exception {
+        File dir = tmpDir();
+        unpack("shape/archsites_epsg_prj.zip", dir);
+        unpack("shape/bugsites_esri_prj.tar.gz", dir);
+        unpack("geotiff/EmissiveCampania.tif.bz2", dir);
+        
+        ImportContext context = importer.createContext(new Directory(dir));
+        assertEquals(3, context.getTasks().size());
+        assertTrue(context.getData() instanceof Directory);
+
+        ImportTask task = context.getTasks().get(0);
+        assertEquals(ImportTask.State.READY, task.getState());
+        assertEquals("archsites", task.getLayer().getResource().getName());
+        assertTrue(task.getData() instanceof SpatialFile);
+        assertEquals("Shapefile", task.getData().getFormat().getName());
+        
+        task = context.getTasks().get(1);
+        assertEquals(ImportTask.State.READY, task.getState());
+        assertEquals("bugsites", task.getLayer().getResource().getName());
+        assertTrue(task.getData() instanceof SpatialFile);
+        assertEquals("Shapefile", task.getData().getFormat().getName());
+        
+        task = context.getTasks().get(2);
+        assertEquals(ImportTask.State.READY, task.getState());
+        assertEquals("EmissiveCampania", task.getLayer().getResource().getName());
+        assertTrue(task.getData() instanceof SpatialFile);
+        assertEquals("GeoTIFF", task.getData().getFormat().getName());
     }
 }

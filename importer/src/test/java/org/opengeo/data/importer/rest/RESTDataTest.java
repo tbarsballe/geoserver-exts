@@ -84,28 +84,24 @@ public class RESTDataTest extends ImporterTestSupport {
         int t = postNewTaskAsMultiPartForm(i, "shape/archsites_no_crs.zip");
 
         JSONObject task = getTask(i, t);
-        assertEquals("INCOMPLETE", task.getString("state"));
+        assertEquals("NO_CRS", task.getString("state"));
         
-        JSONObject item = getItem(i, t, 0);
-        assertEquals("NO_CRS", item.getString("state"));
-
         String json = 
         "{" +
-          "\"item\": {" +
+          "\"task\": {" +
             "\"layer\": {" +
                     "\"srs\": \"EPSG:4326\"" + 
              "}" +
            "}" + 
         "}";
-        putItem(i, t, 0, json);
+        putTask(i, t, json);
 
-        item = getItem(i, t, 0);
-        print(item);
-        assertEquals("READY", item.getString("state"));
-        assertEquals("gs_archsites", item.getJSONObject("layer").getJSONObject("style").getString("name"));
+        task = getTask(i, t);
+        assertEquals("READY", task.getString("state"));
+        assertEquals("gs_archsites", task.getJSONObject("layer").getJSONObject("style").getString("name"));
         json = 
         "{" +
-          "\"item\": {" +
+          "\"task\": {" +
             "\"layer\": {" +
               "\"style\": {" +
                     "\"name\": \"point\"" + 
@@ -113,12 +109,12 @@ public class RESTDataTest extends ImporterTestSupport {
                "}" +
            "}" + 
         "}";
-        putItem(i, t, 0, json);
+        putTask(i, t,json);
 
-        item = getItem(i, t, 0);
+        task = getTask(i, t);
         
-        assertEquals("READY", item.getString("state"));
-        assertEquals("point", item.getJSONObject("layer").getJSONObject("style").getString("name"));
+        assertEquals("READY", task.getString("state"));
+        assertEquals("point", task.getJSONObject("layer").getJSONObject("style").getString("name"));
 
         postImport(i);
         runChecks("archsites");
@@ -199,14 +195,14 @@ public class RESTDataTest extends ImporterTestSupport {
 
         ImportContext context = importer.createContext(new Directory(dir), ds);
         
-        JSONObject item = getItem(0, 0, 0);
-        assertEquals("NO_CRS", item.get("state"));
+        JSONObject task = getTask(0, 0);
+        assertEquals("NO_CRS", task.get("state"));
 
         String json = "{\"id\":0,\"layer\":{\"srs\":\"EPSG:26713\"}}";
-        putItem(0, 0, 0, json);
+        putTask(0, 0, json);
 
-        item = getItem(0, 0, 0);
-        assertEquals("READY", item.get("state"));
+        task = getTask(0, 0);
+        assertEquals("READY", task.get("state"));
 
         DataStore store = (DataStore) ds.getDataStore(null);
         assertEquals(store.getTypeNames().length, 0);
@@ -232,7 +228,7 @@ public class RESTDataTest extends ImporterTestSupport {
         ImportContext context = importer.getContext(i);
         assertEquals(ImportContext.State.COMPLETE, context.getState());
 
-        String layername = context.getTasks().get(0).getItems().get(0).getLayer().getName();
+        String layername = context.getTasks().get(0).getLayer().getName();
         runChecks(layername);
     }
 
@@ -255,7 +251,7 @@ public class RESTDataTest extends ImporterTestSupport {
 
         postImport(i);
 
-        LayerInfo l = importer.getContext(i).getTasks().get(0).getItems().get(0).getLayer();
+        LayerInfo l = importer.getContext(i).getTasks().get(0).getLayer();
         runChecks(l.getName());
     }
 
@@ -276,7 +272,7 @@ public class RESTDataTest extends ImporterTestSupport {
 
         //update all the files
         JSONObject t = getTask(imp, task);
-        JSONArray files = t.getJSONObject("source").getJSONArray("files");
+        JSONArray files = t.getJSONObject("data").getJSONArray("files");
         assertEquals(4, files.size());
 
         for (int i = 0; i < files.size(); i++) {
@@ -296,7 +292,8 @@ public class RESTDataTest extends ImporterTestSupport {
         }
 
         t = getTask(imp, task);
-        files = t.getJSONObject("source").getJSONArray("files");
+
+        files = t.getJSONObject("data").getJSONArray("files");
         for (int i = 0; i < files.size(); i++) {
             JSONObject obj = files.getJSONObject(i);
             assertTrue(obj.has("timestamp"));
@@ -324,7 +321,7 @@ public class RESTDataTest extends ImporterTestSupport {
 
         //verify files have a timestamp
         JSONObject t = getTask(imp, task);
-        JSONArray files = t.getJSONObject("source").getJSONArray("files");
+        JSONArray files = t.getJSONObject("data").getJSONArray("files");
         assertEquals(4, files.size());
 
         for (int i = 0; i < files.size(); i++) {
@@ -333,7 +330,7 @@ public class RESTDataTest extends ImporterTestSupport {
         }
 
         t = getTask(imp, task);
-        files = t.getJSONObject("source").getJSONArray("files");
+        files = t.getJSONObject("data").getJSONArray("files");
 
         //ensure all dates set up, can't rely on iteration order
         List<Integer> ints = Lists.newArrayList(1,2,3,4);
@@ -353,7 +350,7 @@ public class RESTDataTest extends ImporterTestSupport {
         
         postImport(imp);
 
-        LayerInfo l = importer.getContext(imp).getTasks().get(0).getItems().get(0).getLayer();
+        LayerInfo l = importer.getContext(imp).getTasks().get(0).getLayer();
         runChecks(l.getName());
     }
 
@@ -363,19 +360,14 @@ public class RESTDataTest extends ImporterTestSupport {
     }
 
     JSONObject getTask(int imp, int task) throws Exception {
-        JSON json = getAsJSON(String.format("/rest/imports/%d/tasks/%d", imp, task));
+        JSON json = getAsJSON(String.format("/rest/imports/%d/tasks/%d?expand=all", imp, task));
         return ((JSONObject)json).getJSONObject("task");
     }
 
-    JSONObject getItem(int imp, int task, int item) throws Exception {
-        JSON json = getAsJSON(String.format("/rest/imports/%d/tasks/%d/items/%d", imp, task, item));
-        return ((JSONObject)json).getJSONObject("item");
-    }
-
-    void putItem(int imp, int task, int item, String json) throws Exception {
+    void putTask(int imp, int task, String json) throws Exception {
         MockHttpServletResponse resp = putAsServletResponse(
-            String.format("/rest/imports/%d/tasks/%d/items/%d", imp, task, item), json, "application/json");
-        assertEquals(202, resp.getStatusCode());
+            String.format("/rest/imports/%d/tasks/%d", imp, task), json, "application/json");
+        assertEquals(204, resp.getStatusCode());
     }
 
     int postNewTaskAsMultiPartForm(int imp, String data) throws Exception {

@@ -1,9 +1,12 @@
 package org.opengeo.data.importer.rest;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import org.geoserver.rest.AbstractResource;
 import org.geoserver.rest.RestletException;
 import org.opengeo.data.importer.ImportContext;
-import org.opengeo.data.importer.ImportItem;
 import org.opengeo.data.importer.ImportTask;
 import org.opengeo.data.importer.Importer;
 import org.restlet.data.Status;
@@ -41,40 +44,44 @@ public abstract class BaseResource extends AbstractResource {
         String t = getAttribute("task");
         if (t != null) {
             int id = Integer.parseInt(t);
-            if (id < context.getTasks().size()) {
-                task = context.getTasks().get(id);
-            }
+            task = context.task(id);
+        }
+        if (t != null && task == null) {
+            throw new RestletException("No such task: " + t + " for import: " + context.getId(),
+                    Status.CLIENT_ERROR_NOT_FOUND);
         }
 
         if (task == null && !optional) {
-            throw new RestletException("No such task: " + t + " for import: " + context.getId(),
-                Status.CLIENT_ERROR_NOT_FOUND);
+            throw new RestletException("No task specified", 
+                    
+                    Status.CLIENT_ERROR_NOT_FOUND);
         }
 
         return task;
     }
 
-    protected ImportItem item() {
-        return item(false);
+    protected int expand(int def) {
+        String ex = getRequest().getResourceRef().getQueryAsForm().getFirstValue("expand");
+        if (ex == null) {
+            return def;
+        }
+
+        try {
+            return "self".equalsIgnoreCase(ex) ? 1
+                 : "all".equalsIgnoreCase(ex) ? Integer.MAX_VALUE 
+                 : "none".equalsIgnoreCase(ex) ? 0 
+                 : Integer.parseInt(ex);
+        }
+        catch(NumberFormatException e) {
+            return def;
+        }
     }
 
-    protected ImportItem item(boolean optional) {
-        ImportTask task = task();
-        ImportItem item = null;
+    protected ImportJSONReader newReader(InputStream input) throws IOException {
+        return new ImportJSONReader(importer, input);
+    }
 
-        String i = getAttribute("item");
-        
-        if (i != null) {
-            int id = Integer.parseInt(i);
-            if (id < task.getItems().size()) {
-                item = task.getItems().get(id);
-            }
-        }
-
-        if (item == null && !optional) {
-            throw new RestletException("No item specified", Status.CLIENT_ERROR_BAD_REQUEST);
-        }
-
-        return item;
+    protected ImportJSONWriter newWriter(OutputStream output) throws IOException {
+        return new ImportJSONWriter(importer, getPageInfo(), output);
     }
 }

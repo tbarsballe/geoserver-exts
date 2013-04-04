@@ -13,7 +13,7 @@
   <!-- 
     wicket ui stuff
    -->
-  <bean id="importDataMenuPage" class="org.geoserver.web.MenuPageInfo">
+  <!--bean id="importDataMenuPage" class="org.geoserver.web.MenuPageInfo">
     <property name="id" value="importData" />
     <property name="category" ref="dataCategory"/>
     <property name="titleKey" value="ImportDataPage.menu" />
@@ -21,7 +21,7 @@
     <property name="componentClass" value="org.opengeo.data.importer.web.ImportDataPage" />
     <property name="order" value="6"/>
     <property name="icon" value="map_add.png"/>
-  </bean>
+  </bean-->
   <!--
    rest bindings
     -->
@@ -46,18 +46,11 @@
     <constructor-arg value="taskTargetResource"/>
   </bean>
 
-  <bean id="importItemResource" class="org.opengeo.data.importer.rest.ItemResource">
+  <bean id="layerResource" class="org.opengeo.data.importer.rest.LayerResource">
     <constructor-arg ref="importer"/>
   </bean>
-  <bean id="importItemFinder" class="org.geoserver.rest.BeanResourceFinder">
-      <constructor-arg value="importItemResource"/>
-  </bean>
-
-  <bean id="itemLayerResource" class="org.opengeo.data.importer.rest.ItemLayerResource">
-    <constructor-arg ref="importer"/>
-  </bean>
-  <bean id="itemLayerFinder" class="org.geoserver.rest.BeanResourceFinder">
-      <constructor-arg value="itemLayerResource"/>
+  <bean id="layerFinder" class="org.geoserver.rest.BeanResourceFinder">
+      <constructor-arg value="layerResource"/>
   </bean>
 
   <bean id="importDataResource" class="org.opengeo.data.importer.rest.DataResource">
@@ -74,6 +67,14 @@
       <constructor-arg value="dirResource"/>
   </bean>
 
+  <bean id="txResource" class="org.opengeo.data.importer.rest.TransformResource">
+    <constructor-arg ref="importer"/>
+  </bean>
+  <bean id="txFinder" class="org.geoserver.rest.BeanResourceFinder">
+      <constructor-arg value="txResource"/>
+  </bean>
+
+  
   <bean id="importRestMapping" class="org.geoserver.rest.RESTMapping">
     <property name="routes">
       <map>
@@ -97,6 +98,12 @@
         </entry>
         <entry>
           <key>
+            <value>/imports/{import}/tasks/{task}/data</value>
+          </key>
+          <value>importDataFinder</value>
+        </entry>
+        <entry>
+          <key>
             <value>/imports/{import}/data/files</value>
           </key>
           <value>dirFinder</value>
@@ -104,6 +111,18 @@
         <entry>
           <key>
             <value>/imports/{import}/data/files/{file}</value>
+          </key>
+          <value>dirFinder</value>
+        </entry>
+        <entry>
+          <key>
+            <value>/imports/{import}/tasks/{task}/data/files</value>
+          </key>
+          <value>dirFinder</value>
+        </entry>
+        <entry>
+          <key>
+            <value>/imports/{import}/tasks/{task}/data/files/{file}</value>
           </key>
           <value>dirFinder</value>
         </entry>
@@ -127,29 +146,28 @@
         </entry>
         <entry>
           <key>
-            <value>/imports/{import}/tasks/{task}/items</value>
+            <value>/imports/{import}/tasks/{task}/progress</value>
           </key>
-          <value>importItemFinder</value>
+          <value>importTaskFinder</value>
         </entry>
         <entry>
           <key>
-            <value>/imports/{import}/tasks/{task}/items/{item}</value>
+            <value>/imports/{import}/tasks/{task}/layer</value>
           </key>
-          <value>importItemFinder</value>
+          <value>layerFinder</value>
         </entry>
         <entry>
           <key>
-            <value>/imports/{import}/tasks/{task}/items/{item}/progress</value>
+            <value>/imports/{import}/tasks/{task}/transforms</value>
           </key>
-          <value>importItemFinder</value>
+          <value>txFinder</value>
         </entry>
         <entry>
           <key>
-            <value>/imports/{import}/tasks/{task}/items/{item}/layer</value>
+            <value>/imports/{import}/tasks/{task}/transforms/{transform}</value>
           </key>
-          <value>itemLayerFinder</value>
+          <value>txFinder</value>
         </entry>
-
       </map>
     </property>
   </bean>

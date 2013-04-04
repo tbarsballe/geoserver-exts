@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -22,6 +23,9 @@ import org.apache.commons.io.FilenameUtils;
 import org.geoserver.data.util.IOUtils;
 import org.geotools.util.logging.Logging;
 import org.opengeo.data.importer.job.ProgressMonitor;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 
 public class Directory extends FileData {
 
@@ -420,7 +424,27 @@ public class Directory extends FileData {
         }
         super.cleanup();
     }
-    
+
+    @Override
+    public FileData part(final String name) {
+        List<FileData> files = this.files;
+        if (this instanceof Filtered) {
+            files = ((Filtered)this).filter;
+        }
+
+        try {
+            return Iterables.find(files, new Predicate<FileData>() {
+                @Override
+                public boolean apply(FileData input) {
+                    return name.equals(input.getName());
+                }
+            });
+        }
+        catch(NoSuchElementException e) {
+            return null;
+        }
+    }
+
     static class Filtered extends Directory {
 
         List<FileData> filter;

@@ -1,27 +1,25 @@
 package org.opengeo.data.importer.web;
 
 import org.apache.wicket.model.LoadableDetachableModel;
-import org.opengeo.data.importer.ImportItem;
+import org.opengeo.data.importer.ImportTask;
 
-public class ImportItemModel extends LoadableDetachableModel<ImportItem> {
+public class ImportItemModel extends LoadableDetachableModel<ImportTask> {
 
     long context;
     long task;
-    long id;
-
-    public ImportItemModel(ImportItem item) {
-        this(item.getTask().getContext().getId(), item.getTask().getId(), item.getId());
+    
+    public ImportItemModel(ImportTask task) {
+        this(task.getContext().getId(), task.getId());
     }
 
-    public ImportItemModel(long context, long task, long id) {
+    public ImportItemModel(long context, long task) {
         this.context = context;
         this.task = task;
-        this.id = id;
     }
 
     @Override
-    protected ImportItem load() {
-        return ImporterWebUtils.importer().getContext(context).task(task).item(id);
+    protected ImportTask load() {
+        return ImporterWebUtils.importer().getContext(context).task(task);
     }
 
 }

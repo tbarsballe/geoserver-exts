@@ -77,9 +77,11 @@ public class ImportContext implements Serializable {
 
     /** 
      * flag to control whether imported files (indirect) should be archived after import
-     * TODO: false is a better default for this, change it and give mapstory/IS a heads up.
+     * JD: this used to be true by default, now false since by default importing a shapefile
+     * directly from the local file system would result in the shapefile, and its parent directory 
+     * being deleted
      */
-    boolean archive = true;
+    boolean archive = false;
 
     volatile ProgressMonitor progress;
 
@@ -165,6 +167,10 @@ public class ImportContext implements Serializable {
         task.setId(taskid++);
         task.setContext(this);
         this.tasks.add(task);
+    }
+
+    public void removeTask(ImportTask task) {
+        this.tasks.remove(task);
     }
 
     public ImportTask task(long id) {

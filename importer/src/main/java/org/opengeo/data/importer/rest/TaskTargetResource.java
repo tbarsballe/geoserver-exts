@@ -146,12 +146,13 @@ public class TaskTargetResource extends BaseResource {
 
         @Override
         protected Object read(InputStream in) throws IOException {
-            return new ImportJSONIO(importer).fromJSON(in, StoreInfo.class);
+            return newReader(in).fromJSON(StoreInfo.class);
         }
 
         @Override
         protected void write(Object object, OutputStream out) throws IOException {
-            new ImportJSONIO(importer).toJSON(object, out);
+            StoreInfo store = (StoreInfo) object;
+            newWriter(out).store(store, task(), true, expand(1));
         }
     }
 }

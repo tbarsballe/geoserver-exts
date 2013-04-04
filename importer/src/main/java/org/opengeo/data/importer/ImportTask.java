@@ -206,7 +206,7 @@ public class ImportTask implements Serializable {
         messages.add(new LogRecord(level, msg));
     }
     
-    public List<LogRecord> getImportMessages() {
+    public List<LogRecord> getMessages() {
         List<LogRecord> retval;
         if (messages == null) {
             retval = Collections.emptyList();

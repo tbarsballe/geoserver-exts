@@ -39,6 +39,10 @@ public abstract class TransformChain<T extends ImportTransform> implements Seria
         transforms.add(tx);
     }
 
+    public <X extends T> boolean remove(X tx) {
+        return transforms.remove(tx);
+    }
+
     public <X extends T> X get(Class<X> type) {
         for (T tx : transforms) {
             if (type.equals(tx.getClass())) {

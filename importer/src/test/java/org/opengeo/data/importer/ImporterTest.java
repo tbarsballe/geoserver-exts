@@ -29,7 +29,10 @@ public class ImporterTest extends ImporterTestSupport {
         assertEquals(2, context.getTasks().size());
 
         ImportTask task = context.getTasks().get(0);
-        assertEquals(d, task.getData());
+        assertEquals(d.part("archsites"), task.getData());
+
+        task = context.getTasks().get(1);
+        assertEquals(d.part("bugsites"), task.getData());
     }
 
     public void testCreateContextDirectoryHetero() throws Exception {
