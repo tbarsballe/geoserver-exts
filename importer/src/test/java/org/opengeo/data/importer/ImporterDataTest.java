@@ -610,7 +610,7 @@ public class ImporterDataTest extends ImporterTestSupport {
         assertEquals("Shapefile", task.getData().getFormat().getName());
         
         task = context.getTasks().get(2);
-        assertEquals(ImportTask.State.ERROR, task.getState());
+        assertEquals(ImportTask.State.BAD_FORMAT, task.getState());
         assertEquals("EmissiveCampania", task.getLayer().getResource().getName());
         assertTrue(task.getData() instanceof SpatialFile);
         assertEquals("GeoTIFF", task.getData().getFormat().getName());

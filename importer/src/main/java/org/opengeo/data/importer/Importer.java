@@ -516,7 +516,7 @@ public class Importer implements InitializingBean, DisposableBean {
                     "Unable to import vector data into raster store";
 
             task.setError(new Exception(msg));
-            task.setState(State.ERROR);
+            task.setState(State.BAD_FORMAT);
             return false;
         }
 
@@ -640,6 +640,9 @@ public class Importer implements InitializingBean, DisposableBean {
                 continue;
             }
 
+            if (context.progress().isCanceled()) {
+                break;
+            }
             run(task);
         }
 
@@ -818,25 +821,27 @@ public class Importer implements InitializingBean, DisposableBean {
 
                 //JD: not sure what the rationale is here... ask IS
                 //if (task.getUpdateMode() == null) {
-                if (!canceled && task.getUpdateMode() == null) {
-                    addToCatalog(task);
-                }
-
-                // verify that the newly created featuretype's resource
-                // has bounding boxes computed - this might be required
-                // for csv or other uploads that have a geometry that is
-                // the result of a transform. there may be another way...
-                FeatureTypeInfo resource = getCatalog().getResourceByName(
-                        featureType.getQualifiedName(), FeatureTypeInfo.class);
-                if (resource.getNativeBoundingBox().isEmpty()
-                        || resource.getMetadata().get("recalculate-bounds") != null) {
-                    // force computation
-                    CatalogBuilder cb = new CatalogBuilder(getCatalog());
-                    ReferencedEnvelope nativeBounds = cb.getNativeBounds(resource);
-                    resource.setNativeBoundingBox(nativeBounds);
-                    resource.setLatLonBoundingBox(cb.getLatLonBounds(nativeBounds,
-                            resource.getCRS()));
-                    getCatalog().save(resource);
+                if (!canceled) {
+                    if (task.getUpdateMode() == null) {
+                        addToCatalog(task);
+                    }
+    
+                    // verify that the newly created featuretype's resource
+                    // has bounding boxes computed - this might be required
+                    // for csv or other uploads that have a geometry that is
+                    // the result of a transform. there may be another way...
+                    FeatureTypeInfo resource = getCatalog().getResourceByName(
+                            featureType.getQualifiedName(), FeatureTypeInfo.class);
+                    if (resource.getNativeBoundingBox().isEmpty()
+                            || resource.getMetadata().get("recalculate-bounds") != null) {
+                        // force computation
+                        CatalogBuilder cb = new CatalogBuilder(getCatalog());
+                        ReferencedEnvelope nativeBounds = cb.getNativeBounds(resource);
+                        resource.setNativeBoundingBox(nativeBounds);
+                        resource.setLatLonBoundingBox(cb.getLatLonBounds(nativeBounds,
+                                resource.getCRS()));
+                        getCatalog().save(resource);
+                    }
                 }
             }
             catch(Exception e) {

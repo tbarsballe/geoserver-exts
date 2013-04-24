@@ -33,13 +33,13 @@ public class ImportTaskProvider extends GeoServerDataProvider<ImportTask> {
 
     @Override
     protected List<ImportTask> getItems() {
-        List<ImportTask> items = new ArrayList(context.getObject().getTasks());
+        List<ImportTask> tasks = new ArrayList(context.getObject().getTasks());
 //        Collections.sort(items, new Comparator<ImportItem>() {
 //            public int compare(ImportItem o1, ImportItem o2) {
 //                return o1.getState().compareTo(o2.getState());
 //            }
 //        });
-        return items;
+        return tasks;
     }
 
     @Override

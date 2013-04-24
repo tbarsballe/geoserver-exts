@@ -48,6 +48,7 @@ import org.geoserver.web.wicket.GeoServerDataProvider.Property;
 import org.geoserver.web.wicket.GeoServerDialog;
 import org.geoserver.web.wicket.GeoServerDialog.DialogDelegate;
 import org.geoserver.web.wicket.GeoServerTablePanel;
+import org.geoserver.web.wicket.Icon;
 import org.geoserver.web.wicket.ParamResourceModel;
 import org.geoserver.web.wicket.SRSToCRSModel;
 import org.geoserver.web.wicket.SimpleAjaxLink;
@@ -57,11 +58,12 @@ import org.geotools.util.logging.Logging;
 
 import org.opengeo.data.importer.ImportTask;
 import org.opengeo.data.importer.Importer;
+import org.opengeo.data.importer.web.ImportPage.DataIconModel;
 
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.FactoryException;
 
-public class ImportItemTable extends GeoServerTablePanel<ImportTask> {
+public class ImportTaskTable extends GeoServerTablePanel<ImportTask> {
 
     static Logger LOGGER = Logging.getLogger(Importer.class);
     static CoordinateReferenceSystem EPSG_3857() throws FactoryException {
@@ -72,14 +74,14 @@ public class ImportItemTable extends GeoServerTablePanel<ImportTask> {
     GeoServerDialog dialog;
     FeedbackPanel feedbackPanel;
 
-    public ImportItemTable(String id, GeoServerDataProvider<ImportTask> dataProvider, boolean selectable) {
+    public ImportTaskTable(String id, GeoServerDataProvider<ImportTask> dataProvider, boolean selectable) {
         super(id, dataProvider, selectable);
         add(dialog = new GeoServerDialog("dialog"));
         add(popupWindow = new ModalWindow("popup"));
         ((DataView)get("listContainer:items")).setItemReuseStrategy(DefaultItemReuseStrategy.getInstance());
     }
 
-    public ImportItemTable setFeedbackPanel(FeedbackPanel feedbackPanel) {
+    public ImportTaskTable setFeedbackPanel(FeedbackPanel feedbackPanel) {
         this.feedbackPanel = feedbackPanel;
         return this;
     }
@@ -146,7 +148,7 @@ public class ImportItemTable extends GeoServerTablePanel<ImportTask> {
                     @Override
                     protected boolean onSubmit(AjaxRequestTarget target, Component contents) {
                         ImporterWebUtils.importer().changed(itemModel.getObject());
-                        target.addComponent(ImportItemTable.this);
+                        target.addComponent(ImportTaskTable.this);
                         return true;
                     }
 
@@ -201,12 +203,13 @@ public class ImportItemTable extends GeoServerTablePanel<ImportTask> {
             case READY:
                 return new ResourceReference(GeoServerApplication.class, "img/icons/silk/bullet_go.png");
             case RUNNING:
-                return new ResourceReference(ImportItemTable.class, "indicator.gif");
+                return new ResourceReference(ImportTaskTable.class, "indicator.gif");
             case COMPLETE:
                 return new ResourceReference(GeoServerApplication.class, "img/icons/silk/accept.png");
             case NO_BOUNDS:
             case NO_CRS:
             case NO_FORMAT:
+            case BAD_FORMAT:
                 return new ResourceReference(GeoServerApplication.class, "img/icons/silk/error.png");
             case ERROR:
                 return new ResourceReference(GeoServerApplication.class, "img/icons/silk/delete.png");
@@ -226,6 +229,7 @@ public class ImportItemTable extends GeoServerTablePanel<ImportTask> {
             case NO_CRS:
             case ERROR:
             case NO_FORMAT:
+            case BAD_FORMAT:
                 return "warning-link";
             //case ERROR:
             //    return "error-link";
@@ -244,7 +248,7 @@ public class ImportItemTable extends GeoServerTablePanel<ImportTask> {
         public String getObject() {
             ImportTask.State state = (ImportTask.State) chained.getObject();
             return new StringResourceModel(
-                state.name().toLowerCase(), ImportItemTable.this, null).getString();
+                state.name().toLowerCase(), ImportTaskTable.this, null).getString();
         }
     }
 
@@ -348,7 +352,7 @@ public class ImportItemTable extends GeoServerTablePanel<ImportTask> {
                     ImporterWebUtils.importer().changed(item);
 
                     //ImportItemTable.this.modelChanged();
-                    target.addComponent(ImportItemTable.this);
+                    target.addComponent(ImportTaskTable.this);
                     onItemFixed(item, target);
                 }
             });
@@ -376,7 +380,8 @@ public class ImportItemTable extends GeoServerTablePanel<ImportTask> {
                         };
                     });
                 }
-            }.add(new Label("name", new PropertyModel(model, "layer.name"))));
+            }.add(new Label("name", new PropertyModel(model, "layer.name")))
+             .add(new Icon("icon",new DataIconModel(model.getObject().getData()))));
         }
     }
 
@@ -414,7 +419,7 @@ public class ImportItemTable extends GeoServerTablePanel<ImportTask> {
                 new ChoiceRenderer<PreviewLink>() {
                 @Override
                 public Object getDisplayValue(PreviewLink object) {
-                    return new ParamResourceModel(object.id, ImportItemTable.this, object.id).getString();
+                    return new ParamResourceModel(object.id, ImportTaskTable.this, object.id).getString();
                 }
                 @Override
                 public String getIdValue(PreviewLink object, int index) {

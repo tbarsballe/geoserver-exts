@@ -28,7 +28,7 @@ public class ImportTask implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static enum State {
-        PENDING, READY, RUNNING, NO_CRS, NO_BOUNDS, NO_FORMAT, ERROR, CANCELED, COMPLETE
+        PENDING, READY, RUNNING, NO_CRS, NO_BOUNDS, NO_FORMAT, BAD_FORMAT, ERROR, CANCELED, COMPLETE
     }
 
     /**

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 import org.apache.wicket.AttributeModifier;
@@ -19,6 +20,7 @@ import org.apache.wicket.ajax.AbstractAjaxTimerBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.markup.ComponentTag;
+import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.TextArea;
 import org.apache.wicket.markup.html.link.Link;
@@ -58,6 +60,8 @@ public class ImportPage extends GeoServerSecuredPage {
 
     GeoServerDialog dialog;
 
+    AtomicBoolean running = new AtomicBoolean(false);
+
     public ImportPage(PageParameters pp) {
         this(new ImportContextModel(pp.getAsLong("id")));
     }
@@ -72,18 +76,19 @@ public class ImportPage extends GeoServerSecuredPage {
 
     void initComponents(final IModel<ImportContext> model) {
         add(new Label("id", new PropertyModel(model, "id")));
-
+    
         ImportContextProvider provider = new ImportContextProvider() {
             @Override
             protected List<Property<ImportContext>> getProperties() {
                 return Arrays.asList(STATE, CREATED, UPDATED);
             }
+    
             @Override
             protected List<ImportContext> getItems() {
                 return Collections.singletonList(model.getObject());
             }
         };
-
+    
         add(new AjaxLink("raw") {
             @Override
             public void onClick(AjaxRequestTarget target) {
@@ -92,7 +97,8 @@ public class ImportPage extends GeoServerSecuredPage {
                 dialog.showOkCancel(target, new DialogDelegate() {
                     @Override
                     protected Component getContents(String id) {
-                        XStreamPersister xp = importer().createXStreamPersisterXML();
+                        XStreamPersister xp = importer()
+                                .createXStreamPersisterXML();
                         ByteArrayOutputStream bout = new ByteArrayOutputStream();
                         try {
                             xp.save(model.getObject(), bout);
@@ -101,237 +107,190 @@ public class ImportPage extends GeoServerSecuredPage {
                             LOGGER.log(Level.FINER, e.getMessage(), e);
                             e.printStackTrace(new PrintWriter(bout));
                         }
-
-                        return new TextAreaPanel(id, new Model(new String(bout.toByteArray())));
+    
+                        return new TextAreaPanel(id, new Model(new String(bout
+                                .toByteArray())));
                     }
-
+    
                     @Override
-                    protected boolean onSubmit(AjaxRequestTarget target,  Component contents) {
+                    protected boolean onSubmit(AjaxRequestTarget target,
+                            Component contents) {
                         return true;
                     }
                 });
             }
         }.setVisible(ImporterWebUtils.isDevMode()));
-
+    
         final ImportContextTable headerTable = new ImportContextTable("header", provider);
+
         headerTable.setOutputMarkupId(true);
         headerTable.setFilterable(false);
         headerTable.setPageable(false);
         add(headerTable);
-
+    
         final ImportContext imp = model.getObject();
-        ListView<ImportTask> tasksView = new ListView<ImportTask>("tasks", 
-            new FilteredImportTasksModel(new ImportTasksModel(imp), false)) {
-        //ListView<ImportTask> tasksView = new ListView<ImportTask>("tasks", new ImportTasksDetachableModel(imp)) {
+        boolean selectable = imp.getState() != ImportContext.State.COMPLETE;
+        final ImportTaskTable taskTable = new ImportTaskTable("tasks", 
+            new ImportTaskProvider(model), selectable) {
             @Override
-            protected void populateItem(final ListItem<ImportTask> item) {
-                IModel<ImportTask> model = item.getModel();
+            protected void onSelectionUpdate(AjaxRequestTarget target) {
+                updateImportLink((AjaxLink) ImportPage.this.get("import"), this, target);
+            }
+        }.setFeedbackPanel(feedbackPanel);
+        taskTable.setOutputMarkupId(true);
+        taskTable.setFilterable(false);
+        add(taskTable);
+    
+        final AjaxLink<Long> importLink = new AjaxLink<Long>("import",
+                new Model<Long>()) {
+            @Override
+            protected void disableLink(ComponentTag tag) {
+                super.disableLink(tag);
+                ImporterWebUtils.disableLink(tag);
+            }
+    
+            @Override
+            public void onClick(AjaxRequestTarget target) {
+                ImportContext imp = model.getObject();
+    
+                BasicImportFilter filter = new BasicImportFilter();
+                for (ImportTask t : taskTable.getSelection()) {
+                    filter.add(t);
+                }
 
-                ImportTask task = item.getModelObject();
-                ImportData data = task.getData();
+                //set running flag and update cancel link
+                running.set(true);
+                target.addComponent(cancelLink(this));
 
-                item.add(new Icon("icon",new DataIconModel(data)));
-                item.add(new Label("title", new DataTitleModel(task))
-                    .add(new AttributeModifier("title", new DataTitleModel(task, false))));
-
-                StoreInfo store = task.getStore();
-                if (store != null) {
-                    String targetModelKey = null;
-                    switch(task.getState()) {
-                    case COMPLETE:
-                        targetModelKey = "importCompleted";
-                        break;
-                    default:
-                        targetModelKey = store.getId()==null?"importNewStore":"importExistingStore"; 
-                    }
-
-                    item.add(new Label("target",
-                        new StringResourceModel(targetModelKey, ImportPage.this, null)));
-                    item.add(new Link("targetLink") {
-                        @Override
-                        public void onClick() {
-                            GeoServerBasePage page = null;
-                            StoreInfo store = item.getModelObject().getStore();
+                final Long jobid = importer().runAsync(imp, filter);
+                setDefaultModelObject(jobid);
+    
+                final AjaxLink self = this;
+    
+                // create a timer to update the table and reload the page when
+                // necessary
+                taskTable.add(new AbstractAjaxTimerBehavior(Duration.milliseconds(500)) {
+                    @Override
+                    protected void onTimer(AjaxRequestTarget target) {
+                        Task<ImportContext> job = importer().getTask(jobid);
+                        if (job == null || job.isDone()) {
+                            // remove the timer
+                            stop();
+    
+                            self.setEnabled(true);
+                            target.addComponent(self);
+    
+                            running.set(false);
+                            target.addComponent(cancelLink(self));
                             
-                            if (store instanceof DataStoreInfo) {
-                                page = new DataStoreEditPage((DataStoreInfo) store);
-                            }
-                            else if (store instanceof CoverageStoreInfo) {
-                                page = new CoverageStoreEditPage((CoverageStoreInfo)store);
-                            }
-                            if (page != null) {
-                                page.setReturnPage(ImportPage.this);
-                                setResponsePage(page);
-                            }
+                            /*ImportContext imp = model.getObject();
+                            if (imp.getState() == ImportContext.State.COMPLETE) {
+                                // enable cancel, which will not be "done"
+                                setLinkEnabled(cancelLink(self), true, target);
+                            } else {
+                                // disable cancel, import is not longer running, but
+                                // also
+                                // not complete
+                                setLinkEnabled(cancelLink(self), false, target);
+                            }*/
                         }
-                    }.add(new Label("store", new PropertyModel(store, "name"))));
-                }
-                else {
-                    //dummy data
-                    item.add(new Label("target", "").setVisible(false));
-                    item.add(new Link("targetLink") {
-                        @Override
-                        public void onClick() {
-                        }
-                    }.add(new Label("name", "")).setVisible(false));
-                }
-
-                boolean selectable = task.getState() != ImportTask.State.COMPLETE;
-                final ImportItemTable itemTable = null; /*new ImportItemTable("items", provider, selectable) {
-                    @Override
-                    protected void onSelectionUpdate(AjaxRequestTarget target) {
-                        updateImportLink((AjaxLink) item.get("import"), this, target);
-                    }
-                }.setFeedbackPanel(feedbackPanel);*/
-                item.add(itemTable);
-                
-                itemTable.setOutputMarkupId(true);
-                itemTable.setFilterable(false);
-                itemTable.setSortable(false);
-
-                final AjaxLink<Long> importLink = new AjaxLink<Long>("import", new Model<Long>()) {
-                    @Override
-                    protected void disableLink(ComponentTag tag) {
-                        super.disableLink(tag);
-                        ImporterWebUtils.disableLink(tag);
-                    }
-                    @Override
-                    public void onClick(AjaxRequestTarget target) {
-                        ImportTask task = item.getModelObject();
-
-                        BasicImportFilter filter = new BasicImportFilter();
-                        filter.add(task);
-
-                        final Long jobid = 
-                            importer().runAsync(task.getContext(), filter);
-                        setDefaultModelObject(jobid);
-
-                        final AjaxLink self = this;
-
-                        //create a timer to update the table and reload the page when necessary
-                        itemTable.add(new AbstractAjaxTimerBehavior(Duration.milliseconds(500)) {
-                            @Override
-                            protected void onTimer(AjaxRequestTarget target) {
-                                Task<ImportContext> job = importer().getTask(jobid); 
-                                if (job == null || job.isDone()) {
-                                    //remove the timer
-                                    stop();
-                                    
-                                    self.setEnabled(true);
-                                    target.addComponent(self);
-
-                                    ImportTask task = item.getModelObject();
-                                    if (task.getState() == State.COMPLETE) {
-                                        //enable cancel, which will not be "done"
-                                        setLinkEnabled(cancelLink(self), true, target);
-                                    }
-                                    else {
-                                        //disable cancel, import is not longer running, but also 
-                                        // not complete
-                                        setLinkEnabled(cancelLink(self), false, target);
-                                    }
-                                }
-
-                                //update the table
-                                target.addComponent(itemTable);
-                                target.addComponent(headerTable);
-                            }
-                        });
-                        target.addComponent(itemTable);
-
-                        //disable import button
-                        setLinkEnabled(this, false, target);
-                        //enable cancel button
-                        setLinkEnabled(cancelLink(this), true, target);
-                    }
-                };
-                importLink.setOutputMarkupId(true);
-                importLink.setEnabled(doSelectReady(task, itemTable, null));
-                item.add(importLink);
-
-                final AjaxLink cancelLink = new AjaxLink("cancel") {
-                    @Override
-                    protected void disableLink(ComponentTag tag) {
-                        super.disableLink(tag);
-                        ImporterWebUtils.disableLink(tag);
-                    }
-                    @Override
-                    public void onClick(AjaxRequestTarget target) {
-                        ImportTask t = item.getModelObject();
-                        if (t.getState() == State.COMPLETE) {
-                            setResponsePage(ImportDataPage.class);
-                            return;
-                        }
-
-                        Long jobid = importLink.getModelObject();
-                        if (jobid == null) {
-                            return;
-                        }
-
-                        Task<ImportContext> task = importer().getTask(jobid);
-                        if (task == null || task.isDone()) {
-                            return;
-                        }
-
-                        task.getMonitor().setCanceled(true);
-                        task.cancel(false);
-                        try {
-                            task.get();
-                        }
-                        catch(Exception e) {
-                        }
-
-                        //enable import button
-                        setLinkEnabled(importLink, true, target);
-                        //disable cancel button
-                        setLinkEnabled(cancelLink(importLink), false, target);
-                    }
-                    
-                };
-                cancelLink.setEnabled(task.getState() == State.COMPLETE);
-                cancelLink.add(new Label("text", new CancelTitleModel(model)));
-                item.add(cancelLink);
-                item.add(new AjaxLink<ImportTask>("select-all", model) {
-                    @Override
-                    public void onClick(AjaxRequestTarget target) {
-                        itemTable.selectAll();
-                        target.addComponent(itemTable);
-                        updateImportLink(importLink, itemTable, target);
+    
+                        // update the table
+                        target.addComponent(taskTable);
+                        target.addComponent(headerTable);
                     }
                 });
-                item.add(new AjaxLink<ImportTask>("select-none", model) {
-                    @Override
-                    public void onClick(AjaxRequestTarget target) {
-                        itemTable.clearSelection();
-                        target.addComponent(itemTable);
-                        updateImportLink(importLink, itemTable, target);
-                    }
-                });
-                item.add(new AjaxLink<ImportTask>("select-ready", model) {
-                    @Override
-                    public void onClick(AjaxRequestTarget target) {
-                        doSelectReady(getModelObject(), itemTable, target);
-                        updateImportLink(importLink, itemTable, target);
-                    }
-                });
+                target.addComponent(taskTable);
+    
+                // disable import button
+                setLinkEnabled(this, false, target);
+                // enable cancel button
+                //setLinkEnabled(cancelLink(this), true, target);
             }
         };
-        add(tasksView);
-
-        ListView<ImportTask> emptyTasksView = new ListView<ImportTask>("emptyTasks", 
-                new FilteredImportTasksModel(new ImportTasksModel(imp), true)) {
+        importLink.setOutputMarkupId(true);
+        importLink.setEnabled(doSelectReady(imp, taskTable, null));
+        add(importLink);
+    
+        final AjaxLink cancelLink = new AjaxLink("cancel") {
             @Override
-            protected void populateItem(ListItem<ImportTask> item) {
-                item.add(new Label("title", new DataTitleModel(item.getModelObject())));
+            protected void disableLink(ComponentTag tag) {
+                super.disableLink(tag);
+                ImporterWebUtils.disableLink(tag);
             }
+    
+            @Override
+            public void onClick(AjaxRequestTarget target) {
+                ImportContext imp = model.getObject();
+                if (!running.get()) {
+                //if (imp.getState() == ImportContext.State.COMPLETE) {
+                    setResponsePage(ImportDataPage.class);
+                    return;
+                }
+    
+                Long jobid = importLink.getModelObject();
+                if (jobid == null) {
+                    return;
+                }
+    
+                Task<ImportContext> task = importer().getTask(jobid);
+                if (task == null || task.isDone()) {
+                    return;
+                }
+    
+                task.getMonitor().setCanceled(true);
+                task.cancel(false);
+                try {
+                    task.get();
+                } catch (Exception e) {
+                }
+    
+                // enable import button
+                setLinkEnabled(importLink, true, target);
+                // disable cancel button
+                //setLinkEnabled(cancelLink(importLink), false, target);
+            }
+    
         };
-        add(emptyTasksView);
+        //cancelLink.setEnabled(imp.getState() == ImportContext.State.COMPLETE);
+        cancelLink.add(new Label("text", new CancelTitleModel()));
+        add(cancelLink);
+        
+        WebMarkupContainer selectPanel = new WebMarkupContainer("select");
+        selectPanel.add(new AjaxLink<ImportContext>("select-all", model) {
+            @Override
+            public void onClick(AjaxRequestTarget target) {
+                taskTable.selectAll();
+                target.addComponent(taskTable);
+                updateImportLink(importLink, taskTable, target);
+            }
+        });
+        selectPanel.add(new AjaxLink<ImportContext>("select-none", model) {
+            @Override
+            public void onClick(AjaxRequestTarget target) {
+                taskTable.clearSelection();
+                target.addComponent(taskTable);
+                updateImportLink(importLink, taskTable, target);
+            }
+        });
+        selectPanel.add(new AjaxLink<ImportContext>("select-ready", model) {
+            @Override
+            public void onClick(AjaxRequestTarget target) {
+                doSelectReady(getModelObject(), taskTable, target);
+                target.addComponent(taskTable);
+                updateImportLink(importLink, taskTable, target);
+            }
+        });
+        add(selectPanel);
 
+        add(new Icon("icon",new DataIconModel(imp.getData())));
+        add(new Label("title", new DataTitleModel(imp))
+          .add(new AttributeModifier("title", new DataTitleModel(imp, false))));
+        
         add(dialog = new GeoServerDialog("dialog"));
-
     }
 
-    void updateImportLink(AjaxLink link, ImportItemTable table, AjaxRequestTarget target) {
+    void updateImportLink(AjaxLink link, ImportTaskTable table, AjaxRequestTarget target) {
         boolean enable = !table.getSelection().isEmpty();
         if (enable) {
             boolean allComplete = true;
@@ -353,9 +312,15 @@ public class ImportPage extends GeoServerSecuredPage {
         return (AjaxLink) importLink.getParent().get("cancel");
     }
 
-    boolean doSelectReady(ImportTask task, ImportItemTable table, AjaxRequestTarget target) {
+    boolean doSelectReady(ImportContext imp, ImportTaskTable table, AjaxRequestTarget target) {
         boolean empty = true;
-        return task.getState() == ImportTask.State.READY;
+        for (ImportTask t : imp.getTasks()) {
+            if (t.getState() == ImportTask.State.READY) {
+                table.selectObject(t);
+                empty = false;
+            }
+        }
+        return empty;
     }
 
     @Override
@@ -397,33 +362,33 @@ public class ImportPage extends GeoServerSecuredPage {
 
     static class DataTitleModel extends LoadableDetachableModel<String> {
 
-        ImportTask task;
+        ImportContext imp;
         boolean abbrev;
         
-        DataTitleModel(ImportTask task) {
-            this(task, true);
+        DataTitleModel(ImportContext imp) {
+            this(imp, true);
         }
 
-        DataTitleModel(ImportTask task, boolean abbrev) {
-            this.task = task;
+        DataTitleModel(ImportContext imp, boolean abbrev) {
+            this.imp = imp;
             this.abbrev = abbrev;
         }
 
         @Override
         protected String load() {
-            ImportData data = task.getData();
+            ImportData data = imp.getData();
 
             String title = data.toString();
             if (data instanceof FileData) {
                 FileData df = (FileData) data;
-                ImportData parentData = task.getContext().getData();
-                if (parentData instanceof Directory) {
-                    try {
-                        title = df.relativePath((Directory) parentData);
-                    } catch (IOException e) {
-                        LOGGER.log(Level.WARNING, e.getMessage(), e);
-                    }
-                }
+//                ImportData parentData = task.getContext().getData();
+//                if (parentData instanceof Directory) {
+//                    try {
+//                        title = df.relativePath((Directory) parentData);
+//                    } catch (IOException e) {
+//                        LOGGER.log(Level.WARNING, e.getMessage(), e);
+//                    }
+//                }
             }
             if (abbrev && title.length() > 70) {
                 //shorten it
@@ -434,28 +399,22 @@ public class ImportPage extends GeoServerSecuredPage {
     
     }
 
-    static class CancelTitleModel extends LoadableDetachableModel {
+    class CancelTitleModel implements IModel<String> {
 
-        IModel<ImportTask> taskModel;
-
-        CancelTitleModel(IModel<ImportTask> taskModel) {
-            this.taskModel = taskModel;
+        @Override
+        public String getObject() {
+            StringResourceModel m = running.get() ? 
+                new StringResourceModel("cancel", new Model("Cancel")) : 
+                new StringResourceModel("done", new Model("Done"));
+            return m.getString();
         }
 
         @Override
-        protected Object load() {
-            switch(taskModel.getObject().getState()) {
-            case COMPLETE:
-                return new StringResourceModel("done", new Model("Done")).getString();
-            default:
-                return new StringResourceModel("cancel", new Model("Cancel")).getString();
-            }
+        public void setObject(String object) {
         }
 
         @Override
-        protected void onDetach() {
-            super.onDetach();
-            taskModel.detach();
+        public void detach() {
         }
     }
 
