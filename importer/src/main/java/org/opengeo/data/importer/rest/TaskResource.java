@@ -190,12 +190,14 @@ public class TaskResource extends BaseResource {
         return getAttribute("task") != null;
     };
 
+    @Override
     public void handleDelete() {
         ImportTask task = (ImportTask) lookupTask(false);
         task.getContext().removeTask(task);
-
+        importer.changed(task.getContext());
         getResponse().setStatus(Status.SUCCESS_NO_CONTENT);
-    };
+    }
+
     
     Object lookupTask(boolean allowAll) {
         ImportTask task = task(allowAll);

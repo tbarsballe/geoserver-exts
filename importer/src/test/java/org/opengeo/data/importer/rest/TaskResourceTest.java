@@ -51,6 +51,9 @@ import org.springframework.security.core.context.SecurityContextImpl;
 
 import com.mockrunner.mock.web.MockHttpServletRequest;
 import com.mockrunner.mock.web.MockHttpServletResponse;
+import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static junit.framework.Assert.assertNull;
 import org.geoserver.catalog.FeatureTypeInfo;
 import org.opengeo.data.importer.transform.AttributesToPointGeometryTransform;
 
@@ -291,6 +294,51 @@ public class TaskResourceTest extends ImporterTestSupport {
         assertTrue(task.getString("href").endsWith("/imports/0/tasks/0"));
     }
 
+    public void testDeleteTask() throws Exception {
+        MockHttpServletResponse resp = postAsServletResponse("/rest/imports", "");
+        assertEquals(201, resp.getStatusCode());
+        assertNotNull(resp.getHeader("Location"));
+
+        String[] split = resp.getHeader("Location").split("/");
+        Integer id = Integer.parseInt(split[split.length-1]);
+        
+        ImportContext context = importer.getContext(id);
+
+        File dir = unpack("shape/archsites_epsg_prj.zip");
+        unpack("shape/bugsites_esri_prj.tar.gz", dir);
+        
+        new File(dir, "extra.file").createNewFile();
+        File[] files = dir.listFiles();
+        Part[] parts = new Part[files.length];
+        for (int i = 0; i < files.length; i++) {
+            parts[i] = new FilePart(files[i].getName(), files[i]);
+        }
+
+        MultipartRequestEntity multipart =
+            new MultipartRequestEntity(parts, new PostMethod().getParams());
+
+        ByteArrayOutputStream bout = new ByteArrayOutputStream();
+        multipart.writeRequest(bout);
+
+        MockHttpServletRequest req = createRequest("/rest/imports/" + id + "/tasks");
+        req.setContentType(multipart.getContentType());
+        req.addHeader("Content-Type", multipart.getContentType());
+        req.setMethod("POST");
+        req.setBodyContent(bout.toByteArray());
+        resp = dispatch(req);
+
+        context = importer.getContext(context.getId());
+        assertEquals(2, context.getTasks().size());
+
+        req = createRequest("/rest/imports/" + id + "/tasks/1");
+        req.setMethod("DELETE");
+        resp = dispatch(req);
+        assertEquals(204, resp.getStatusCode());
+
+        context = importer.getContext(context.getId());
+        assertEquals(1, context.getTasks().size());
+    }
+
     public void testPostMultiPartFormData() throws Exception {
         MockHttpServletResponse resp = postAsServletResponse("/rest/imports", "");
         assertEquals(201, resp.getStatusCode());
@@ -505,7 +553,7 @@ public class TaskResourceTest extends ImporterTestSupport {
         assertErrorResponse(resp, "Invalid date parsing format");
     }
 
-    public void testDeleteTask() throws Exception {
+    public void testDeleteTask2() throws Exception {
         MockHttpServletResponse response = deleteAsServletResponse("/rest/imports/0/tasks/0");
         assertEquals(204, response.getStatusCode());
 
