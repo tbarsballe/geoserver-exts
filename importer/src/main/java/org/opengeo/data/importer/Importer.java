@@ -272,6 +272,11 @@ public class Importer implements InitializingBean, DisposableBean {
             protected ImportContext call(ProgressMonitor monitor) throws Exception {
                 return createContext(data, targetWorkspace, targetStore, monitor);
             }
+
+            @Override
+            public String toString() {
+                return "Processing data " + data.toString();
+            }
         });
     }
 
@@ -722,11 +727,20 @@ public class Importer implements InitializingBean, DisposableBean {
                 run(context, filter, monitor);
                 return context;
             }
+
+            @Override
+            public String toString() {
+                return "Processing import " + context.getId();
+            }
         });
     }
 
     public Task<ImportContext> getTask(Long job) {
-        return (Task<ImportContext>) jobs.getFuture(job);
+        return (Task<ImportContext>) jobs.getTask(job);
+    }
+
+    public List<Task<ImportContext>> getTasks() {
+        return (List) jobs.getTasks();
     }
 
     /* 

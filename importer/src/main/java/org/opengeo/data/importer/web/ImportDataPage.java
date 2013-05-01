@@ -12,10 +12,12 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.wicket.Application;
 import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.Component;
 import org.apache.wicket.PageParameters;
 import org.apache.wicket.ResourceReference;
+import org.apache.wicket.SharedResources;
 import org.apache.wicket.ajax.AbstractAjaxTimerBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.form.AjaxFormComponentUpdatingBehavior;
@@ -48,6 +50,7 @@ import org.geoserver.web.data.workspace.WorkspaceChoiceRenderer;
 import org.geoserver.web.data.workspace.WorkspaceDetachableModel;
 import org.geoserver.web.data.workspace.WorkspacesModel;
 import org.geoserver.web.wicket.GeoServerDialog;
+import org.geoserver.web.wicket.GeoServerDialog.DialogDelegate;
 import org.geoserver.web.wicket.ParamResourceModel;
 import org.geotools.data.DataStoreFactorySpi;
 import org.geotools.util.logging.Logging;
@@ -65,7 +68,7 @@ import org.opengeo.data.importer.job.Task;
  */
 @SuppressWarnings("serial")
 public class ImportDataPage extends GeoServerSecuredPage {
-
+    
     static Logger LOGGER = Logging.getLogger(ImportDataPage.class);
 
     AjaxRadioPanel<Source> sourceList;
@@ -235,6 +238,7 @@ public class ImportDataPage extends GeoServerSecuredPage {
                            }
                            catch(Exception e) {
                                error(e);
+                               LOGGER.log(Level.WARNING, "", e);
                            }
                            finally {
                                stop();
@@ -320,9 +324,28 @@ public class ImportDataPage extends GeoServerSecuredPage {
         });
         removeImportLink.setOutputMarkupId(true).setEnabled(false);
         
+        AjaxLink jobLink = new AjaxLink("jobs") {
+            @Override
+            public void onClick(AjaxRequestTarget target) {
+                dialog.showOkCancel(target, new DialogDelegate() {
+                    @Override
+                    protected boolean onSubmit(AjaxRequestTarget target, Component contents) {
+                        return true;
+                    }
+                    
+                    @Override
+                    protected Component getContents(String id) {
+                        return new JobQueuePanel(id);
+                    }
+                });
+            }
+        };
+        jobLink.setVisible(ImporterWebUtils.isDevMode());
+        form.add(jobLink);
+        
         add(dialog = new GeoServerDialog("dialog"));
-        dialog.setInitialWidth(400);
-        dialog.setInitialHeight(150);
+        dialog.setInitialWidth(600);
+        dialog.setInitialHeight(400);
         dialog.setMinimalHeight(150);
 
         updateSourcePanel(Source.SPATIAL_FILES, null);
