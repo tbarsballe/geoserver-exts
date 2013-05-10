@@ -42,11 +42,6 @@
   </dependency>
   <dependency>
    <groupId>org.opengeo.geoserver</groupId>
-   <artifactId>analytics</artifactId>
-   <version>${gs.version}</version>
-  </dependency>
-  <dependency>
-   <groupId>org.opengeo.geoserver</groupId>
    <artifactId>printng</artifactId>
    <version>${gs.version}</version>
   </dependency>
@@ -105,6 +100,15 @@
        <dependency>
          <groupId>org.geoserver.extension</groupId>
          <artifactId>control-flow</artifactId>
+       </dependency>
+     </dependencies>
+   </profile>
+   <profile>
+     <id>jdbcconfig</id>
+     <dependencies>
+       <dependency>
+         <groupId>org.geoserver.community</groupId>
+         <artifactId>jdbcconfig</artifactId>
        </dependency>
      </dependencies>
    </profile>
