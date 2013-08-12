@@ -79,7 +79,7 @@ public class ItemResource extends BaseResource {
                 progress.put("state", item.getState().toString());
                 if (item.getState() == ImportItem.State.ERROR) {
                     if (item.getError() != null) {
-                        progress.put("message", item.getError().getMessage());
+                        progress.put("message", ImportJSONIO.concatErrorMessages(item.getError()));
                     }
                 }
             }
