@@ -567,7 +567,7 @@ public class ImportJSONWriter {
         }
     }
 
-    String concatErrorMessages(Throwable ex) {
+    static String concatErrorMessages(Throwable ex) {
         StringBuilder buf = new StringBuilder();
         while (ex != null) {
             if (buf.length() > 0) {

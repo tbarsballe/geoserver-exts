@@ -307,7 +307,7 @@ public class TaskResource extends BaseResource {
                 progress.put("state", task.getState().toString());
                 if (task.getState() == ImportTask.State.ERROR) {
                     if (task.getError() != null) {
-                        progress.put("message", task.getError().getMessage());
+                        progress.put("message", ImportJSONWriter.concatErrorMessages(task.getError()));
                     }
                 }
             }
