@@ -1272,7 +1272,7 @@ public class Importer implements InitializingBean, DisposableBean {
                 Statement st = null;
                 try {
                     st = conn.createStatement();
-                    st.execute("drop table " + featureTypeName);
+                    st.execute("drop table \"" + featureTypeName + "\"");
                     LOGGER.fine("dropSchema " + featureTypeName + " successful");
                 } finally {
                     dataStore.closeSafe(conn);
