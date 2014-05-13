@@ -15,7 +15,7 @@
   <name>GeoGit GeoServer integration</name>
 
   <properties>
-    <geogit.version>0.8-SNAPSHOT</geogit.version>
+    <geogit.version>0.9-SNAPSHOT</geogit.version>
   </properties>
 
   <dependencies>
