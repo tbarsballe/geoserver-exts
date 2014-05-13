@@ -84,7 +84,7 @@ public class GWCIntegrationTest extends GeoServerSystemTestSupport {
         assertNotNull(pointLayerInfo);
         pointsLayer = mediator.getTileLayer(pointLayerInfo);
         assertNotNull(pointsLayer);
-        pointsLayer.getInfo().setExpireCache(10 * 1000);
+        // pointsLayer.getInfo().setExpireCache(10 * 1000);
         mediator.save(pointsLayer);
 
         layerName = catalogBuilder.workspaceName() + ":lines";
