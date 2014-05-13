@@ -120,6 +120,12 @@
       <version>${gs.version}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.geoserver</groupId>
+      <artifactId>gs-gwc</artifactId>
+      <version>${gs.version}</version>
+      <scope>provided</scope>
+    </dependency>
     
     <dependency>
       <groupId>junit</groupId>
@@ -129,6 +135,13 @@
     <dependency>
       <groupId>org.geogit</groupId>
       <artifactId>geogit-core</artifactId>
+      <version>${geogit.version}</version>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.geogit</groupId>
+      <artifactId>geogit-cli</artifactId>
       <version>${geogit.version}</version>
       <classifier>tests</classifier>
       <scope>test</scope>
