@@ -2,7 +2,7 @@
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
  */
-package org.geogit.rest.repository;
+package org.geogit.geoserver.rest;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -19,20 +19,20 @@ import java.util.Map;
 
 import org.geogit.api.Context;
 import org.geogit.api.GeoGIT;
+import org.geogit.api.GlobalContextBuilder;
 import org.geogit.api.ObjectId;
 import org.geogit.api.Ref;
 import org.geogit.api.RevObject;
+import org.geogit.api.TestPlatform;
 import org.geogit.api.plumbing.RefParse;
 import org.geogit.api.plumbing.ResolveGeogitDir;
 import org.geogit.api.plumbing.ResolveTreeish;
 import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.api.porcelain.CommitOp;
-import org.geogit.di.GeogitModule;
-import org.geogit.di.caching.CachingModule;
+import org.geogit.cli.test.functional.CLITestContextBuilder;
 import org.geogit.geotools.data.GeoGitDataStore;
 import org.geogit.geotools.data.GeoGitDataStoreFactory;
 import org.geogit.storage.ObjectSerializingFactory;
-import org.geogit.storage.bdbje.JEStorageModule;
 import org.geogit.storage.datastream.DataStreamSerializationFactory;
 import org.geogit.test.integration.RepositoryTestCase;
 import org.geoserver.catalog.Catalog;
@@ -56,8 +56,6 @@ import com.google.common.collect.Iterators;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.google.inject.Guice;
-import com.google.inject.util.Modules;
 import com.mockrunner.mock.web.MockHttpServletResponse;
 
 /**
@@ -80,9 +78,9 @@ public class GeoServerRESTIntegrationTest extends GeoServerSystemTestSupport {
 
             @Override
             protected Context createInjector() {
-                return Guice.createInjector(
-                        Modules.override(new GeogitModule(), new CachingModule()).with(
-                                new JEStorageModule())).getInstance(Context.class);
+                TestPlatform testPlatform = (TestPlatform) createPlatform();
+                GlobalContextBuilder.builder = new CLITestContextBuilder(testPlatform);
+                return GlobalContextBuilder.builder.build();
             }
 
             @Override

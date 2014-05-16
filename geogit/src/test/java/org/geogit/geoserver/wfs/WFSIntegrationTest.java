@@ -2,7 +2,7 @@
  * This code is licensed under the BSD New License, available at the root
  * application directory.
  */
-package org.geogit.geoserver;
+package org.geogit.geoserver.wfs;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -18,18 +18,18 @@ import java.util.Map;
 
 import org.geogit.api.Context;
 import org.geogit.api.GeoGIT;
+import org.geogit.api.GlobalContextBuilder;
 import org.geogit.api.NodeRef;
 import org.geogit.api.RevCommit;
+import org.geogit.api.TestPlatform;
 import org.geogit.api.plumbing.FindTreeChild;
 import org.geogit.api.plumbing.LsTreeOp;
 import org.geogit.api.plumbing.ResolveGeogitDir;
 import org.geogit.api.porcelain.CommitOp;
 import org.geogit.api.porcelain.LogOp;
-import org.geogit.di.GeogitModule;
-import org.geogit.di.caching.CachingModule;
+import org.geogit.cli.test.functional.CLITestContextBuilder;
 import org.geogit.geotools.data.GeoGitDataStore;
 import org.geogit.geotools.data.GeoGitDataStoreFactory;
-import org.geogit.storage.bdbje.JEStorageModule;
 import org.geogit.test.integration.RepositoryTestCase;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.CatalogFactory;
@@ -54,8 +54,6 @@ import org.w3c.dom.Document;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.inject.Guice;
-import com.google.inject.util.Modules;
 
 @TestSetup(run = TestSetupFrequency.REPEAT)
 public class WFSIntegrationTest extends WFSTestSupport {
@@ -76,9 +74,9 @@ public class WFSIntegrationTest extends WFSTestSupport {
 
             @Override
             protected Context createInjector() {
-                return Guice.createInjector(
-                        Modules.override(new GeogitModule(), new CachingModule()).with(
-                                new JEStorageModule())).getInstance(Context.class);
+                TestPlatform testPlatform = (TestPlatform) createPlatform();
+                GlobalContextBuilder.builder = new CLITestContextBuilder(testPlatform);
+                return GlobalContextBuilder.builder.build();
             }
 
             @Override
