@@ -16,4 +16,8 @@
     <constructor-arg ref="catalog"/>
   </bean>
 
+  <bean id="GeogitLayerIntegrationListener" class="org.geogit.layer.GeogitLayerIntegrationListener" >
+    <constructor-arg ref="geoServer"/>
+  </bean>
+
 </beans>
