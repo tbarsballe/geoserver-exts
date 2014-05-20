@@ -3,7 +3,9 @@ package org.geogit.layer;
 import static org.geoserver.catalog.Predicates.and;
 import static org.geoserver.catalog.Predicates.equal;
 
+import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.geogit.geotools.data.GeoGitDataStoreFactory;
@@ -88,12 +90,12 @@ public class GeogitLayerIntegrationListener implements CatalogListener {
         }
 
         final CatalogInfo source = event.getSource();
+        final boolean isGeogitStore = isGeogitStore(source);
 
-        boolean tryPostUpdate = (source instanceof WorkspaceInfo)
-                || ((source instanceof DataStoreInfo) && isGeogitStore((DataStoreInfo) source));
-
+        boolean tryPostUpdate = (source instanceof WorkspaceInfo) || isGeogitStore;
         final List<String> propertyNames = event.getPropertyNames();
-        tryPostUpdate &= propertyNames.contains("name");
+        tryPostUpdate &= propertyNames.contains("name")
+                || propertyNames.contains("connectionParameters");
 
         if (tryPostUpdate) {
             LOGGER.fine("Storing event for post-handling on " + source);
@@ -241,7 +243,17 @@ public class GeogitLayerIntegrationListener implements CatalogListener {
         StoreInfo store = resource.getStore();
         WorkspaceInfo workspace = store.getWorkspace();
 
+        Map<String, Serializable> connectionParameters = store.getConnectionParameters();
+
+        Serializable refSpec = connectionParameters.get(GeoGitDataStoreFactory.BRANCH.key);
+        if (refSpec == null) {
+            refSpec = connectionParameters.get(GeoGitDataStoreFactory.HEAD.key);
+        }
+
         String identifier = workspace.getName() + ":" + store.getName();
+        if (refSpec != null) {
+            identifier = identifier + ":" + refSpec;
+        }
 
         return identifier;
     }
@@ -252,8 +264,11 @@ public class GeogitLayerIntegrationListener implements CatalogListener {
         return isGeogitStore(store);
     }
 
-    private boolean isGeogitStore(StoreInfo store) {
-        final String storeType = store.getType();
+    private boolean isGeogitStore(CatalogInfo store) {
+        if (!(store instanceof DataStoreInfo)) {
+            return false;
+        }
+        final String storeType = ((DataStoreInfo) store).getType();
         boolean isGeogitLayer = GeoGitDataStoreFactory.DISPLAY_NAME.equals(storeType);
         return isGeogitLayer;
     }

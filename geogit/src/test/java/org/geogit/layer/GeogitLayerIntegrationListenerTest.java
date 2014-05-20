@@ -3,10 +3,14 @@ package org.geogit.layer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
+import org.geogit.api.ObjectId;
 import org.geogit.geoserver.GeoGitTestData;
 import org.geogit.geoserver.GeoGitTestData.CatalogBuilder;
+import org.geogit.geotools.data.GeoGitDataStoreFactory;
 import org.geoserver.catalog.AuthorityURLInfo;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.DataStoreInfo;
@@ -84,6 +88,47 @@ public class GeogitLayerIntegrationListenerTest extends GeoServerSystemTestSuppo
     }
 
     @Test
+    public void testAddGeogitLayerAddsLayerIdentifierWithExplicitBranch() {
+        addAvailableGeogitLayers();
+
+        Catalog catalog = getCatalog();
+        CatalogBuilder catalogBuilder = geogitData.newCatalogBuilder(catalog);
+        DataStoreInfo store = catalog.getDataStoreByName(catalogBuilder.storeName());
+        store.getConnectionParameters().put(GeoGitDataStoreFactory.BRANCH.key, "master");
+        catalog.save(store);
+
+        String layerName = catalogBuilder.workspaceName() + ":points";
+        LayerInfo pointLayerInfo = catalog.getLayerByName(layerName);
+        assertIdentifier(pointLayerInfo);
+
+        layerName = catalogBuilder.workspaceName() + ":lines";
+        LayerInfo lineLayerInfo = catalog.getLayerByName(layerName);
+        assertIdentifier(lineLayerInfo);
+    }
+
+    @Test
+    public void testAddGeogitLayerAddsLayerIdentifierWithExplicitHead() {
+        addAvailableGeogitLayers();
+
+        Catalog catalog = getCatalog();
+        CatalogBuilder catalogBuilder = geogitData.newCatalogBuilder(catalog);
+        DataStoreInfo store = catalog.getDataStoreByName(catalogBuilder.storeName());
+
+        final String fakeHead = ObjectId.forString("something").toString();
+
+        store.getConnectionParameters().put(GeoGitDataStoreFactory.HEAD.key, fakeHead);
+        catalog.save(store);
+
+        String layerName = catalogBuilder.workspaceName() + ":points";
+        LayerInfo pointLayerInfo = catalog.getLayerByName(layerName);
+        assertIdentifier(pointLayerInfo);
+
+        layerName = catalogBuilder.workspaceName() + ":lines";
+        LayerInfo lineLayerInfo = catalog.getLayerByName(layerName);
+        assertIdentifier(lineLayerInfo);
+    }
+
+    @Test
     public void testRenameStore() {
         addAvailableGeogitLayers();
 
@@ -140,6 +185,14 @@ public class GeogitLayerIntegrationListenerTest extends GeoServerSystemTestSuppo
         WorkspaceInfo workspace = store.getWorkspace();
 
         String expectedId = workspace.getName() + ":" + store.getName();
+        Map<String, Serializable> params = store.getConnectionParameters();
+        if (params.containsKey(GeoGitDataStoreFactory.BRANCH.key)) {
+            String branch = (String) params.get(GeoGitDataStoreFactory.BRANCH.key);
+            expectedId += ":" + branch;
+        } else if (params.containsKey(GeoGitDataStoreFactory.HEAD.key)) {
+            String head = (String) params.get(GeoGitDataStoreFactory.HEAD.key);
+            expectedId += ":" + head;
+        }
 
         assertEquals(expectedId, expected.getIdentifier());
     }
