@@ -8,7 +8,7 @@
   <groupId>org.opengeo</groupId>
   <artifactId>geoserver-exts</artifactId>
   <packaging>pom</packaging>
-  <version>2.4-SNAPSHOT</version>
+  <version>2.4-geogit09RC1</version>
   <name>OpenGeo GeoServer Extensions</name>
 
   <organization>
