@@ -33,6 +33,24 @@ import org.geotools.util.logging.Logging;
 import org.opengis.filter.Filter;
 
 /**
+ * Ensures a global WMS {@link AuthorityURL} exists with name {@code GEOGIT_ENTRY_POINT} and URL
+ * {@code http://geogit.org}, and that each {@link LayerInfo layer} from a geogit datastore gets a
+ * {@link LayerIdentifierInfo} with authority {@code GEOGIT_ENTRY_POINT} and the identifier composed
+ * of {@code <workspace name>:<store name>:<nativeName>[:<branch/head>]}
+ * <p>
+ * The identifier is made of the following parts:
+ * <ul>
+ * <li> {@code <workspace name>}: the name of the {@link WorkspaceInfo workspace} the layer's
+ * resource belongs to
+ * <li> {@code <store name>}: the name of the {@link DataStoreInfo data store} the layer's resource
+ * belongs to
+ * <li> {@code <nativeName>}: the layer's resource {@link ResourceInfo#getNativeName() native name}
+ * <li> {@code <branch/head>}: the geogit datastore's configured
+ * {@link GeoGitDataStoreFactory#BRANCH branch} or {@link GeoGitDataStoreFactory#HEAD}, whichever is
+ * present, or absent if no branch or head is configured (and hence the datastore operates on
+ * whatever the current HEAD is)
+ * </ul>
+ * <p>
  * Handles the following events:
  * <ul>
  * <li> {@link WorkspaceInfo} renamed: all geogit layers of stores in that workspace get their
@@ -250,7 +268,8 @@ public class GeogitLayerIntegrationListener implements CatalogListener {
             refSpec = connectionParameters.get(GeoGitDataStoreFactory.HEAD.key);
         }
 
-        String identifier = workspace.getName() + ":" + store.getName();
+        String identifier = workspace.getName() + ":" + store.getName() + ":"
+                + geogitLayer.getResource().getNativeName();
         if (refSpec != null) {
             identifier = identifier + ":" + refSpec;
         }

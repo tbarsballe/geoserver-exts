@@ -16,6 +16,7 @@ import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.DataStoreInfo;
 import org.geoserver.catalog.LayerIdentifierInfo;
 import org.geoserver.catalog.LayerInfo;
+import org.geoserver.catalog.ResourceInfo;
 import org.geoserver.catalog.StoreInfo;
 import org.geoserver.catalog.WorkspaceInfo;
 import org.geoserver.data.test.SystemTestData;
@@ -181,10 +182,12 @@ public class GeogitLayerIntegrationListenerTest extends GeoServerSystemTestSuppo
 
         assertNotNull("No geogit identifier added for layer " + layer, expected);
 
-        StoreInfo store = layer.getResource().getStore();
+        ResourceInfo resource = layer.getResource();
+        StoreInfo store = resource.getStore();
         WorkspaceInfo workspace = store.getWorkspace();
 
-        String expectedId = workspace.getName() + ":" + store.getName();
+        String expectedId = workspace.getName() + ":" + store.getName() + ":"
+                + resource.getNativeName();
         Map<String, Serializable> params = store.getConnectionParameters();
         if (params.containsKey(GeoGitDataStoreFactory.BRANCH.key)) {
             String branch = (String) params.get(GeoGitDataStoreFactory.BRANCH.key);
