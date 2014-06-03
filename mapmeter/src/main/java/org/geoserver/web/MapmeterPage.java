@@ -138,27 +138,6 @@ public class MapmeterPage extends GeoServerSecuredPage {
         credentialsConvertForm.setVisible(shouldDisplayConvertForm);
         credentialsSaveForm.setVisible(shouldDisplayCredentialsUpdateForm);
 
-        // to aid in testing
-        // final Form<?> testingForm = new Form<Void>("testing");
-        // AjaxLink<?> testingLink = new AjaxLink<String>("testing-button") {
-        //
-        // /** serialVersionUID */
-        // private static final long serialVersionUID = 1L;
-        //
-        // @Override
-        // public void onClick(AjaxRequestTarget target) {
-        // mapmeterConfiguration.clearConfigForTesting();
-        // try {
-        // mapmeterConfiguration.save();
-        // } catch (IOException e) {
-        // throw new RuntimeException(e);
-        // }
-        // target.addComponent(feedbackPanel);
-        // setFeedbackInfo("Cleared", target);
-        // }
-        // };
-        // testingForm.add(testingLink);
-        // add(testingForm);
     }
 
     private WebMarkupContainer addApiKeyEnvWarning(String apiKey) {
