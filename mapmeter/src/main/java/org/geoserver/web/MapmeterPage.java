@@ -6,10 +6,8 @@ import java.util.logging.Logger;
 
 import org.apache.wicket.Session;
 import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxButton;
-import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxLink;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
@@ -50,6 +48,8 @@ public class MapmeterPage extends GeoServerSecuredPage {
 
     private Form<?> credentialsSaveForm;
 
+    private Form<?> connectionCheckForm;
+
     private FeedbackPanel feedbackPanel;
 
     public MapmeterPage() {
@@ -85,11 +85,13 @@ public class MapmeterPage extends GeoServerSecuredPage {
         boolean shouldDisplayConvertForm = false;
         boolean shouldDisplayCredentialsUpdateForm = false;
         boolean isInvalidMapmeterCredentials = false;
+        boolean shouldDisplayConnectionCheckForm = false;
 
         if (!isOnPremise) {
             if (!maybeApiKey.isPresent()) {
                 shouldDisplayMapmeterEnableForm = true;
             } else {
+                shouldDisplayConnectionCheckForm = true;
                 if (!maybeMapmeterSaasCredentials.isPresent()) {
                     shouldDisplayCredentialsUpdateForm = true;
                 } else {
@@ -116,13 +118,13 @@ public class MapmeterPage extends GeoServerSecuredPage {
 
         addApiKeyForm(apiKey);
         WebMarkupContainer apiWarning = addApiKeyEnvWarning(apiKey);
-        addConnectionCheckForm();
         apiKeyForm.setVisible(!isApiKeyOverridden);
         apiWarning.setVisible(isApiKeyOverridden);
 
         addMapmeterEnableForm(baseUrl);
         addCredentialsConvertForm(baseUrl);
         addCredentialsSaveForm(isInvalidMapmeterCredentials, currentUsername);
+        addConnectionCheckForm();
 
         enableMapmeterForm.setOutputMarkupId(true);
         enableMapmeterForm.setOutputMarkupPlaceholderTag(true);
@@ -130,11 +132,13 @@ public class MapmeterPage extends GeoServerSecuredPage {
         credentialsConvertForm.setOutputMarkupPlaceholderTag(true);
         credentialsSaveForm.setOutputMarkupId(true);
         credentialsSaveForm.setOutputMarkupPlaceholderTag(true);
+        connectionCheckForm.setOutputMarkupId(true);
+        connectionCheckForm.setOutputMarkupPlaceholderTag(true);
 
         enableMapmeterForm.setVisible(shouldDisplayMapmeterEnableForm);
         credentialsConvertForm.setVisible(shouldDisplayConvertForm);
         credentialsSaveForm.setVisible(shouldDisplayCredentialsUpdateForm);
-
+        connectionCheckForm.setVisible(shouldDisplayConnectionCheckForm);
     }
 
     private WebMarkupContainer addApiKeyEnvWarning(String apiKey) {
@@ -145,15 +149,14 @@ public class MapmeterPage extends GeoServerSecuredPage {
     }
 
     private Form<?> addConnectionCheckForm() {
-        final Form<?> connectionCheckForm = new Form<Void>("connection-check-form");
+        connectionCheckForm = new Form<Void>("connection-check-form");
 
-        AjaxLink<?> connectionCheckButton = new IndicatingAjaxLink<Void>("connection-check-button") {
+        AjaxButton connectionCheckButton = new IndicatingAjaxButton("connection-check-button") {
 
             private static final long serialVersionUID = 1L;
 
             @Override
-            public void onClick(AjaxRequestTarget target) {
-                // target.addComponent(connectionCheckForm);
+            public void onSubmit(AjaxRequestTarget target, Form<?> form) {
                 Optional<String> maybeApiKey;
                 synchronized (mapmeterConfiguration) {
                     maybeApiKey = mapmeterConfiguration.getApiKey();
@@ -215,6 +218,8 @@ public class MapmeterPage extends GeoServerSecuredPage {
                         mapmeterConfiguration.save();
                     }
                     setFeedbackInfo("API key saved", target);
+                    connectionCheckForm.setVisible(true);
+                    target.addComponent(connectionCheckForm);
                 } catch (IOException e) {
                     String msg = "Failure saving api key: " + apiKey;
                     LOGGER.log(Level.SEVERE, msg, e);
@@ -250,9 +255,11 @@ public class MapmeterPage extends GeoServerSecuredPage {
                     setFeedbackInfo("Mapmeter trial activated", target);
                     enableMapmeterForm.setVisible(false);
                     credentialsConvertForm.setVisible(true);
+                    connectionCheckForm.setVisible(true);
                     target.addComponent(apiKeyField);
                     target.addComponent(enableMapmeterForm);
                     target.addComponent(credentialsConvertForm);
+                    target.addComponent(connectionCheckForm);
                 } catch (IOException e) {
                     setFeedbackError("IO Error activating mapmeter: " + e.getLocalizedMessage(),
                             target);
