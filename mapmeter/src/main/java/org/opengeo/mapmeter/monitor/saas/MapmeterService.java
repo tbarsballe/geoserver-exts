@@ -200,4 +200,56 @@ public class MapmeterService {
         }
     }
 
+    public MapmeterMessageStorageResult checkMapmeterMessageStorage() throws IOException,
+            MapmeterSaasException, MissingMapmeterApiKeyException {
+        String baseUrl;
+        Optional<String> maybeApiKey;
+        synchronized (mapmeterConfiguration) {
+            baseUrl = mapmeterConfiguration.getBaseUrl();
+            maybeApiKey = mapmeterConfiguration.getApiKey();
+        }
+        if (!maybeApiKey.isPresent()) {
+            throw new MissingMapmeterApiKeyException(
+                    "No existing api key but asked to check message storage");
+        }
+        String apiKey = maybeApiKey.get();
+        MapmeterSaasResponse saasResponse = mapmeterSaasService.checkMapmeterMessageStorage(
+                baseUrl, apiKey);
+        if (saasResponse.isErrorStatus()) {
+            throw new MapmeterSaasException(saasResponse,
+                    "Failure checking message storage for key: " + apiKey);
+        }
+
+        Map<String, Object> response = saasResponse.getResponse();
+        String status;
+        String error;
+        String apiKeyStatus;
+        try {
+            status = (String) response.get("status");
+            error = (String) response.get("error");
+            apiKeyStatus = (String) response.get("api_key_status");
+        } catch (ClassCastException e) {
+            throw throwUnexpectedResponse(response);
+        }
+
+        if ("ERROR".equals(status)) {
+            // could be an internal server error, or an api key failure
+            if (apiKeyStatus != null) {
+                if ("INVALID".equals(apiKeyStatus)) {
+                    return MapmeterMessageStorageResult.invalidApiKey(apiKey);
+                } else {
+                    // this would be "VALID" otherwise, but then we wouldn't have an error status
+                    throw throwUnexpectedResponse(response);
+                }
+            } else {
+                // internal server error on mapmeter side
+                return MapmeterMessageStorageResult.error(apiKey, error);
+            }
+        } else if ("OK".equals(status)) {
+            return MapmeterMessageStorageResult.success(apiKey);
+        } else {
+            throw throwUnexpectedResponse(response);
+        }
+    }
+
 }

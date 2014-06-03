@@ -32,17 +32,6 @@
     <p><strong wicket:id="active-apikey"></strong></p>
   </div>
 
-  <!--
-  <form wicket:id="connection-check-form" method="GET" style="margin-top: 50px">
-    <fieldset>
-      <legend>Check Connection</legend>
-    </fieldset>
-    <div class="button-group selfclear">
-      <a href="#" wicket:id="connection-check-button">Check</a>
-    </div>
-  </form>
-  -->
-
   <form wicket:id="mapmeter-enable-form">
     <fieldset>
       <legend>Start Mapmeter Trial</legend>
@@ -99,6 +88,15 @@
     </ul>
     <div class="button-group selfclear">
       <a href="#" wicket:id="mapmeter-credentials-save-button">Save</a>
+    </div>
+  </form>
+
+  <form wicket:id="connection-check-form" method="GET" style="margin-top: 50px">
+    <fieldset>
+      <legend>Check Mapmeter Status</legend>
+    </fieldset>
+    <div class="button-group selfclear">
+      <a href="#" wicket:id="connection-check-button">Check message storage</a>
     </div>
   </form>
 

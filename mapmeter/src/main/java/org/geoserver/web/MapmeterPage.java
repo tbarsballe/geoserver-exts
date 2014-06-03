@@ -6,8 +6,10 @@ import java.util.logging.Logger;
 
 import org.apache.wicket.Session;
 import org.apache.wicket.ajax.AjaxRequestTarget;
+import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxButton;
+import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxLink;
 import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
@@ -17,13 +19,14 @@ import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.util.lang.Objects;
 import org.geotools.util.logging.Logging;
-import org.opengeo.mapmeter.monitor.check.ConnectionChecker;
 import org.opengeo.mapmeter.monitor.config.MapmeterConfiguration;
 import org.opengeo.mapmeter.monitor.saas.MapmeterEnableResult;
+import org.opengeo.mapmeter.monitor.saas.MapmeterMessageStorageResult;
 import org.opengeo.mapmeter.monitor.saas.MapmeterSaasCredentials;
 import org.opengeo.mapmeter.monitor.saas.MapmeterSaasException;
 import org.opengeo.mapmeter.monitor.saas.MapmeterSaasUserState;
 import org.opengeo.mapmeter.monitor.saas.MapmeterService;
+import org.opengeo.mapmeter.monitor.saas.MissingMapmeterApiKeyException;
 
 import com.google.common.base.Optional;
 
@@ -34,8 +37,6 @@ public class MapmeterPage extends GeoServerSecuredPage {
     private static final Logger LOGGER = Logging.getLogger(MapmeterPage.class);
 
     private final transient MapmeterConfiguration mapmeterConfiguration;
-
-    private final transient ConnectionChecker connectionChecker;
 
     private final transient MapmeterService mapmeterService;
 
@@ -56,10 +57,6 @@ public class MapmeterPage extends GeoServerSecuredPage {
         this.mapmeterConfiguration = geoServerApplication.getBeanOfType(MapmeterConfiguration.class);
         if (mapmeterConfiguration == null) {
             throw new IllegalStateException("Error finding MapmeterConfiguration bean");
-        }
-        this.connectionChecker = geoServerApplication.getBeanOfType(ConnectionChecker.class);
-        if (connectionChecker == null) {
-            throw new IllegalStateException("Error finding ConnectionChecker bean");
         }
         this.mapmeterService = geoServerApplication.getBeanOfType(MapmeterService.class);
         if (mapmeterService == null) {
@@ -119,7 +116,7 @@ public class MapmeterPage extends GeoServerSecuredPage {
 
         addApiKeyForm(apiKey);
         WebMarkupContainer apiWarning = addApiKeyEnvWarning(apiKey);
-        // addConnectionCheckForm();
+        addConnectionCheckForm();
         apiKeyForm.setVisible(!isApiKeyOverridden);
         apiWarning.setVisible(isApiKeyOverridden);
 
@@ -147,47 +144,56 @@ public class MapmeterPage extends GeoServerSecuredPage {
         return apiKeyWarning;
     }
 
-    // private Form<?> addConnectionCheckForm() {
-    // final Form<?> connectionCheckForm = new Form<Void>("connection-check-form");
-    //
-    // AjaxLink<?> connectionCheckButton = new IndicatingAjaxLink<Void>("connection-check-button") {
-    //
-    // private static final long serialVersionUID = 1L;
-    //
-    // @Override
-    // public void onClick(AjaxRequestTarget target) {
-    // target.addComponent(connectionCheckForm);
-    // Optional<String> maybeApiKey;
-    // synchronized (mapmeterConfiguration) {
-    // maybeApiKey = mapmeterConfiguration.getApiKey();
-    // }
-    // if (maybeApiKey.isPresent()) {
-    // ConnectionResult result = connectionChecker.checkConnection(maybeApiKey.get());
-    // if (result.isError()) {
-    // Optional<Integer> maybeStatusCode = result.getStatusCode();
-    // if (maybeStatusCode.isPresent()) {
-    // int statusCode = maybeStatusCode.get();
-    // if (statusCode == HttpStatus.SC_OK) {
-    // setFeedbackError(result.getError(), target);
-    // } else {
-    // setFeedbackError(statusCode + ": " + result.getError(), target);
-    // }
-    // } else {
-    // setFeedbackError(result.getError(), target);
-    // }
-    // } else {
-    // setFeedbackInfo("Connection successfully established.", target);
-    // }
-    // } else {
-    // setFeedbackError("Please set an api key first", target);
-    // }
-    // }
-    // };
-    // connectionCheckForm.add(connectionCheckButton);
-    //
-    // add(connectionCheckForm);
-    // return connectionCheckForm;
-    // }
+    private Form<?> addConnectionCheckForm() {
+        final Form<?> connectionCheckForm = new Form<Void>("connection-check-form");
+
+        AjaxLink<?> connectionCheckButton = new IndicatingAjaxLink<Void>("connection-check-button") {
+
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void onClick(AjaxRequestTarget target) {
+                // target.addComponent(connectionCheckForm);
+                Optional<String> maybeApiKey;
+                synchronized (mapmeterConfiguration) {
+                    maybeApiKey = mapmeterConfiguration.getApiKey();
+                }
+                if (maybeApiKey.isPresent()) {
+                    try {
+                        MapmeterMessageStorageResult messageStorageResult = mapmeterService.checkMapmeterMessageStorage();
+                        if (messageStorageResult.isError()) {
+                            setFeedbackError("Mapmeter error: " + messageStorageResult.getError(),
+                                    target);
+                        } else if (!messageStorageResult.isValidApiKey()) {
+                            setFeedbackError("Invalid API key", target);
+                        } else {
+                            setFeedbackInfo("Valid API key. Messages will be successfully stored.",
+                                    target);
+                        }
+                    } catch (IOException e) {
+                        String errMsg = "IO Failure connecting to mapmeter";
+                        LOGGER.log(Level.SEVERE, errMsg, e);
+                        setFeedbackError(errMsg, target);
+                    } catch (MapmeterSaasException e) {
+                        String errMsg = "Failure response from mapmeter";
+                        LOGGER.log(Level.WARNING, errMsg, e);
+                        setFeedbackError(errMsg, target);
+                    } catch (MissingMapmeterApiKeyException e) {
+                        // this shouldn't happen because we just checked it, but it's possible it was removed in between via rest
+                        String errMsg = "Missing api key";
+                        LOGGER.log(Level.SEVERE, errMsg, e);
+                        setFeedbackError(errMsg, target);
+                    }
+                } else {
+                    setFeedbackError("API key must be set first.", target);
+                }
+            }
+        };
+        connectionCheckForm.add(connectionCheckButton);
+
+        add(connectionCheckForm);
+        return connectionCheckForm;
+    }
 
     public Form<?> addApiKeyForm(String apiKey) {
         apiKeyForm = new Form<Void>("apikey-form");

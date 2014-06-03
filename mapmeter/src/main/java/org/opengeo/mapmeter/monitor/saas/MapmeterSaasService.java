@@ -152,4 +152,16 @@ public class MapmeterSaasService {
         }
     }
 
+    public MapmeterSaasResponse checkMapmeterMessageStorage(String baseUrl, String apiKey)
+            throws IOException {
+        HttpClient httpClient = createEphemeralHttpClient();
+        String messageStorageCheckUrl = baseUrl + "/controller/v1/message/check";
+
+        GetMethod getMethod = new GetMethod(messageStorageCheckUrl);
+        NameValuePair[] queryParams = new NameValuePair[] { new NameValuePair("apikey", apiKey) };
+        getMethod.setQueryString(queryParams);
+
+        return executeMethod(httpClient, getMethod);
+    }
+
 }
