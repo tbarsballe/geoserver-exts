@@ -25,6 +25,7 @@ import org.opengeo.mapmeter.monitor.saas.MapmeterSaasException;
 import org.opengeo.mapmeter.monitor.saas.MapmeterSaasUserState;
 import org.opengeo.mapmeter.monitor.saas.MapmeterService;
 import org.opengeo.mapmeter.monitor.saas.MissingMapmeterApiKeyException;
+import org.opengeo.mapmeter.monitor.saas.MissingMapmeterSaasCredentialsException;
 
 import com.google.common.base.Optional;
 
@@ -95,18 +96,34 @@ public class MapmeterPage extends GeoServerSecuredPage {
                 if (!maybeMapmeterSaasCredentials.isPresent()) {
                     shouldDisplayCredentialsUpdateForm = true;
                 } else {
+                    MapmeterSaasCredentials mapmeterSaasCredentials = maybeMapmeterSaasCredentials.get();
+                    currentUsername = mapmeterSaasCredentials.getUsername();
                     try {
                         MapmeterSaasUserState mapmeterSaasUserState = mapmeterService.findUserState();
                         if (mapmeterSaasUserState == MapmeterSaasUserState.ANONYMOUS) {
                             shouldDisplayConvertForm = true;
                         } else {
                             shouldDisplayCredentialsUpdateForm = true;
-                            MapmeterSaasCredentials mapmeterSaasCredentials = maybeMapmeterSaasCredentials.get();
-                            currentUsername = mapmeterSaasCredentials.getUsername();
                         }
-                    } catch (Exception e) {
+                    } catch (IOException e) {
+                        LOGGER.log(Level.SEVERE, "IO Error checking mapmeter user state", e);
                         shouldDisplayCredentialsUpdateForm = true;
-                        isInvalidMapmeterCredentials = true;
+                    } catch (MapmeterSaasException e) {
+                        int statusCode = e.getStatusCode();
+                        if (statusCode == 401) {
+                            LOGGER.log(Level.WARNING, "Invalid mapmeter credentials");
+                            isInvalidMapmeterCredentials = true;
+                            shouldDisplayCredentialsUpdateForm = true;
+                        } else {
+                            LOGGER.log(Level.SEVERE, "Unexpected mapmeter response");
+                        }
+                        LOGGER.log(Level.SEVERE,
+                                "Mapmeter saas exception when fetching user state", e);
+                    } catch (MissingMapmeterSaasCredentialsException e) {
+                        // this shouldn't really happen, because we're checking for credentials above before entering this branch
+                        // but it's possible that it changed in between via REST
+                        LOGGER.log(Level.WARNING, "Missing mapmeter saas credentials", e);
+                        shouldDisplayCredentialsUpdateForm = true;
                     }
                 }
             }
@@ -182,7 +199,7 @@ public class MapmeterPage extends GeoServerSecuredPage {
                         LOGGER.log(Level.WARNING, errMsg, e);
                         setFeedbackError(errMsg, target);
                     } catch (MissingMapmeterApiKeyException e) {
-                        // this shouldn't happen because we just checked it, but it's possible it was removed in between via rest
+                        // this shouldn't happen because we just checked it, but it's possible it was removed in between via REST
                         String errMsg = "Missing api key";
                         LOGGER.log(Level.SEVERE, errMsg, e);
                         setFeedbackError(errMsg, target);
