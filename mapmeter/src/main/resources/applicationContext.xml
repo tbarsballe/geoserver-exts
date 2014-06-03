@@ -20,9 +20,16 @@
       <constructor-arg ref="mapmeterRequestDataFactory" index="1"/>
     </bean>
 
-    <bean id="mapmeterHttpTimeoutParams" class="org.apache.commons.httpclient.params.HttpConnectionManagerParams">
+    <bean id="mapmeterHttpMessageTransportTimeoutParams" class="org.apache.commons.httpclient.params.HttpConnectionManagerParams">
+      <!-- Set an http timeout of 5 seconds for message transport to mapmeter service -->
       <property name="connectionTimeout" value="5000"/>
       <property name="soTimeout" value="5000"/>
+    </bean>
+
+    <bean id="mapmeterHttpTimeoutParams" class="org.apache.commons.httpclient.params.HttpConnectionManagerParams">
+      <!-- Set a default timeout of 30 seconds for all other communications -->
+      <property name="connectionTimeout" value="30000"/>
+      <property name="soTimeout" value="30000"/>
     </bean>
 
     <bean id="mapmeterHttpSimpleConnectionManager" class="org.apache.commons.httpclient.SimpleHttpConnectionManager">
@@ -37,7 +44,7 @@
 
     <bean id="mapmeterMonitorHttpTransport" class="org.opengeo.mapmeter.monitor.transport.HttpMessageTransport" >
       <constructor-arg ref="mapmeterConfiguration" index="0" />
-      <constructor-arg ref="mapmeterHttpTimeoutParams" index="1" />
+      <constructor-arg ref="mapmeterHttpMessageTransportTimeoutParams" index="1" />
     </bean>
 
     <bean id="mapmeterConfiguration"
