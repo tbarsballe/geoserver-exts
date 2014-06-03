@@ -71,6 +71,13 @@ public class MapmeterConfiguration {
         this.geoServerSecurityManager = geoServerSecurityManager;
         this.mapmeterConfigRelPath = monitoringDataDirName + File.separatorChar + configName;
 
+        String apiKeyOverrideProperty = GeoServerExtensions.getProperty(MAPMETER_APIKEY_OVERRIDE_PROPERTY_NAME);
+        apiKeyOverride = Optional.fromNullable(apiKeyOverrideProperty);
+
+        refreshConfig();
+    }
+
+    public void refreshConfig() {
         Optional<String> apiKey = Optional.absent();
         Optional<String> baseUrl = Optional.absent();
         Optional<Boolean> isOnPremise = Optional.absent();
@@ -96,7 +103,8 @@ public class MapmeterConfiguration {
                     if (apiKeyString != null) {
                         apiKey = Optional.of(apiKeyString.trim());
                     } else {
-                        LOGGER.severe("Failure reading 'apikey' property from " + configName);
+                        LOGGER.severe("Failure reading 'apikey' property from "
+                                + mapmeterConfigRelPath);
                     }
                     if (baseUrlString != null) {
                         String prefix = baseUrlString.trim();
@@ -132,9 +140,6 @@ public class MapmeterConfiguration {
                 LOGGER.info(Throwables.getStackTraceAsString(e));
             }
         }
-
-        String apiKeyOverrideProperty = GeoServerExtensions.getProperty(MAPMETER_APIKEY_OVERRIDE_PROPERTY_NAME);
-        apiKeyOverride = Optional.fromNullable(apiKeyOverrideProperty);
 
         this.apiKeyProperties = apiKey;
         this.baseUrl = baseUrl;

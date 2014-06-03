@@ -55,6 +55,11 @@ public class MapmeterConfigurationResource extends AbstractResource {
     }
 
     @Override
+    public boolean allowPost() {
+        return true;
+    }
+
+    @Override
     public void handleGet() {
         DataFormat format = getFormatGet();
         getResponse().setEntity(format.toRepresentation(serializeMapmeterConfiguration()));
@@ -70,6 +75,7 @@ public class MapmeterConfigurationResource extends AbstractResource {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        LOGGER.log(Level.INFO, "Mapmeter configuration cleared");
         handleGet();
     }
 
@@ -133,15 +139,26 @@ public class MapmeterConfigurationResource extends AbstractResource {
                 }
                 if (haveChanges) {
                     mapmeterConfiguration.save();
+                    LOGGER.log(Level.INFO, "Mapmeter configuration updated");
                 }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         } catch (JSONException e) {
-            LOGGER.log(Level.FINER, "Invalid json request", e);
+            LOGGER.log(Level.WARNING, "Invalid json request", e);
             response.setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
             return;
         }
+        handleGet();
+    }
+
+    @Override
+    public void handlePost() {
+        synchronized (mapmeterConfiguration) {
+            mapmeterConfiguration.clearConfig();
+            mapmeterConfiguration.refreshConfig();
+        }
+        LOGGER.log(Level.INFO, "Mapmeter configuration refreshed");
         handleGet();
     }
 
