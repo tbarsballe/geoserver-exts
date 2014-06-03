@@ -170,7 +170,7 @@ public class MapmeterConfiguration {
     public Optional<File> findMapmeterConfigurationFile() throws IOException {
         File propFile = loader.find(mapmeterConfigRelPath);
         if (propFile == null) {
-            String msg = "Could not find controller properties file in data dir. Expected data dir location: "
+            String msg = "Could not find mapmeter properties file in data dir. Expected data dir location: "
                     + mapmeterConfigRelPath;
             LOGGER.warning(msg);
             return Optional.absent();
@@ -241,7 +241,7 @@ public class MapmeterConfiguration {
         if (maybePropFile.isPresent()) {
             propFile = maybePropFile.get();
         } else {
-            LOGGER.warning("Creating controller properties: " + mapmeterConfigRelPath);
+            LOGGER.warning("Creating mapmeter properties: " + mapmeterConfigRelPath);
             propFile = loader.createFile(mapmeterConfigRelPath);
         }
 
