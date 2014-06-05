@@ -103,11 +103,7 @@ public class HttpMessageTransport implements MessageTransport {
     }
 
     private void logCommunicationError(Exception e, String url) {
-        LOGGER.severe("Error sending messages to: " + url);
-        LOGGER.severe(e.getLocalizedMessage());
-        if (LOGGER.isLoggable(Level.INFO)) {
-            LOGGER.info(Throwables.getStackTraceAsString(e));
-        }
+        LOGGER.log(Level.SEVERE, "Error sending messages to: " + url, e);
     }
 
     @Override

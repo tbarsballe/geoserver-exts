@@ -8,7 +8,6 @@ import org.geoserver.config.GeoServerInitializer;
 import org.geotools.util.logging.Logging;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 
 public class MapmeterInitializer implements GeoServerInitializer {
 
@@ -48,7 +47,7 @@ public class MapmeterInitializer implements GeoServerInitializer {
         public void run() {
             Optional<SystemData> maybeSystemData = supplier.get();
             if (!maybeSystemData.isPresent()) {
-                LOGGER.warning("Mapmeter api key not configured. Not sending system data.");
+                LOGGER.info("Mapmeter api key not configured. Not sending system data.");
                 return;
             }
 
@@ -59,14 +58,10 @@ public class MapmeterInitializer implements GeoServerInitializer {
             } else {
                 if (result.isTransferError()) {
                     Exception error = result.getError().get();
-                    LOGGER.severe("Error transferring data to Mapmeter: "
-                            + error.getLocalizedMessage());
-                    if (LOGGER.isLoggable(Level.INFO)) {
-                        LOGGER.info(Throwables.getStackTraceAsString(error));
-                    }
+                    LOGGER.log(Level.SEVERE, "Error transferring data to Mapmeter", error);
                 } else {
                     LOGGER.severe("Error response from mapmeter. Code: "
-                            + result.getStatusCode().get() + " - Response text: "
+                            + result.getStatusCode().get() + " - Response: "
                             + result.getResponseText().get());
                 }
             }

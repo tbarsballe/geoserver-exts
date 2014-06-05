@@ -20,7 +20,6 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
-import com.google.common.base.Throwables;
 import com.google.common.io.Closer;
 import com.google.common.io.Files;
 
@@ -102,9 +101,6 @@ public class MapmeterConfiguration {
 
                     if (apiKeyString != null) {
                         apiKey = Optional.of(apiKeyString.trim());
-                    } else {
-                        LOGGER.severe("Failure reading 'apikey' property from "
-                                + mapmeterConfigRelPath);
                     }
                     if (baseUrlString != null) {
                         String prefix = baseUrlString.trim();
@@ -135,10 +131,8 @@ public class MapmeterConfiguration {
                 closer.close();
             }
         } catch (IOException e) {
-            LOGGER.severe("Failure reading: " + mapmeterConfigRelPath + " from data dir");
-            if (LOGGER.isLoggable(Level.INFO)) {
-                LOGGER.info(Throwables.getStackTraceAsString(e));
-            }
+            LOGGER.log(Level.SEVERE,
+                    "Failure reading: " + mapmeterConfigRelPath + " from data dir", e);
         }
 
         this.apiKeyProperties = apiKey;
@@ -175,9 +169,8 @@ public class MapmeterConfiguration {
     public Optional<File> findMapmeterConfigurationFile() throws IOException {
         File propFile = loader.find(mapmeterConfigRelPath);
         if (propFile == null) {
-            String msg = "Could not find mapmeter properties file in data dir. Expected data dir location: "
-                    + mapmeterConfigRelPath;
-            LOGGER.warning(msg);
+            LOGGER.info("No mapmeter properties file in data dir. Expected data dir location: "
+                    + mapmeterConfigRelPath);
             return Optional.absent();
         } else {
             return Optional.of(propFile);
@@ -246,7 +239,7 @@ public class MapmeterConfiguration {
         if (maybePropFile.isPresent()) {
             propFile = maybePropFile.get();
         } else {
-            LOGGER.warning("Creating mapmeter properties: " + mapmeterConfigRelPath);
+            LOGGER.info("Creating new mapmeter properties config: " + mapmeterConfigRelPath);
             propFile = loader.createFile(mapmeterConfigRelPath);
         }
 
