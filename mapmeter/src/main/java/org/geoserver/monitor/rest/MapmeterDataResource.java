@@ -50,18 +50,18 @@ public class MapmeterDataResource extends AbstractResource {
             Map<String, Object> result = mapmeterService.fetchMapmeterData();
             return result;
         } catch (IOException e) {
-            LOGGER.log(Level.WARNING, e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, e.getMessage(), e);
             return Collections.<String, Object> singletonMap("error", e.getLocalizedMessage());
         } catch (MissingMapmeterApiKeyException e) {
-            String errMsg = "No mapmeter api key configured";
-            LOGGER.log(Level.INFO, errMsg, e);
+            String errMsg = "No mapmeter api key configured, cannot fetch mapmeter data";
+            LOGGER.log(Level.INFO, errMsg);
             return Collections.<String, Object> singletonMap("error", errMsg);
         } catch (MissingMapmeterSaasCredentialsException e) {
-            String errMsg = "No mapmeter saas credentials configured";
-            LOGGER.log(Level.WARNING, errMsg, e);
+            String errMsg = "No mapmeter saas credentials configured, cannot fetch mapmeter data";
+            LOGGER.log(Level.INFO, errMsg);
             return Collections.<String, Object> singletonMap("error", errMsg);
         } catch (MapmeterSaasException e) {
-            LOGGER.log(Level.WARNING, "Failure fetching mapmeter data", e);
+            LOGGER.log(Level.SEVERE, "Failure fetching mapmeter data", e);
             if (e.getStatusCode() == 403) {
                 Map<String, Object> result = new HashMap<String, Object>();
                 result.put("accessDenied", true);
