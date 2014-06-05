@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Date;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -33,14 +35,6 @@ public class MapmeterConfiguration {
 
     private final GeoServerResourceLoader loader;
 
-    private Optional<String> apiKeyProperties;
-
-    private Optional<String> baseUrl;
-
-    private Optional<Boolean> isOnPremise;
-
-    private Optional<MapmeterSaasCredentials> mapmeterSaasCredentials;
-
     private final Optional<String> apiKeyOverride;
 
     private final String defaultBaseUrl;
@@ -55,25 +49,90 @@ public class MapmeterConfiguration {
 
     private final GeoServerSecurityManager geoServerSecurityManager;
 
-    public MapmeterConfiguration(String monitoringDataDirName, String configName,
-            String defaultBaseUrl, String storageSuffix, String checkSuffix,
-            String systemUpdateSuffix, GeoServerResourceLoader loader,
+    private Optional<String> apiKeyProperties;
+
+    private Optional<String> baseUrl;
+
+    private Optional<Boolean> isOnPremise;
+
+    private Optional<MapmeterSaasCredentials> mapmeterSaasCredentials;
+
+    public MapmeterConfiguration(String defaultBaseUrl, GeoServerResourceLoader loader,
             GeoServerPBEPasswordEncoder geoServerPBEPasswordEncoder,
             GeoServerSecurityManager geoServerSecurityManager) {
 
         this.defaultBaseUrl = defaultBaseUrl;
-        this.storageSuffix = storageSuffix;
-        this.checkSuffix = checkSuffix;
-        this.systemUpdateSuffix = systemUpdateSuffix;
+        this.storageSuffix = "/controller/v1/message/store";
+        this.checkSuffix = "/controller/v1/message/check";
+        this.systemUpdateSuffix = "/controller/v1/server";
         this.loader = loader;
         this.geoServerPBEPasswordEncoder = geoServerPBEPasswordEncoder;
         this.geoServerSecurityManager = geoServerSecurityManager;
-        this.mapmeterConfigRelPath = monitoringDataDirName + File.separatorChar + configName;
+        this.mapmeterConfigRelPath = "monitoring" + File.separatorChar + "mapmeter.properties";
 
         String apiKeyOverrideProperty = GeoServerExtensions.getProperty(MAPMETER_APIKEY_OVERRIDE_PROPERTY_NAME);
         apiKeyOverride = Optional.fromNullable(apiKeyOverrideProperty);
 
+        migrateConfigIfNecessary("monitoring" + File.separatorChar + "controller.properties",
+                mapmeterConfigRelPath);
+
         refreshConfig();
+    }
+
+    private void migrateConfigIfNecessary(String oldPath, String newPath) {
+        try {
+            File oldConfigFile = loader.find(oldPath);
+            File newConfigFile = loader.find(newPath);
+            if (oldConfigFile != null && oldConfigFile.isFile()) {
+                if (newConfigFile != null && newConfigFile.isFile()) {
+                    LOGGER.warning("Detected legacy mapmeter configuration: " + oldPath
+                            + " - as well as new mapmeter configuration: " + newPath
+                            + ". Not performing migration");
+                    return;
+                }
+                LOGGER.warning("Detected configuration file controller.properties. Migrating to mapmeter.properties.");
+                Closer closer = Closer.create();
+                try {
+                    BufferedReader fileReader = closer.register(Files.newReader(oldConfigFile,
+                            Charsets.UTF_8));
+                    Properties oldProperties = new Properties();
+                    oldProperties.load(fileReader);
+
+                    Properties newProperties = new Properties();
+
+                    String apiKey = (String) oldProperties.get("apikey");
+                    if (apiKey != null) {
+                        newProperties.put("apikey", apiKey);
+                    }
+                    String url = (String) oldProperties.get("url");
+                    if (url != null) {
+                        try {
+                            // this was the controller storage url
+                            // parse the base url out of this
+                            URI uri = new URI(url);
+                            String baseUrl = uri.getScheme() + "://" + uri.getAuthority();
+                            newProperties.put("baseurl", baseUrl);
+                        } catch (URISyntaxException e) {
+                            LOGGER.log(Level.SEVERE, "Could not parse url: " + url, e);
+                        }
+                    }
+
+                    newConfigFile = loader.createFile(newPath);
+                    BufferedWriter writer = closer.register(Files.newWriter(newConfigFile,
+                            Charsets.UTF_8));
+                    newProperties.store(writer, null);
+
+                    if (!oldConfigFile.delete()) {
+                        LOGGER.log(Level.SEVERE,
+                                "Failure removing legacy mapmeter configuration file: " + oldPath);
+                    }
+                } finally {
+                    closer.close();
+                }
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "IO failure detecting/migrating mapmeter configuration", e);
+        }
     }
 
     public void refreshConfig() {

@@ -50,15 +50,10 @@
     <bean id="mapmeterConfiguration"
           class="org.opengeo.mapmeter.monitor.config.MapmeterConfiguration"
           depends-on="extensions">
-      <constructor-arg value="monitoring" index="0"/>
-      <constructor-arg value="mapmeter.properties" index="1"/>
-      <constructor-arg value="https://app.mapmeter.com" index="2"/>
-      <constructor-arg value="/controller/v1/message/store" index="3"/>
-      <constructor-arg value="/controller/v1/message/check" index="4"/>
-      <constructor-arg value="/controller/v1/server" index="5"/>
-      <constructor-arg ref="resourceLoader" index="6"/>
-      <constructor-arg ref="pbePasswordEncoder" index="7"/>
-      <constructor-arg ref="geoServerSecurityManager" index="8"/>
+      <constructor-arg value="https://app.mapmeter.com" index="0"/>
+      <constructor-arg ref="resourceLoader" index="1"/>
+      <constructor-arg ref="pbePasswordEncoder" index="2"/>
+      <constructor-arg ref="geoServerSecurityManager" index="3"/>
     </bean>
 
     <bean id="mapmeterRequestDataMapping" class="java.util.concurrent.ConcurrentHashMap"></bean>
