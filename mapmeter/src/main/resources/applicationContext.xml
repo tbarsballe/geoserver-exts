@@ -9,7 +9,7 @@
     default-autowire="byName">
 
     <bean id="monitorGeoIPPostProcessor" class="org.geoserver.monitor.GeoIPPostProcessor">
-        <constructor-arg ref="resourceLoader" index="0" />
+      <constructor-arg ref="resourceLoader" index="0" />
     </bean>
 
     <!-- don't show the "Activity" and "Reports" pages in the "Monitor" category -->
@@ -20,6 +20,22 @@
       <constructor-arg ref="mapmeterRequestDataFactory" index="1"/>
     </bean>
 
+    <bean id="mapmeterHttpMessageTransportTimeoutParams" class="org.apache.commons.httpclient.params.HttpConnectionManagerParams">
+      <!-- Set an http timeout of 5 seconds for message transport to mapmeter service -->
+      <property name="connectionTimeout" value="5000"/>
+      <property name="soTimeout" value="5000"/>
+    </bean>
+
+    <bean id="mapmeterHttpTimeoutParams" class="org.apache.commons.httpclient.params.HttpConnectionManagerParams">
+      <!-- Set a default timeout of 30 seconds for all other communications -->
+      <property name="connectionTimeout" value="30000"/>
+      <property name="soTimeout" value="30000"/>
+    </bean>
+
+    <bean id="mapmeterHttpSimpleConnectionManager" class="org.apache.commons.httpclient.SimpleHttpConnectionManager">
+      <property name="params" ref="mapmeterHttpTimeoutParams"/>
+    </bean>
+
     <bean id="mapmeterMonitorTransport" class="org.opengeo.mapmeter.monitor.transport.QueuedMessageTransport">
       <constructor-arg ref="mapmeterMonitorHttpTransport" index="0"/>
       <!-- Seconds delay between transports -->
@@ -27,19 +43,22 @@
     </bean>
 
     <bean id="mapmeterMonitorHttpTransport" class="org.opengeo.mapmeter.monitor.transport.HttpMessageTransport" >
-      <constructor-arg ref="mapmeterMessageHttpTransportConfig" index="0" />
+      <constructor-arg ref="mapmeterConfiguration" index="0" />
+      <constructor-arg ref="mapmeterHttpMessageTransportTimeoutParams" index="1" />
     </bean>
 
-    <bean id="mapmeterMessageHttpTransportConfig"
-          class="org.opengeo.mapmeter.monitor.config.MessageTransportConfigProperties"
+    <bean id="mapmeterConfiguration"
+          class="org.opengeo.mapmeter.monitor.config.MapmeterConfiguration"
           depends-on="extensions">
       <constructor-arg value="monitoring" index="0"/>
-      <constructor-arg value="controller.properties" index="1"/>
+      <constructor-arg value="mapmeter.properties" index="1"/>
       <constructor-arg value="https://app.mapmeter.com" index="2"/>
       <constructor-arg value="/controller/v1/message/store" index="3"/>
       <constructor-arg value="/controller/v1/message/check" index="4"/>
       <constructor-arg value="/controller/v1/server" index="5"/>
       <constructor-arg ref="resourceLoader" index="6"/>
+      <constructor-arg ref="pbePasswordEncoder" index="7"/>
+      <constructor-arg ref="geoServerSecurityManager" index="8"/>
     </bean>
 
     <bean id="mapmeterRequestDataMapping" class="java.util.concurrent.ConcurrentHashMap"></bean>
@@ -59,20 +78,15 @@
 
     <bean id="mapmeterJmxSystemMonitor" class="org.opengeo.mapmeter.monitor.JmxSystemMonitor" />
 
-    <bean id="mapmeterConnectionChecker" class="org.opengeo.mapmeter.monitor.check.HttpConnectionChecker">
-      <constructor-arg ref="mapmeterMessageHttpTransportConfig" index="0" />
-      <!-- Connection timeout in milliseconds -->
-      <constructor-arg value="30000" index="1" />
-    </bean>
-
     <bean id="mapmeterSystemDataSupplier" class="org.opengeo.mapmeter.monitor.system.SystemDataSupplier">
-      <constructor-arg ref="mapmeterMessageHttpTransportConfig" index="0"></constructor-arg>
+      <constructor-arg ref="mapmeterConfiguration" index="0"></constructor-arg>
       <constructor-arg ref="manifestLoader" index="1"></constructor-arg>
     </bean>
 
     <bean id="mapmeterSystemDataTransport" class="org.opengeo.mapmeter.monitor.system.SystemDataTransport">
       <constructor-arg ref="mapmeterSystemDataSerializer" index="0"></constructor-arg>
-      <constructor-arg ref="mapmeterMessageHttpTransportConfig" index="1"></constructor-arg>
+      <constructor-arg ref="mapmeterConfiguration" index="1"></constructor-arg>
+      <constructor-arg ref="mapmeterHttpSimpleConnectionManager" index="2"></constructor-arg>
     </bean>
 
     <bean id="mapmeterSystemDataSerializer" class="org.opengeo.mapmeter.monitor.system.SystemDataSerializer">
@@ -83,14 +97,99 @@
       <constructor-arg ref="mapmeterSystemDataTransport" index="1"></constructor-arg>
     </bean>
 
+    <bean id="mapmeterSaasService" class="org.opengeo.mapmeter.monitor.saas.MapmeterSaasService">
+      <constructor-arg ref="mapmeterHttpSimpleConnectionManager" index="0"></constructor-arg>
+    </bean>
+
+    <bean id="mapmeterService" class="org.opengeo.mapmeter.monitor.saas.MapmeterService">
+      <constructor-arg ref="mapmeterSaasService" index="0"></constructor-arg>
+      <constructor-arg ref="mapmeterConfiguration" index="1"></constructor-arg>
+      <constructor-arg value="7" index="2"></constructor-arg>
+    </bean>
+
+    <bean id="mapmeterDataResource" class="org.geoserver.monitor.rest.MapmeterDataResource">
+      <constructor-arg ref="mapmeterService" index="0"></constructor-arg>
+    </bean>
+
+    <bean id="mapmeterConfigurationResource" class="org.geoserver.monitor.rest.MapmeterConfigurationResource">
+      <constructor-arg ref="mapmeterConfiguration" index="0"></constructor-arg>
+    </bean>
+
+    <bean id="mapmeterRestMapping" class="org.geoserver.rest.RESTMapping">
+      <property name="routes">
+        <map>
+          <entry>
+            <key><value>/mapmeter/data.{format}</value></key>
+            <value>mapmeterDataResource</value>
+          </entry>
+          <entry>
+            <key><value>/mapmeter/configuration.{format}</value></key>
+            <value>mapmeterConfigurationResource</value>
+          </entry>
+        </map>
+      </property>
+    </bean>
+
     <bean class="org.geoserver.web.MenuPageInfo" id="mapmeterMenuPageLink">
-    <property name="id" value="mapmeterMenuPageId"/>
-    <property name="titleKey" value="MapmeterPage.title"/>
-    <property name="descriptionKey" value="MapmeterPage.description"/>
-    <property name="componentClass" value="org.geoserver.monitor.web.MapmeterPage"/>
-<!--     <property name="icon" value="imgs/some-image.png"/> -->
-    <property name="category" ref="monitorCategory"/>
-    <property name="order" value="50"/>
-</bean>
+      <property name="id" value="mapmeterMenuPageId"/>
+      <property name="titleKey" value="MapmeterPage.title"/>
+      <property name="descriptionKey" value="MapmeterPage.description"/>
+      <property name="componentClass" value="org.geoserver.web.MapmeterPage"/>
+      <property name="category" ref="monitorCategory"/>
+      <property name="order" value="50"/>
+    </bean>
+
+    <bean id="mapmeterCss" class="org.geoserver.web.ClassLimitingHeaderContribution">
+      <constructor-arg>
+        <set>
+          <value>org.geoserver.web.GeoServerHomePage</value>
+          <value>org.geoserver.web.MapmeterPage</value>
+        </set>
+      </constructor-arg>
+      <property name="scope" value="org.geoserver.web.GeoServerHomePage"/>
+      <property name="CSSFilename" value="mapmeter.css"/>
+    </bean>
+
+    <bean id="mapmeterJsD3" class="org.geoserver.web.ClassLimitingHeaderContribution">
+      <constructor-arg>
+        <set>
+          <value>org.geoserver.web.GeoServerHomePage</value>
+          <value>org.geoserver.web.MapmeterPage</value>
+        </set>
+      </constructor-arg>
+      <property name="scope" value="org.geoserver.web.GeoServerHomePage"/>
+      <property name="javaScriptFilename" value="d3.js"/>
+    </bean>
+
+    <bean id="mapmeterJsMapmeter" class="org.geoserver.web.ClassLimitingHeaderContribution">
+      <constructor-arg>
+        <set>
+          <value>org.geoserver.web.GeoServerHomePage</value>
+          <value>org.geoserver.web.MapmeterPage</value>
+        </set>
+      </constructor-arg>
+      <property name="scope" value="org.geoserver.web.GeoServerHomePage"/>
+      <property name="javaScriptFilename" value="mapmeter.js"/>
+    </bean>
+
+    <bean id="mapmeterHomeJs" class="org.geoserver.web.ClassLimitingHeaderContribution">
+      <constructor-arg>
+        <set>
+          <value>org.geoserver.web.GeoServerHomePage</value>
+        </set>
+      </constructor-arg>
+      <property name="scope" value="org.geoserver.web.GeoServerHomePage"/>
+      <property name="javaScriptFilename" value="mapmeterHome.js"/>
+    </bean>
+
+    <bean id="mapmeterPageJs" class="org.geoserver.web.ClassLimitingHeaderContribution">
+      <constructor-arg>
+        <set>
+          <value>org.geoserver.web.MapmeterPage</value>
+        </set>
+      </constructor-arg>
+      <property name="scope" value="org.geoserver.web.GeoServerHomePage"/>
+      <property name="javaScriptFilename" value="mapmeterPage.js"/>
+    </bean>
 
 </beans>
