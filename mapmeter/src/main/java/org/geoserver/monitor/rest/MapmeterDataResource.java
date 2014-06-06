@@ -10,7 +10,6 @@ import java.util.logging.Logger;
 
 import org.geoserver.rest.AbstractResource;
 import org.geoserver.rest.format.DataFormat;
-import org.geoserver.rest.format.MapJSONFormat;
 import org.geotools.util.logging.Logging;
 import org.opengeo.mapmeter.monitor.saas.MapmeterSaasException;
 import org.opengeo.mapmeter.monitor.saas.MapmeterService;
@@ -31,7 +30,7 @@ public class MapmeterDataResource extends AbstractResource {
 
     @Override
     protected List<DataFormat> createSupportedFormats(Request request, Response response) {
-        return Collections.<DataFormat> singletonList(new MapJSONFormat());
+        return Collections.<DataFormat> singletonList(new BooleanPatchedMapJSONFormat());
     }
 
     @Override
