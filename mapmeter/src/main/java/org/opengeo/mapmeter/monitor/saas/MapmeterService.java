@@ -121,7 +121,7 @@ public class MapmeterService {
         String apiKey = maybeApiKey.get();
 
         Date end = new Date();
-        Date start = new Date(end.getTime() - (1000 * 60 * 60 * 24 * daysOfDataToFetch));
+        Date start = new Date(end.getTime() - (1000L * 60 * 60 * 24 * daysOfDataToFetch));
 
         MapmeterSaasResponse saasResponse = mapmeterSaasService.fetchData(baseUrl,
                 maybeMapmeterCredentials, apiKey, start, end);
