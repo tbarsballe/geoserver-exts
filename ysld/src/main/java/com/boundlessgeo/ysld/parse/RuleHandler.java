@@ -70,18 +70,28 @@ public class RuleHandler extends YsldParseHandler {
             });
         }
         else if ("scale".equals(val)) {
-            Tuple t = Tuple.parse(val, evt,
-                String.format("Bad scale value: '%s', must be of form (<min>;<max>)", val));
-
-            if (t.first != null) {
-                rule.setMinScaleDenominator(Double.parseDouble(t.first));
-            }
-            if (t.second != null) {
-                rule.setMaxScaleDenominator(Double.parseDouble(t.second));
-            }
+            handlers.push(new ValueHandler(factory) {
+                @Override
+                protected void value(String value, Event event) {
+                    Tuple t = null;
+                    try {
+                        t = Tuple.of(2).parse(value);
+                    }
+                    catch(IllegalArgumentException e) {
+                        throw new ParseException(
+                            String.format("Bad scale value: '%s', must be of form (<min>,<max>)", value), event);
+                    }
+                    if (t.at(0) != null) {
+                        rule.setMinScaleDenominator(Double.parseDouble(t.at(0)));
+                    }
+                    if (t.at(1) != null) {
+                        rule.setMaxScaleDenominator(Double.parseDouble(t.at(1)));
+                    }
+                }
+            });
         }
         else if ("symbolizers".equals(val)) {
-            handlers.push(new SymbolizerHandler(rule, factory));
+            handlers.push(new SymbolizersHandler(rule, factory));
         }
     }
 

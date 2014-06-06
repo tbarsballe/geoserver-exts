@@ -174,7 +174,7 @@ public class SldTransformerTest {
 
         rule = style.o("feature-styles", 0).o("rules", 2);
         assertEquals("Small", rule.s("name"));
-        assertEquals("(320000000)", rule.s("scale"));
+        assertEquals("(320000000,)", rule.s("scale"));
     }
 
     @Test
@@ -365,7 +365,7 @@ public class SldTransformerTest {
 
         YamlObj text =
             style.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
-        assertEquals("@name", text.s("label"));
+        assertEquals("[name]", text.s("label"));
         assertEquals("#000000", text.o("fill").s("color"));
     }
 
@@ -420,7 +420,7 @@ public class SldTransformerTest {
         YamlObj text =
             style.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
 
-        assertEquals("@name", text.s("label"));
+        assertEquals("[name]", text.s("label"));
 
         assertEquals("Arial", text.o("font").s("family"));
         assertEquals(12, text.o("font").i("size").intValue());
@@ -667,7 +667,7 @@ public class SldTransformerTest {
 
         YamlObj style = transform("line", "curved-label.sld");
         YamlObj text = style.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
-        assertEquals("@name", text.s("label"));
+        assertEquals("[name]", text.s("label"));
         assertEquals("#000000", text.o("fill").s("color"));
         assertEquals(true, text.o("options").b("follow-line"));
     }
@@ -820,7 +820,7 @@ public class SldTransformerTest {
         assertEquals("#FF0000", line.o("stroke").s("color"));
 
         YamlObj text = style.o("feature-styles", 0).o("rules", 0).o("symbolizers", 1).o("text");
-        assertEquals("@name", text.s("label"));
+        assertEquals("[name]", text.s("label"));
         assertEquals("#000000", text.o("fill").s("color"));
     }
 
@@ -924,7 +924,7 @@ public class SldTransformerTest {
 
         rule = style.o("feature-styles", 0).o("rules", 2);
         assertEquals("Small", rule.s("name"));
-        assertEquals("(360000000)", rule.s("scale"));
+        assertEquals("(360000000,)", rule.s("scale"));
 
         line = rule.o("symbolizers", 0).o("line");
         assertEquals("#009933", line.o("stroke").s("color"));
@@ -964,7 +964,7 @@ public class SldTransformerTest {
         YamlObj style = transform("line", "optimized-label.sld");
 
         YamlObj text = style.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
-        assertEquals("@name", text.s("label"));
+        assertEquals("[name]", text.s("label"));
         assertEquals("#000000", text.o("fill").s("color"));
         assertEquals(true, text.o("options").b("follow-line"));
         assertEquals(90, text.o("options").i("max-angle-delta").intValue());
@@ -1012,7 +1012,7 @@ public class SldTransformerTest {
 
         YamlObj text = style.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
 
-        assertEquals("@name", text.s("label"));
+        assertEquals("[name]", text.s("label"));
         assertEquals("#000000", text.o("fill").s("color"));
 
         assertEquals("Arial", text.o("font").s("family"));
@@ -1042,7 +1042,7 @@ public class SldTransformerTest {
         //    </UserStyle>
 
         YamlObj obj = transform("poly", "simple.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("poly");
+        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
 
         assertEquals("#000080", poly.o("fill").s("color"));
     }
@@ -1112,21 +1112,21 @@ public class SldTransformerTest {
         assertEquals("SmallPop", rule.s("name"));
         assertEquals("pop < '200000'", rule.s("filter"));
 
-        YamlObj poly = rule.o("symbolizers",0).o("poly");
+        YamlObj poly = rule.o("symbolizers",0).o("polygon");
         assertEquals("#66FF66", poly.o("fill").s("color"));
 
         rule = obj.o("feature-styles", 0).o("rules", 1);
         assertEquals("MediumPop", rule.s("name"));
         assertEquals("(pop >= '200000' AND pop < '500000')", rule.s("filter"));
 
-        poly = rule.o("symbolizers",0).o("poly");
+        poly = rule.o("symbolizers",0).o("polygon");
         assertEquals("#33CC33", poly.o("fill").s("color"));
 
         rule = obj.o("feature-styles", 0).o("rules", 2);
         assertEquals("LargePop", rule.s("name"));
         assertEquals("pop > '500000'", rule.s("filter"));
 
-        poly = rule.o("symbolizers",0).o("poly");
+        poly = rule.o("symbolizers",0).o("polygon");
         assertEquals("#009900", poly.o("fill").s("color"));
 
     }
@@ -1156,14 +1156,14 @@ public class SldTransformerTest {
         //    </UserStyle>
 
         YamlObj obj = transform("poly", "default-label.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("poly");
+        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
         YamlObj text = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
 
         assertEquals("#40FF40", poly.o("fill").s("color"));
         assertEquals("#FFFFFF", poly.o("stroke").s("color"));
         assertEquals(2, poly.o("stroke").i("width").intValue());
 
-        assertEquals("@name", text.s("label"));
+        assertEquals("[name]", text.s("label"));
     }
 
     @Test
@@ -1192,7 +1192,7 @@ public class SldTransformerTest {
         //    </UserStyle>
 
         YamlObj obj = transform("poly", "graphic-fill.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("poly");
+        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
 
         YamlObj g = poly.o("fill").o("graphic").o("symbols", 0).o("external");
         assertEquals("colorblocks.png", g.s("url"));
@@ -1232,7 +1232,7 @@ public class SldTransformerTest {
 
         YamlObj obj = transform("poly", "halo-label.sld");
         YamlObj text = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
-        assertEquals("@name", text.s("label"));
+        assertEquals("[name]", text.s("label"));
         assertEquals(3, text.o("halo").i("radius").intValue());
         assertEquals("#FFFFFF", text.o("halo").o("fill").s("color"));
 
@@ -1265,7 +1265,7 @@ public class SldTransformerTest {
         //    </UserStyle>
 
         YamlObj obj = transform("poly", "hatch-fill.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("poly");
+        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
 
         YamlObj mark = poly.o("fill").o("graphic").o("symbols", 0).o("mark");
         assertEquals("shape://times", mark.s("shape"));
@@ -1295,7 +1295,7 @@ public class SldTransformerTest {
         //    </UserStyle>
 
         YamlObj obj = transform("poly", "stroke.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("poly");
+        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
 
         assertEquals("#000080", poly.o("fill").s("color"));
         assertEquals("#FFFFFF", poly.o("stroke").s("color"));
@@ -1347,7 +1347,7 @@ public class SldTransformerTest {
 
         YamlObj obj = transform("poly", "styled-label.sld");
         YamlObj text = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
-        assertEquals("@name", text.s("label"));
+        assertEquals("[name]", text.s("label"));
 
         assertEquals("Arial", text.o("font").s("family"));
         assertEquals(11, text.o("font").i("size").intValue());
@@ -1384,7 +1384,7 @@ public class SldTransformerTest {
         //    </UserStyle>
 
         YamlObj obj = transform("poly", "transparent.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("poly");
+        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
 
         assertEquals("#000080", poly.o("fill").s("color"));
         assertEquals(0.5, poly.o("fill").d("opacity"), 0.1);
@@ -1469,13 +1469,13 @@ public class SldTransformerTest {
         assertEquals("Large", rule.s("name"));
         assertEquals("(,100000000)", rule.s("scale"));
 
-        YamlObj poly = rule.o("symbolizers",0).o("poly");
+        YamlObj poly = rule.o("symbolizers",0).o("polygon");
         assertEquals("#0000CC", poly.o("fill").s("color"));
         assertEquals("#000000", poly.o("stroke").s("color"));
         assertEquals(7, poly.o("stroke").i("width").intValue());
 
         YamlObj text = rule.o("symbolizers",1).o("text");
-        assertEquals("@name", text.s("label"));
+        assertEquals("[name]", text.s("label"));
         assertEquals("Arial", text.o("font").s("family"));
         assertEquals(14, text.o("font").i("size").intValue());
         assertEquals("normal", text.o("font").s("style"));
@@ -1490,17 +1490,17 @@ public class SldTransformerTest {
         assertEquals("Medium", rule.s("name"));
         assertEquals("(100000000,200000000)", rule.s("scale"));
 
-        poly = rule.o("symbolizers",0).o("poly");
+        poly = rule.o("symbolizers",0).o("polygon");
         assertEquals("#0000CC", poly.o("fill").s("color"));
         assertEquals("#000000", poly.o("stroke").s("color"));
         assertEquals(4, poly.o("stroke").i("width").intValue());
 
         rule = obj.o("feature-styles", 0).o("rules", 2);
         assertEquals("Small", rule.s("name"));
-        assertEquals("(200000000)", rule.s("scale"));
+        assertEquals("(200000000,)", rule.s("scale"));
 
-        poly = rule.o("symbolizers",0).o("poly");
-        poly = rule.o("symbolizers",0).o("poly");
+        poly = rule.o("symbolizers",0).o("polygon");
+        poly = rule.o("symbolizers",0).o("polygon");
         assertEquals("#0000CC", poly.o("fill").s("color"));
         assertEquals("#000000", poly.o("stroke").s("color"));
         assertEquals(1, poly.o("stroke").i("width").intValue());
@@ -1524,7 +1524,6 @@ public class SldTransformerTest {
 
         YamlObj obj = transform("raster", "alpha-channel.sld");
         YamlObj raster = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("raster");
-        System.out.println(raster);
 
         assertEquals("(#008000,,70,)", raster.o("color-map").s("entries", 0));
         assertEquals("(#008000,0,256,)", raster.o("color-map").s("entries", 1));

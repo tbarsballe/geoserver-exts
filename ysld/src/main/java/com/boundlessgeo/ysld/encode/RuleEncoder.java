@@ -25,8 +25,7 @@ public class RuleEncoder extends Encoder<Rule> {
             put("else", true);
         }
 
-        Tuple t = new Tuple(toStringOrNull(rule.getMinScaleDenominator()),
-            toStringOrNull(rule.getMaxScaleDenominator()));
+        Tuple t = Tuple.of(toStringOrNull(rule.getMinScaleDenominator()), toStringOrNull(rule.getMaxScaleDenominator()));
         if (t.isNull()) {
             put("scale", t.toString());
         }

@@ -14,22 +14,15 @@ public abstract class FloatArrayHandler extends YsldParseHandler {
 
     public FloatArrayHandler(Factory factory) {
         super(factory);
-    }
-
-    @Override
-    public void sequence(SequenceStartEvent evt, Deque<YamlParseHandler> handlers) {
-        super.sequence(evt, handlers);
         list = new ArrayList<Float>();
     }
 
     @Override
     public void scalar(ScalarEvent evt, Deque<YamlParseHandler> handlers) {
-        list.add(Float.parseFloat(evt.getValue()));
-    }
+        for (String str : evt.getValue().split(" ")) {
+            list.add(Float.parseFloat(str));
+        }
 
-    @Override
-    public void endSequence(SequenceEndEvent evt, Deque<YamlParseHandler> handlers) {
-        super.endSequence(evt, handlers);
         float[] array = new float[list.size()];
         for (int i = 0; i < list.size(); i++) {
             array[i] = list.get(i).floatValue();

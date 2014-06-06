@@ -22,7 +22,7 @@ public abstract class MarkHandler extends YsldParseHandler {
     @Override
     public void scalar(ScalarEvent evt, Deque<YamlParseHandler> handlers) {
         String val = evt.getValue();
-        if ("name".equals(val)) {
+        if ("shape".equals(val)) {
             handlers.push(new ExpressionHandler(factory) {
                 @Override
                 protected void expression(Expression expr) {

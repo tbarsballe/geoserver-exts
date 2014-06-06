@@ -1,42 +1,87 @@
 package com.boundlessgeo.ysld.parse;
 
 import org.geotools.styling.Rule;
+import org.geotools.styling.Symbolizer;
+import org.opengis.filter.expression.Expression;
+import org.yaml.snakeyaml.events.Event;
+import org.yaml.snakeyaml.events.MappingEndEvent;
 import org.yaml.snakeyaml.events.ScalarEvent;
-import org.yaml.snakeyaml.events.SequenceEndEvent;
 
 import java.util.Deque;
 
-public class SymbolizerHandler extends YsldParseHandler {
+public class SymbolizerHandler<T extends Symbolizer> extends YsldParseHandler {
 
-    Rule rule;
+    protected T sym;
 
-    public SymbolizerHandler(Rule rule, Factory factory) {
+    protected SymbolizerHandler(Rule rule, T sym, Factory factory) {
         super(factory);
-        this.rule = rule;
+        rule.symbolizers().add(this.sym = sym);
     }
 
     @Override
     public void scalar(ScalarEvent evt, Deque<YamlParseHandler> handlers) {
         String val = evt.getValue();
-        if ("point".equals(val)) {
-            handlers.push(new PointHandler(rule, factory));
+        if ("geometry".equals(val)) {
+            handlers.push(new ExpressionHandler(factory) {
+                @Override
+                protected void expression(Expression expr) {
+                    sym.setGeometry(expr);
+                }
+            });
         }
-        else if ("line".equals(val)) {
-
-        }
-        else if ("polygon".equals(val)) {
-
-        }
-        else if ("text".equals(val)) {
-
-        }
-        else if ("raster".equals(val)) {
-
+        else if ("options".equals(val)) {
+            handlers.push(new OptionsHandler());
         }
     }
 
     @Override
-    public void endSequence(SequenceEndEvent evt, Deque<YamlParseHandler> handlers) {
+    public void endMapping(MappingEndEvent evt, Deque<YamlParseHandler> handlers) {
+        super.endMapping(evt, handlers);
         handlers.pop();
+    }
+
+    class OptionsHandler extends YsldParseHandler {
+
+        OptionsHandler() {
+            super(SymbolizerHandler.this.factory);
+        }
+
+        @Override
+        public void scalar(ScalarEvent evt, Deque<YamlParseHandler> handlers) {
+            final String key = evt.getValue();
+            handlers.push(new ValueHandler(factory) {
+                @Override
+                protected void value(String value, Event event) {
+                    sym.getOptions().put(toCamelCase(key), value);
+                }
+            });
+        }
+
+        @Override
+        public void endMapping(MappingEndEvent evt, Deque<YamlParseHandler> handlers) {
+            super.endMapping(evt, handlers);
+            handlers.pop();
+        }
+
+        String toCamelCase(String str) {
+            if (str == null || str.isEmpty()) {
+                return str;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            boolean upper = false;
+            for (int i = 0; i < str.length(); i++) {
+                char ch = str.charAt(i);
+                if (ch == '-') {
+                    upper = true;
+                }
+                else {
+                    sb.append(upper?Character.toUpperCase(ch):ch);
+                    upper = false;
+                }
+            }
+
+            return sb.toString();
+        }
     }
 }

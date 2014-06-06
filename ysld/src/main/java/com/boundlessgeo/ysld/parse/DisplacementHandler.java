@@ -1,13 +1,13 @@
 package com.boundlessgeo.ysld.parse;
 
 import com.boundlessgeo.ysld.Tuple;
-import org.geotools.styling.AnchorPoint;
+import org.geotools.styling.Displacement;
 import org.opengis.filter.expression.Expression;
 import org.yaml.snakeyaml.events.Event;
 
-public abstract class AnchorHandler extends ValueHandler {
+public abstract class DisplacementHandler extends ValueHandler {
 
-    AnchorHandler(Factory factory) {
+    protected DisplacementHandler(Factory factory) {
         super(factory);
     }
 
@@ -18,15 +18,15 @@ public abstract class AnchorHandler extends ValueHandler {
             t = Tuple.of(2).parse(value);
         }
         catch(IllegalArgumentException e) {
-            throw new ParseException(String.format("Bad anchor: '%s', must be of form (<x>,<y>)", value), event);
+            throw new ParseException(String.format("Bad displacment: '%s', must be of form (<x>,<y>)", value), event);
         }
 
         Expression x = t.at(0) != null ? ExpressionHandler.parse(t.at(0), event, factory) :
-            factory.filter.literal(0);
+                factory.filter.literal(0);
         Expression y = t.at(1) != null ? ExpressionHandler.parse(t.at(1), event, factory) :
-            factory.filter.literal(0);
-        anchor(factory.style.createAnchorPoint(x, y));
+                factory.filter.literal(0);
+        displace(factory.style.createDisplacement(x, y));
     }
 
-    protected abstract void anchor(AnchorPoint anchor);
+    protected abstract void displace(Displacement displacement);
 }

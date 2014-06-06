@@ -1,5 +1,7 @@
 package com.boundlessgeo.ysld.transform.sld;
 
+import org.opengis.filter.expression.Expression;
+
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
@@ -65,6 +67,7 @@ public class TextSymbolizerHandler extends SymbolizerHandler {
     }
 
     static class PlacementHandler extends SldTransformHandler {
+
         @Override
         public void element(XMLStreamReader xml, SldTransformContext context) throws XMLStreamException, IOException {
             String name = xml.getLocalName();
@@ -85,6 +88,24 @@ public class TextSymbolizerHandler extends SymbolizerHandler {
             }
             else if ("Rotation".equals(name)) {
                 context.scalar("rotation").push(new ExpressionHandler());
+            }
+            else if ("PerpendicularOffset".equals(name)) {
+                context.scalar("offset").push(new ExpressionHandler());
+            }
+            else if ("IsRepeated".equals(name)) {
+                context.scalar("repeat").scalar(xml.getElementText());
+            }
+            else if ("IsAligned".equals(name)) {
+                context.scalar("align").scalar(xml.getElementText());
+            }
+            else if ("GeneralizeLine".equals(name)) {
+                context.scalar("generalize").scalar(xml.getElementText());
+            }
+            else if ("InitialGap".equals(name)) {
+                context.scalar("initial-gap").push(new ExpressionHandler());
+            }
+            else if ("Gap".equals(name)) {
+                context.scalar("gap").push(new ExpressionHandler());
             }
         }
 

@@ -15,6 +15,9 @@ public class LineSymbolizerHandler extends SymbolizerHandler {
         else if ("Stroke".equals(name)) {
             context.scalar("stroke").push(new StrokeHandler());
         }
+        else if ("PerpindicularOffset".equals(name)) {
+            context.scalar("offset").push(new ExpressionHandler());
+        }
         else {
             super.element(xml, context);
         }

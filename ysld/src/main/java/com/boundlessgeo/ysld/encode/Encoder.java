@@ -73,7 +73,7 @@ public abstract class Encoder<T> implements Iterator<Object> {
     }
 
     Encoder put(String key, Expression e1, Expression e2) {
-        Tuple t = new Tuple(toStringOrNull(e1), toStringOrNull(e2));
+        Tuple t = Tuple.of(toStringOrNull(e1), toStringOrNull(e2));
         if (!t.isNull()) {
             put(key, t.toString());
         }

@@ -3,27 +3,32 @@ package com.boundlessgeo.ysld.parse;
 import org.geotools.styling.*;
 import org.yaml.snakeyaml.events.MappingEndEvent;
 import org.yaml.snakeyaml.events.MappingStartEvent;
+import org.yaml.snakeyaml.events.ScalarEvent;
 
 import java.util.Deque;
 
-public class PointHandler extends YsldParseHandler {
-
-    PointSymbolizer sym;
+public class PointHandler extends SymbolizerHandler<PointSymbolizer> {
 
     public PointHandler(Rule rule, Factory factory) {
-        super(factory);
-        rule.symbolizers().add(sym = factory.style.createPointSymbolizer());
+        super(rule, factory.style.createPointSymbolizer(), factory);
     }
 
     @Override
     public void mapping(MappingStartEvent evt, Deque<YamlParseHandler> handlers) {
         super.mapping(evt, handlers);
-        handlers.push(new GraphicHandler(factory, sym.getGraphic()));
+        handlers.push(new PointGraphicHandler());
     }
 
-    @Override
-    public void endMapping(MappingEndEvent evt, Deque<YamlParseHandler> handlers) {
-        super.endMapping(evt, handlers);
-        handlers.pop();
+    class PointGraphicHandler extends GraphicHandler {
+
+        PointGraphicHandler() {
+            super(PointHandler.this.factory, sym.getGraphic());
+        }
+
+        @Override
+        public void scalar(ScalarEvent evt, Deque<YamlParseHandler> handlers) {
+            super.scalar(evt, handlers);
+            PointHandler.this.scalar(evt, handlers);
+        }
     }
 }

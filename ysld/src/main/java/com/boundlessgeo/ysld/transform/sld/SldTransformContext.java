@@ -127,6 +127,6 @@ class SldTransformContext {
     }
 
     public SldTransformContext tuple(String first, String second) throws IOException {
-        return scalar(new Tuple(first, second).toString());
+        return scalar(Tuple.of(first, second).toString());
     }
 }

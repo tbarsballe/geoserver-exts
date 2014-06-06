@@ -13,6 +13,7 @@ public abstract class StrokeHandler extends YsldParseHandler {
 
     protected StrokeHandler(Factory factory) {
         super(factory);
+        stroke = factory.style.createStroke(null, null);
     }
 
     @Override
@@ -40,28 +41,28 @@ public abstract class StrokeHandler extends YsldParseHandler {
                 }
             });
         }
-        if ("join".equals(val)) {
+        if ("linejoin".equals(val)) {
             handlers.push(new ExpressionHandler(factory) {
                 protected void expression(Expression expr) {
                     stroke.setLineJoin(expr);
                 }
             });
         }
-        if ("cap".equals(val)) {
+        if ("linecap".equals(val)) {
             handlers.push(new ExpressionHandler(factory) {
                 protected void expression(Expression expr) {
                     stroke.setLineCap(expr);
                 }
             });
         }
-        if ("dash".equals(val)) {
+        if ("dasharray".equals(val)) {
             handlers.push(new FloatArrayHandler(factory) {
                 protected void array(float[] arr) {
                     stroke.setDashArray(arr);
                 }
             });
         }
-        if ("dash-offset".equals(val)) {
+        if ("dashoffset".equals(val)) {
             handlers.push(new ExpressionHandler(factory) {
                 protected void expression(Expression expr) {
                     stroke.setDashOffset(expr);

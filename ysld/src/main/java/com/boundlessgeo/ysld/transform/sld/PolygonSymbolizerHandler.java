@@ -10,7 +10,7 @@ public class PolygonSymbolizerHandler extends SymbolizerHandler {
     public void element(XMLStreamReader xml, SldTransformContext context) throws XMLStreamException, IOException {
         String name = xml.getLocalName();
         if ("PolygonSymbolizer".equals(name)) {
-            context.mapping().scalar("poly").mapping();
+            context.mapping().scalar("polygon").mapping();
         }
         else if ("Fill".equals(name)) {
             context.scalar("fill").push(new FillHandler());

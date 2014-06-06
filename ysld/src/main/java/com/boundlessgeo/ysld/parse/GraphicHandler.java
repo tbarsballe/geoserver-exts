@@ -1,11 +1,10 @@
 package com.boundlessgeo.ysld.parse;
 
-import org.geotools.styling.AnchorPoint;
-import org.geotools.styling.Displacement;
-import org.geotools.styling.Graphic;
+import org.geotools.styling.*;
 import org.opengis.filter.expression.Expression;
 import org.yaml.snakeyaml.events.MappingEndEvent;
 import org.yaml.snakeyaml.events.ScalarEvent;
+import org.yaml.snakeyaml.events.SequenceEndEvent;
 
 import java.util.Deque;
 
@@ -14,7 +13,7 @@ public class GraphicHandler extends YsldParseHandler {
     Graphic g;
 
     GraphicHandler(Factory factory) {
-        this(factory, factory.style.createDefaultGraphic());
+        this(factory, factory.styleBuilder.createGraphic(null, null, null));
     }
 
     GraphicHandler(Factory factory, Graphic g) {
@@ -43,19 +42,19 @@ public class GraphicHandler extends YsldParseHandler {
         if ("size".equals(val)) {
             handlers.push(new ExpressionHandler(factory) {
                 protected void expression(Expression expr) {
-
+                    g.setSize(expr);
                 }
             });
         }
-        if ("displace".equals(val)) {
-            handlers.push(new DisplaceHandler(factory) {
+        if ("displacement".equals(val)) {
+            handlers.push(new DisplacementHandler(factory) {
                 @Override
                 protected void displace(Displacement displacement) {
                     g.setDisplacement(displacement);
                 }
             });
         }
-        if ("rotate".equals(val)) {
+        if ("rotation".equals(val)) {
             handlers.push(new ExpressionHandler(factory) {
                 protected void expression(Expression expr) {
                     g.setRotation(expr);
@@ -63,20 +62,21 @@ public class GraphicHandler extends YsldParseHandler {
             });
         }
         if ("gap".equals(val)) {
-            handlers.push(new GapHandler(factory) {
-                @Override
-                protected void gap(Expression gap, Expression init) {
-                    if (gap != null) {
-                        g.setGap(gap);
-                    }
-                    if (init != null) {
-                        g.setInitialGap(init);
-                    }
+            handlers.push(new ExpressionHandler(factory) {
+                protected void expression(Expression expr) {
+                    g.setGap(expr);
+                }
+            });
+        }
+        if ("initial-gap".equals(val)) {
+            handlers.push(new ExpressionHandler(factory) {
+                protected void expression(Expression expr) {
+                    g.setInitialGap(expr);
                 }
             });
         }
         if ("symbols".equals(val)) {
-            handlers.push(new SymbolsHandler(g, factory));
+            handlers.push(new SymbolsHandler());
         }
     }
 
@@ -88,5 +88,38 @@ public class GraphicHandler extends YsldParseHandler {
     }
 
     protected void graphic(Graphic graphic) {
+    }
+
+    class SymbolsHandler extends YsldParseHandler {
+
+        protected SymbolsHandler() {
+            super(GraphicHandler.this.factory);
+        }
+
+        @Override
+        public void scalar(ScalarEvent evt, Deque<YamlParseHandler> handlers) {
+            String val = evt.getValue();
+            if ("mark".equals(val)) {
+                handlers.push(new MarkHandler(factory) {
+                    @Override
+                    protected void mark(Mark mark) {
+                        g.graphicalSymbols().add(mark);
+                    }
+                });
+            }
+            else if ("external".equals(val)) {
+                handlers.push(new ExternalGraphicHandler(factory) {
+                    @Override
+                    protected void externalGraphic(ExternalGraphic externalGraphic) {
+                        g.graphicalSymbols().add(externalGraphic);
+                    }
+                });
+            }
+        }
+
+        @Override
+        public void endSequence(SequenceEndEvent evt, Deque<YamlParseHandler> handlers) {
+            handlers.pop();
+        }
     }
 }

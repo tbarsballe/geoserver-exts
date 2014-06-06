@@ -33,7 +33,7 @@ public abstract class ColorHandler extends ValueHandler {
         }
 
 
-        color(color != null ? factory.filter.literal(color) : ExpressionHandler.parse(value, event));
+        color(color != null ? factory.filter.literal(color) : ExpressionHandler.parse(value, event, factory));
     }
 
     Color parseAsHex(Matcher m, Event event) {
