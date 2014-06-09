@@ -133,7 +133,7 @@ public class TruncateTilesOnUpdateRefHook implements CommandHook {
 
         List<LayerInfo> affectedLayers;
         final String newRefName = newValue.get().getName();
-        Stopwatch sw = new Stopwatch().start();
+        Stopwatch sw = Stopwatch.createStarted();
         affectedLayers = findAffectedLayers(mediator, command.context(), newRefName);
         LOGGER.debug("GWC geogit truncate post-hook found {} affected layers on branch {} in {}.",
                 affectedLayers.size(), refName, sw.stop());

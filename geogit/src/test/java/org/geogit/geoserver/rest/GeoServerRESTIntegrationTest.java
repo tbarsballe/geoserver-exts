@@ -29,7 +29,7 @@ import org.geogit.api.plumbing.ResolveGeogitDir;
 import org.geogit.api.plumbing.ResolveTreeish;
 import org.geogit.api.plumbing.RevObjectParse;
 import org.geogit.api.porcelain.CommitOp;
-import org.geogit.cli.test.functional.CLITestContextBuilder;
+import org.geogit.cli.test.functional.general.CLITestContextBuilder;
 import org.geogit.geotools.data.GeoGitDataStore;
 import org.geogit.geotools.data.GeoGitDataStoreFactory;
 import org.geogit.storage.ObjectSerializingFactory;

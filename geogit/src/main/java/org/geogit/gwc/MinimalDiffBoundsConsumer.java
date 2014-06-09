@@ -147,4 +147,14 @@ class MinimalDiffBoundsConsumer implements DiffTreeVisitor.Consumer {
     private boolean isPoint(Envelope env) {
         return env.getWidth() == 0D && env.getHeight() == 0D;
     }
+
+    @Override
+    public void endTree(Node left, Node right) {
+        // nothing to do, intentionally blank
+    }
+
+    @Override
+    public void endBucket(int bucketIndex, int bucketDepth, Bucket left, Bucket right) {
+        // nothing to do, intentionally blank
+    }
 }

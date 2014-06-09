@@ -62,7 +62,7 @@ class TruncateHelper {
                 "Computing minimal bounds geometry on layer '{}' (tree '{}') for change {}...{} ",
                 tileLayerName, layerTreeName, oldCommit, newCommit);
         final Geometry minimalBounds;
-        Stopwatch sw = new Stopwatch().start();
+        Stopwatch sw = Stopwatch.createStarted();
         try {
             MinimalDiffBounds geomBuildCommand = geogit.command(MinimalDiffBounds.class)
                     .setOldVersion(oldCommit.toString()).setNewVersion(newCommit.toString());

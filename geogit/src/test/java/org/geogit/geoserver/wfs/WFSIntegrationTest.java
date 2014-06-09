@@ -27,7 +27,7 @@ import org.geogit.api.plumbing.LsTreeOp;
 import org.geogit.api.plumbing.ResolveGeogitDir;
 import org.geogit.api.porcelain.CommitOp;
 import org.geogit.api.porcelain.LogOp;
-import org.geogit.cli.test.functional.CLITestContextBuilder;
+import org.geogit.cli.test.functional.general.CLITestContextBuilder;
 import org.geogit.geotools.data.GeoGitDataStore;
 import org.geogit.geotools.data.GeoGitDataStoreFactory;
 import org.geogit.test.integration.RepositoryTestCase;
