@@ -1,5 +1,7 @@
 package org.opengeo.mapmeter.monitor.saas;
 
+import com.google.common.base.Objects;
+
 public class MapmeterEnableResult {
 
     private final String serverApiKey;
@@ -39,6 +41,17 @@ public class MapmeterEnableResult {
 
     public String getOrgName() {
         return orgName;
+    }
+
+    @Override
+    public String toString() {
+        return Objects.toStringHelper(MapmeterEnableResult.class)
+                .add("serverApiKey", serverApiKey)
+                .add("username", username)
+                .add("password", password)
+                .add("externalUserId", externalUserId)
+                .add("orgName", orgName)
+                .toString();
     }
 
 }
