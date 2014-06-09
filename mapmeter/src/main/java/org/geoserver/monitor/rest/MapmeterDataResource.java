@@ -22,7 +22,7 @@ public class MapmeterDataResource extends AbstractResource {
 
     private static final Logger LOGGER = Logging.getLogger(MapmeterDataResource.class);
 
-    private final MapmeterService mapmeterService;
+    private MapmeterService mapmeterService;
 
     public MapmeterDataResource(MapmeterService mapmeterService) {
         this.mapmeterService = mapmeterService;
@@ -70,6 +70,11 @@ public class MapmeterDataResource extends AbstractResource {
                 return Collections.<String, Object> singletonMap("error", e.getMessage());
             }
         }
+    }
+
+    void setMapmeterService(MapmeterService mapmeterService) {
+        // for tests
+        this.mapmeterService = mapmeterService;
     }
 
 }
