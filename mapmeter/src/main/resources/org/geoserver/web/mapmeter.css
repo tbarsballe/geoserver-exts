@@ -12,6 +12,7 @@
 }
 
 #mapmeter-chart-container {
+  clear: both;
   display: none;
 }
 
