@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.geogit.rest.repository.CatalogRepositoryProvider;
 import org.geogit.rest.repository.CommandResource;
+import org.geogit.rest.repository.FixedEncoder;
 import org.geogit.rest.repository.RepositoryListResource;
 import org.geogit.rest.repository.RepositoryProvider;
 import org.geogit.rest.repository.RepositoryResource;
@@ -25,6 +26,7 @@ import org.geoserver.rest.PageInfo;
 import org.geoserver.rest.RESTDispatcher;
 import org.geoserver.rest.RESTMapping;
 import org.geotools.util.logging.Logging;
+import org.restlet.Restlet;
 import org.restlet.Router;
 import org.restlet.data.Request;
 import org.restlet.data.Response;
@@ -32,6 +34,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 
+import com.noelios.restlet.application.Decoder;
 import com.noelios.restlet.ext.servlet.ServletConverter;
 
 /**
@@ -64,7 +67,7 @@ public class GeogitDispatcher extends AbstractController {
     /**
      * the root restlet router
      */
-    private Router router;
+    private Restlet root;
 
     public GeogitDispatcher(final Catalog catalog) {
         this.repositoryProvider = new CatalogRepositoryProvider(catalog);
@@ -77,8 +80,23 @@ public class GeogitDispatcher extends AbstractController {
         super.initApplicationContext();
 
         converter = new GeoServerServletConverter(getServletContext());
-        router = createInboundRoot();
-        converter.setTarget(router);
+        Router router = createInboundRoot();
+
+        org.restlet.Context context = null;// getContext();
+        FixedEncoder encoder = new FixedEncoder(context);
+        // needed for the Encoder to wrap the incoming requests if they come with
+        // "Content-Type: gzip"
+        encoder.setEncodeRequest(false);
+        encoder.setEncodeResponse(true);
+        encoder.setNext(router);
+
+        Decoder decoder = new Decoder(context);
+        decoder.setDecodeRequest(true);
+        decoder.setDecodeResponse(false);
+        decoder.setNext(encoder);
+
+        root = decoder;
+        converter.setTarget(root);
     }
 
     public Router createInboundRoot() {
