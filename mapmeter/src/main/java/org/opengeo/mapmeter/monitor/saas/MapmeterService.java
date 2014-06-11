@@ -47,6 +47,7 @@ public class MapmeterService {
         }
 
         Map<String, Object> response = saasResponse.getResponse();
+        int statusCode = saasResponse.getStatusCode();
 
         String username;
         String password;
@@ -61,6 +62,10 @@ public class MapmeterService {
             @SuppressWarnings("unchecked")
             Map<String, Object> server = (Map<String, Object>) response.get("server");
 
+            if (user == null || org == null || server == null) {
+                throw throwUnexpectedResponse(statusCode, response);
+            }
+
             externalUserId = (String) user.get("id");
             username = (String) user.get("email");
             password = (String) user.get("password");
@@ -71,11 +76,11 @@ public class MapmeterService {
 
             if (username == null || password == null || apiKey == null || externalUserId == null
                     || orgName == null) {
-                throw throwUnexpectedResponse(response);
+                throw throwUnexpectedResponse(statusCode, response);
             }
         } catch (ClassCastException e) {
             LOGGER.log(Level.SEVERE, "Unexpected mapmeter saas response", e);
-            throw throwUnexpectedResponse(response);
+            throw throwUnexpectedResponse(statusCode, response);
         }
 
         MapmeterSaasCredentials mapmeterSaasCredentials = new MapmeterSaasCredentials(username,
@@ -89,11 +94,12 @@ public class MapmeterService {
         return new MapmeterEnableResult(apiKey, username, password, externalUserId, orgName);
     }
 
-    public MapmeterSaasException throwUnexpectedResponse(Map<String, Object> response)
-            throws MapmeterSaasException {
+    public MapmeterSaasException throwUnexpectedResponse(int statusCode,
+            Map<String, Object> response) throws MapmeterSaasException {
         LOGGER.log(Level.SEVERE, response.toString());
-        throw new MapmeterSaasException(200, Collections.<String, Object> singletonMap("error",
-                "Unexpected json response from mapmeter saas"), "Unexpected mapmeter saas response");
+        throw new MapmeterSaasException(statusCode, Collections.<String, Object> singletonMap(
+                "message", "Unexpected json response from mapmeter saas"),
+                "Unexpected mapmeter saas response");
     }
 
     public Map<String, Object> fetchMapmeterData() throws IOException,
@@ -220,6 +226,7 @@ public class MapmeterService {
                     "Failure checking message storage for key: " + apiKey);
         }
 
+        int statusCode = saasResponse.getStatusCode();
         Map<String, Object> response = saasResponse.getResponse();
         String status;
         String error;
@@ -229,7 +236,7 @@ public class MapmeterService {
             error = (String) response.get("error");
             apiKeyStatus = (String) response.get("api_key_status");
         } catch (ClassCastException e) {
-            throw throwUnexpectedResponse(response);
+            throw throwUnexpectedResponse(statusCode, response);
         }
 
         if ("ERROR".equals(status)) {
@@ -239,7 +246,7 @@ public class MapmeterService {
                     return MapmeterMessageStorageResult.invalidApiKey(apiKey);
                 } else {
                     // this would be "VALID" otherwise, but then we wouldn't have an error status
-                    throw throwUnexpectedResponse(response);
+                    throw throwUnexpectedResponse(statusCode, response);
                 }
             } else {
                 // internal server error on mapmeter side
@@ -248,7 +255,7 @@ public class MapmeterService {
         } else if ("OK".equals(status)) {
             return MapmeterMessageStorageResult.success(apiKey);
         } else {
-            throw throwUnexpectedResponse(response);
+            throw throwUnexpectedResponse(statusCode, response);
         }
     }
 

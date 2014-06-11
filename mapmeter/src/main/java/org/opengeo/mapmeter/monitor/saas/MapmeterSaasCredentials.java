@@ -29,4 +29,14 @@ public class MapmeterSaasCredentials {
                 .toString();
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof MapmeterSaasCredentials)) {
+            return false;
+        }
+        MapmeterSaasCredentials that = (MapmeterSaasCredentials) obj;
+        return Objects.equal(this.username, that.username)
+                && Objects.equal(this.password, that.password);
+    }
+
 }

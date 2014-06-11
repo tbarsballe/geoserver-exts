@@ -12,7 +12,6 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.geoserver.rest.AbstractResource;
 import org.geoserver.rest.format.DataFormat;
-import org.geoserver.rest.format.MapJSONFormat;
 import org.geotools.util.logging.Logging;
 import org.opengeo.mapmeter.monitor.config.MapmeterConfiguration;
 import org.opengeo.mapmeter.monitor.saas.MapmeterSaasCredentials;
@@ -36,7 +35,7 @@ public class MapmeterConfigurationResource extends AbstractResource {
 
     @Override
     protected List<DataFormat> createSupportedFormats(Request request, Response response) {
-        return Collections.<DataFormat> singletonList(new MapJSONFormat());
+        return Collections.<DataFormat> singletonList(new BooleanPatchedMapJSONFormat());
     }
 
     @Override
@@ -162,7 +161,7 @@ public class MapmeterConfigurationResource extends AbstractResource {
         handleGet();
     }
 
-    private Map<String, String> serializeMapmeterConfiguration() {
+    private Map<String, Object> serializeMapmeterConfiguration() {
         Optional<String> maybeApiKey;
         String baseUrl;
         boolean isOnPremise;
@@ -175,10 +174,10 @@ public class MapmeterConfigurationResource extends AbstractResource {
             maybeMapmeterSaasCredentials = mapmeterConfiguration.getMapmeterSaasCredentials();
         }
 
-        Map<String, String> result = new HashMap<String, String>();
+        Map<String, Object> result = new HashMap<String, Object>();
         result.put("apikey", maybeApiKey.orNull());
         result.put("baseurl", baseUrl);
-        result.put("onpremise", "" + isOnPremise);
+        result.put("onpremise", isOnPremise);
         if (maybeMapmeterSaasCredentials.isPresent()) {
             MapmeterSaasCredentials mapmeterSaasCredentials = maybeMapmeterSaasCredentials.get();
             result.put("username", mapmeterSaasCredentials.getUsername());
