@@ -12,9 +12,6 @@
   <div wicket:id="mapmeter-feedback"></div>
 
   <form wicket:id="apikey-form" method="POST">
-    <fieldset>
-      <legend><wicket:message key="MapmeterPage.legend.EditApiKey">Edit API Key</wicket:message></legend>
-    </fieldset>
     <ul>
       <li>
       <label for="apikey-field"><wicket:message key="MapmeterPage.field.apikey">API Key</wicket:message></label>
@@ -22,7 +19,8 @@
       </li>
     </ul>
     <div class="button-group selfclear">
-      <a href="#" wicket:id="apikey-button">Save</a>
+      <a href="#" wicket:id="apikey-save-button">Save</a>
+      <a href="#" wicket:id="apikey-check-button">Validate</a>
     </div>
   </form>
 
@@ -57,7 +55,7 @@
         <input wicket:id="mapmeter-credentials-convert-password1" type="password" />
       </li>
       <li>
-        <label for="mapmeter-credentials-convert-password2">Password Again</label>
+        <label for="mapmeter-credentials-convert-password2">Retype Password</label>
         <input wicket:id="mapmeter-credentials-convert-password2" type="password" />
       </li>
     </ul>
@@ -82,7 +80,7 @@
         <input wicket:id="mapmeter-credentials-save-password1" type="password" />
       </li>
       <li>
-        <label for="mapmeter-credentials-save-password2">Password Again</label>
+        <label for="mapmeter-credentials-save-password2">Retype Password</label>
         <input wicket:id="mapmeter-credentials-save-password2" type="password" />
       </li>
     </ul>
@@ -91,16 +89,9 @@
     </div>
   </form>
 
-  <form wicket:id="connection-check-form" method="GET" style="margin-top: 50px">
-    <fieldset>
-      <legend>Check Mapmeter Status</legend>
-    </fieldset>
-    <div class="button-group selfclear">
-      <a href="#" wicket:id="connection-check-button">Check message storage</a>
-    </div>
-  </form>
-
-  <div id="mapmeter-chart">
+  <div id="mapmeter-chart-container">
+    <h2>GeoServer Request Data</h2>
+    <div id="mapmeter-chart"></div>
   </div>
 
   </div>

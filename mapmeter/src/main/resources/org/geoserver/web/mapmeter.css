@@ -11,6 +11,10 @@
   font-weight: bold;
 }
 
+#mapmeter-chart-container {
+  display: none;
+}
+
 #mapmeter-chart {
   width: 500px;
   height: 150px;

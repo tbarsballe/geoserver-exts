@@ -8,7 +8,7 @@
     }
   }
 
-  mapmeter.fetchDataAndDrawChart = function(domElt) {
+  mapmeter.fetchDataAndDrawChart = function(domElt, domWrapper) {
     mapmeter.fetchData(function(mapmeterData) {
       if (!mapmeterData) {
         log('No mapmeter data returned');
@@ -17,6 +17,9 @@
       } else if (mapmeterData.error) {
         log('Error fetching mapmeter data: ' + mapmeterData.error);
       } else if (mapmeterData.data) {
+        if (domWrapper) {
+          domWrapper.style.display = 'block';
+        }
         mapmeter.drawChart(domElt, mapmeterData);
       } else {
         log('Unknown response when fetching mapmeter data');

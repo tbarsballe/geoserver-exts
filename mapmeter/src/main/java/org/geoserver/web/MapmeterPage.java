@@ -28,6 +28,7 @@ import org.opengeo.mapmeter.monitor.saas.MissingMapmeterApiKeyException;
 import org.opengeo.mapmeter.monitor.saas.MissingMapmeterSaasCredentialsException;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 
 public class MapmeterPage extends GeoServerSecuredPage {
 
@@ -41,6 +42,8 @@ public class MapmeterPage extends GeoServerSecuredPage {
 
     private RequiredTextField<String> apiKeyField;
 
+    private IndicatingAjaxButton apiKeyValidateButton;
+
     private RequiredTextField<String> mapmeterCredentialsUpdateUsername;
 
     private Form<?> apiKeyForm;
@@ -50,8 +53,6 @@ public class MapmeterPage extends GeoServerSecuredPage {
     private Form<?> credentialsConvertForm;
 
     private Form<?> credentialsSaveForm;
-
-    private Form<?> connectionCheckForm;
 
     private FeedbackPanel feedbackPanel;
 
@@ -88,13 +89,11 @@ public class MapmeterPage extends GeoServerSecuredPage {
         boolean shouldDisplayConvertForm = false;
         boolean shouldDisplayCredentialsUpdateForm = false;
         boolean isInvalidMapmeterCredentials = false;
-        boolean shouldDisplayConnectionCheckForm = false;
 
         if (!isOnPremise) {
             if (!maybeApiKey.isPresent()) {
                 shouldDisplayMapmeterEnableForm = true;
             } else {
-                shouldDisplayConnectionCheckForm = true;
                 if (!maybeMapmeterSaasCredentials.isPresent()) {
                     shouldDisplayCredentialsUpdateForm = true;
                 } else {
@@ -143,7 +142,6 @@ public class MapmeterPage extends GeoServerSecuredPage {
         addMapmeterEnableForm(baseUrl);
         addCredentialsConvertForm(baseUrl);
         addCredentialsSaveForm(isInvalidMapmeterCredentials, currentUsername);
-        addConnectionCheckForm();
 
         enableMapmeterForm.setOutputMarkupId(true);
         enableMapmeterForm.setOutputMarkupPlaceholderTag(true);
@@ -151,13 +149,10 @@ public class MapmeterPage extends GeoServerSecuredPage {
         credentialsConvertForm.setOutputMarkupPlaceholderTag(true);
         credentialsSaveForm.setOutputMarkupId(true);
         credentialsSaveForm.setOutputMarkupPlaceholderTag(true);
-        connectionCheckForm.setOutputMarkupId(true);
-        connectionCheckForm.setOutputMarkupPlaceholderTag(true);
 
         enableMapmeterForm.setVisible(shouldDisplayMapmeterEnableForm);
         credentialsConvertForm.setVisible(shouldDisplayConvertForm);
         credentialsSaveForm.setVisible(shouldDisplayCredentialsUpdateForm);
-        connectionCheckForm.setVisible(shouldDisplayConnectionCheckForm);
     }
 
     private WebMarkupContainer addApiKeyEnvWarning(String apiKey) {
@@ -167,10 +162,44 @@ public class MapmeterPage extends GeoServerSecuredPage {
         return apiKeyWarning;
     }
 
-    private Form<?> addConnectionCheckForm() {
-        connectionCheckForm = new Form<Void>("connection-check-form");
+    public Form<?> addApiKeyForm(String apiKey) {
+        apiKeyForm = new Form<Void>("apikey-form");
 
-        AjaxButton connectionCheckButton = new IndicatingAjaxButton("connection-check-button") {
+        apiKeyField = new RequiredTextField<String>("apikey-field", Model.of(apiKey));
+        apiKeyField.setOutputMarkupId(true);
+        apiKeyForm.add(apiKeyField);
+
+        AjaxButton apiKeyButton = new IndicatingAjaxButton("apikey-save-button") {
+
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
+                String apiKey = apiKeyField.getModel().getObject().trim();
+                try {
+                    synchronized (mapmeterConfiguration) {
+                        mapmeterConfiguration.setApiKey(apiKey);
+                        mapmeterConfiguration.save();
+                    }
+                    setFeedbackInfo("API key saved", target);
+                    apiKeyValidateButton.setVisible(true);
+                    target.addComponent(apiKeyValidateButton);
+                } catch (IOException e) {
+                    String msg = "Failure saving api key: " + apiKey;
+                    LOGGER.log(Level.SEVERE, msg, e);
+                    setFeedbackError(msg, target);
+                }
+            }
+
+            @Override
+            protected void onError(AjaxRequestTarget target, Form<?> form) {
+                target.addComponent(feedbackPanel);
+            }
+
+        };
+        apiKeyForm.add(apiKeyButton);
+
+        apiKeyValidateButton = new IndicatingAjaxButton("apikey-check-button") {
 
             private static final long serialVersionUID = 1L;
 
@@ -199,7 +228,7 @@ public class MapmeterPage extends GeoServerSecuredPage {
                         setFeedbackError(errMsg, target);
                     } catch (MapmeterSaasException e) {
                         String errMsg = "Failure response from mapmeter";
-                        LOGGER.log(Level.WARNING, errMsg, e);
+                        LOGGER.log(Level.SEVERE, errMsg, e);
                         setFeedbackError(errMsg, target);
                     } catch (MissingMapmeterApiKeyException e) {
                         // this shouldn't happen because we just checked it, but it's possible it was removed in between via REST
@@ -212,48 +241,11 @@ public class MapmeterPage extends GeoServerSecuredPage {
                 }
             }
         };
-        connectionCheckForm.add(connectionCheckButton);
 
-        add(connectionCheckForm);
-        return connectionCheckForm;
-    }
-
-    public Form<?> addApiKeyForm(String apiKey) {
-        apiKeyForm = new Form<Void>("apikey-form");
-
-        apiKeyField = new RequiredTextField<String>("apikey-field", Model.of(apiKey));
-        apiKeyField.setOutputMarkupId(true);
-        apiKeyForm.add(apiKeyField);
-
-        AjaxButton apiKeyButton = new IndicatingAjaxButton("apikey-button") {
-
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
-                String apiKey = apiKeyField.getModel().getObject().trim();
-                try {
-                    synchronized (mapmeterConfiguration) {
-                        mapmeterConfiguration.setApiKey(apiKey);
-                        mapmeterConfiguration.save();
-                    }
-                    setFeedbackInfo("API key saved", target);
-                    connectionCheckForm.setVisible(true);
-                    target.addComponent(connectionCheckForm);
-                } catch (IOException e) {
-                    String msg = "Failure saving api key: " + apiKey;
-                    LOGGER.log(Level.SEVERE, msg, e);
-                    setFeedbackError(msg, target);
-                }
-            }
-
-            @Override
-            protected void onError(AjaxRequestTarget target, Form<?> form) {
-                target.addComponent(feedbackPanel);
-            }
-
-        };
-        apiKeyForm.add(apiKeyButton);
+        apiKeyForm.add(apiKeyValidateButton);
+        apiKeyValidateButton.setOutputMarkupId(true);
+        apiKeyValidateButton.setOutputMarkupPlaceholderTag(true);
+        apiKeyValidateButton.setVisible(!Strings.isNullOrEmpty(apiKey));
 
         add(apiKeyForm);
 
@@ -275,11 +267,11 @@ public class MapmeterPage extends GeoServerSecuredPage {
                     setFeedbackInfo("Mapmeter trial activated", target);
                     enableMapmeterForm.setVisible(false);
                     credentialsConvertForm.setVisible(true);
-                    connectionCheckForm.setVisible(true);
+                    apiKeyValidateButton.setVisible(true);
                     target.addComponent(apiKeyField);
                     target.addComponent(enableMapmeterForm);
                     target.addComponent(credentialsConvertForm);
-                    target.addComponent(connectionCheckForm);
+                    target.addComponent(apiKeyValidateButton);
                 } catch (IOException e) {
                     setFeedbackError("IO Error activating mapmeter: " + e.getLocalizedMessage(),
                             target);
