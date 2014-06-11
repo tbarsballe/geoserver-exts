@@ -189,7 +189,8 @@ public class MapmeterPage extends GeoServerSecuredPage {
                         } else if (!messageStorageResult.isValidApiKey()) {
                             setFeedbackError("Invalid API key", target);
                         } else {
-                            setFeedbackInfo("Valid API key. Messages will be successfully stored.",
+                            setFeedbackInfo(
+                                    "Valid API key. Mapmeter will accept messages with this API key.",
                                     target);
                         }
                     } catch (IOException e) {
