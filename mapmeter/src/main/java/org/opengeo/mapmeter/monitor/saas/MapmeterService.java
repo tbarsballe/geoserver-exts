@@ -221,7 +221,8 @@ public class MapmeterService {
         String apiKey = maybeApiKey.get();
         MapmeterSaasResponse saasResponse = mapmeterSaasService.checkMapmeterMessageStorage(
                 baseUrl, apiKey);
-        if (saasResponse.isErrorStatus()) {
+        // 400 status codes are used for invalid api keys
+        if (saasResponse.isErrorStatus() && saasResponse.getStatusCode() != 400) {
             throw new MapmeterSaasException(saasResponse,
                     "Failure checking message storage for key: " + apiKey);
         }

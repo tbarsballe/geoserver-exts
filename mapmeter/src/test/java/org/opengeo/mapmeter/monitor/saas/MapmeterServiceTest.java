@@ -577,7 +577,7 @@ public class MapmeterServiceTest {
 
         Map<String, Object> response = ImmutableMap.<String, Object> of("status", "ERROR",
                 "api_key_status", "INVALID");
-        MapmeterSaasResponse saasResponse = new MapmeterSaasResponse(200, response);
+        MapmeterSaasResponse saasResponse = new MapmeterSaasResponse(400, response);
 
         when(mapmeterSaasService.checkMapmeterMessageStorage(baseUrl, apiKey)).thenReturn(
                 saasResponse);
@@ -599,7 +599,7 @@ public class MapmeterServiceTest {
 
         Map<String, Object> response = ImmutableMap.<String, Object> of("status", "ERROR", "error",
                 "boom");
-        MapmeterSaasResponse saasResponse = new MapmeterSaasResponse(200, response);
+        MapmeterSaasResponse saasResponse = new MapmeterSaasResponse(400, response);
 
         when(mapmeterSaasService.checkMapmeterMessageStorage(baseUrl, apiKey)).thenReturn(
                 saasResponse);
