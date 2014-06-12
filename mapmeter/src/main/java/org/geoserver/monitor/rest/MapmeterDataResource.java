@@ -2,7 +2,6 @@ package org.geoserver.monitor.rest;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -17,6 +16,9 @@ import org.opengeo.mapmeter.monitor.saas.MissingMapmeterApiKeyException;
 import org.opengeo.mapmeter.monitor.saas.MissingMapmeterSaasCredentialsException;
 import org.restlet.data.Request;
 import org.restlet.data.Response;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 public class MapmeterDataResource extends AbstractResource {
 
@@ -54,21 +56,37 @@ public class MapmeterDataResource extends AbstractResource {
         } catch (MissingMapmeterApiKeyException e) {
             String errMsg = "No mapmeter api key configured, cannot fetch mapmeter data";
             LOGGER.log(Level.INFO, errMsg);
-            return Collections.<String, Object> singletonMap("error", errMsg);
+            return ImmutableMap.<String, Object> of("error", errMsg, "reason", "missingApiKey");
         } catch (MissingMapmeterSaasCredentialsException e) {
             String errMsg = "No mapmeter saas credentials configured, cannot fetch mapmeter data";
             LOGGER.log(Level.INFO, errMsg);
-            return Collections.<String, Object> singletonMap("error", errMsg);
+            return ImmutableMap.<String, Object> of("error", errMsg, "reason", "missingCredentials");
         } catch (MapmeterSaasException e) {
             LOGGER.log(Level.SEVERE, "Failure fetching mapmeter data", e);
-            if (e.getStatusCode() == 403) {
-                Map<String, Object> result = new HashMap<String, Object>();
-                result.put("accessDenied", true);
-                result.put("error", e.getMessage());
+            Map<String, Object> result = Maps.newHashMap();
+            result.put("error", e.getMessage());
+
+            Map<String, Object> response = e.getResponse();
+            int statusCode = e.getStatusCode();
+
+            // if we have a reason from mapmeter, use that
+            Object reasonObj = response.get("reason");
+            if (reasonObj instanceof String) {
+                String reason = (String) reasonObj;
+                result.put("reason", reason);
                 return result;
-            } else {
-                return Collections.<String, Object> singletonMap("error", e.getMessage());
             }
+
+            // default reasons based on status code
+            if (statusCode == 403) {
+                result.put("reason", "serverExpired");
+            } else if (statusCode == 401) {
+                result.put("reason", "missingCredentials");
+            } else if (statusCode == 400) {
+                result.put("reason", "invalidApiKey");
+            }
+
+            return result;
         }
     }
 

@@ -8,51 +8,119 @@
     }
   }
 
-  mapmeter.fetchDataAndDrawChart = function(domElt, domWrapper) {
+  // driver function that both main page and mapmeter page call
+  // the main page creates the dom element and then calls
+  // whereas the mapmeter page calls it on an existing empty element
+  mapmeter.fetchDataAndApply = function(containerJqueryElt) {
+
+    // create the dom elements
+    var mapmeterElts = mapmeter.createDomElements(containerJqueryElt);
+    mapmeterElts.container = containerJqueryElt;
+
+    // fetch the mapmeter data
     mapmeter.fetchData(function(mapmeterData) {
+      // apply to dom based on response
       if (!mapmeterData) {
         log('No mapmeter data returned');
-      } else if (mapmeterData.accessDenied) {
-        mapmeter.displayAccessDeniedMessage(domElt);
       } else if (mapmeterData.error) {
-        log('Error fetching mapmeter data: ' + mapmeterData.error);
-      } else if (mapmeterData.data) {
-        if (domWrapper) {
-          domWrapper.style.display = 'block';
+        var reason = mapmeterData.reason;
+        if (reason) {
+          var msgElt = mapmeterElts.msg[reason];
+          if (msgElt) {
+            mapmeterElts.msg.container.show();
+            msgElt.show();
+          } else if (reason === 'missingApiKey') {
+            // missing api key is ok
+          } else {
+            mapmeterElts.msg.container.show();
+            mapmeterElts.msg.unknown.text(mapmeterData.error);
+            mapmeterElts.msg.unknown.show();
+          }
+        } else {
+          log('Error fetching mapmeter data: ' + mapmeterData.error);
         }
-        mapmeter.drawChart(domElt, mapmeterData);
+      } else if (mapmeterData.data) {
+        mapmeterElts.chart.container.show();
+        mapmeter.drawChart(mapmeterElts.chart.element, mapmeterData);
       } else {
         log('Unknown response when fetching mapmeter data');
       }
     });
   };
 
-  mapmeter.displayAccessDeniedMessage = function(domElt) {
-    $('<div></div>')
-      .attr('class', 'access-denied')
+  mapmeter.createDomElements = function(containerJqueryElt) {
+    var chart = $('<div></div>').attr('id', 'mapmeter-chart');
+    var chartContainer = $('<div></div>')
+      .attr('id', 'mapmeter-chart-container')
+      .append(
+        $('<h2></h2>').text('GeoServer Request Data'))
+      .append(chart);
+
+    var serverExpiredHtml = 'You no longer have access to view server data. ' +
+        'Please contact: <a href="mailto:accounts@mapmeter.com">' +
+        'accounts@mapmeter.com</a> to resume access.';
+    var serverExpired = $('<span></span>')
+      .attr('class', 'error access-denied')
+      .html(serverExpiredHtml);
+    var unauthorized = $('<span></span>')
+      .attr('class', 'error unauthorized')
+      .html('User is unauthorized to view API key.');
+    var missingCredentials = $('<span></span>')
+      .attr('class', 'error missing-credentials')
+      .html('Missing Mapmeter credentials.');
+    var invalidApiKey = $('<span></span>')
+      .attr('class', 'error invalid-apikey')
+      .html('Invalid API key.');
+    var unknown = $('<span></span>')
+      .attr('class', 'error unknown')
+      .html('Mapmeter error');
+
+    var msgContainer = $('<div></div>')
+      .attr('id', 'mapmeter-msg-container')
       .append(
         $('<p></p>')
-          .html('You no longer have access to view server data. ' +
-                'Please contact: <a href="mailto:accounts@mapmeter.com">' +
-                'accounts@mapmeter.com</a> to resume access.'))
-      .appendTo(domElt);
+          .attr('class', 'warning-link')
+          .text('Mapmeter Error: ')
+          .append(serverExpired)
+          .append(unauthorized)
+          .append(missingCredentials)
+          .append(invalidApiKey)
+          .append(unknown));
+
+    containerJqueryElt
+      .append(chartContainer)
+      .append(msgContainer);
+    return {
+      chart: {
+        container: chartContainer,
+        element: chart
+      },
+      msg: {
+        container: msgContainer,
+        serverExpired: serverExpired,
+        unauthorized: unauthorized,
+        missingCredentials: missingCredentials,
+        invalidApiKey: invalidApiKey,
+        unknown: unknown
+      }
+    };
   };
 
   mapmeter.fetchData = function(cb) {
     $.getJSON('../rest/mapmeter/data.json', cb);
   };
 
-  mapmeter.drawChart = function(domElt, mapmeterData) {
+  mapmeter.drawChart = function(jqueryDomElt, mapmeterData) {
     var stats = mapmeterData;
 
-    var jqueryElt = $(domElt);
+    var domElt = jqueryDomElt.get(0);
     var d3Container = d3.select(domElt);
 
     // 1. set up the elements for the chart
     // 2. inject the data from the json response
 
-    var width = jqueryElt.width();
-    var height = jqueryElt.height();
+    var width = jqueryDomElt.width();
+    var height = jqueryDomElt.height();
 
     // set up all the elements needed for d3
     var xScale = d3.time.scale().range([0, width]),

@@ -90,9 +90,9 @@ public class MapmeterDataResourceTest extends GeoServerTestSupport {
 
         JSONObject jsonObject = (JSONObject) getAsJSON(mapmeterDataEndpointUrl);
         String error = (String) jsonObject.get("error");
-        boolean isUnauthorized = (Boolean) jsonObject.get("accessDenied");
+        String reason = (String) jsonObject.get("reason");
         assertEquals("boom", error);
-        assertTrue(isUnauthorized);
+        assertEquals("serverExpired", reason);
 
         verify(mapmeterService).fetchMapmeterData();
     }
@@ -106,7 +106,6 @@ public class MapmeterDataResourceTest extends GeoServerTestSupport {
         JSONObject jsonObject = (JSONObject) getAsJSON(mapmeterDataEndpointUrl);
         String error = (String) jsonObject.get("error");
         assertEquals("boom", error);
-        assertFalse(jsonObject.containsKey("accessDenied"));
 
         verify(mapmeterService).fetchMapmeterData();
     }

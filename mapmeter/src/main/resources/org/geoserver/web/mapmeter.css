@@ -11,8 +11,13 @@
   font-weight: bold;
 }
 
-#mapmeter-chart-container {
+#mapmeter-data-container {
   clear: both;
+}
+
+#mapmeter-chart-container,
+#mapmeter-msg-container,
+#mapmeter-msg-container .error {
   display: none;
 }
 
