@@ -128,7 +128,8 @@
         xAxis = d3.svg.axis().scale(xScale).ticks(7),
         yAxis = d3.svg.axis().scale(yScale).ticks(5).orient('left');
 
-    var yFormat = d3.format(',f');
+    var yFormat = d3.format('s');
+    yAxis.tickFormat(yFormat);
 
     var area = d3.svg.area()
       .x(function(d) { return xScale(d.date); })
@@ -139,13 +140,28 @@
       .x(function(d) { return xScale(d.date); })
       .y(function(d) { return yScale(d.value); });
 
-    var margin = {top: 5, right: 0, bottom: 20, left: 50};
+    var margin = {top: 5, right: 0, bottom: 45, left: 100};
     var svg = d3Container.append('svg')
       .attr('width', width + margin.right + margin.left)
       .attr('height', height + margin.top + margin.bottom);
     var g = svg.append('g')
              .attr('transform', 'translate(' +
         margin.left + ',' + margin.top + ')');
+
+    // y axis label
+    svg.append('text')
+      .attr('x', 0 - height / 2)
+      .attr('y', (margin.left / 2) - 5)
+      .attr('transform', 'rotate(-90)')
+      .style('text-anchor', 'middle')
+      .text('Requests');
+
+    // x axis label
+    svg.append('text')
+      .attr('x', margin.left + (width / 2))
+      .attr('y', height + margin.bottom + margin.top - 5)
+      .style('text-anchor', 'middle')
+      .text('Day');
 
     var areaEl = g.append('path')
       .attr('class', 'area');
