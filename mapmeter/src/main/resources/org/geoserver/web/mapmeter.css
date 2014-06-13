@@ -28,42 +28,41 @@
   margin: 2em 0;
 }
 
-path.line {
+#mapmeter-chart path.line {
   fill: none;
   stroke: #999;
   stroke-width: 1px;
 }
-path.area {
+#mapmeter-chart path.area {
   fill: #e7e7e7;
 }
-.axis {
+#mapmeter-chart .axis {
   shape-rendering: crispEdges;
 }
-.x.axis line {
+#mapmeter-chart .x.axis line {
   stroke: #fff;
 }
-.x.axis .minor {
+#mapmeter-chart .x.axis .minor {
   stroke-opacity: .5;
 }
-.x.axis path {
+#mapmeter-chart .x.axis path {
   stroke: #999;
   fill: none;
 }
-.x.axis text,
-.y.axis text {
+#mapmeter-chart .x.axis text,
+#mapmeter-chart .y.axis text {
   font-size: 11px;
   font-family: 'proxima-nova', Arial, Helvetica, sans-serif;
   font-weight: 300;
 }
-.x.axis text {
+#mapmeter-chart .x.axis text {
   fill: #888;
 }
-.y.axis text {
+#mapmeter-chart .y.axis text {
   fill: #555;
 }
-.y.axis line,
-.y.axis path {
+#mapmeter-chart .y.axis line,
+#mapmeter-chart .y.axis path {
   fill: none;
   stroke: #666;
 }
-
