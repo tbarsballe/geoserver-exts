@@ -67,7 +67,7 @@ public class TruncateTilesOnUpdateRefHook implements CommandHook {
             equal("resource.store.type", GeoGitDataStoreFactory.DISPLAY_NAME));
 
     @Override
-    public boolean appliesTo(@SuppressWarnings("rawtypes") Class<? extends AbstractGeoGitOp> clazz) {
+    public boolean appliesTo(Class<? extends AbstractGeoGitOp<?>> clazz) {
         return UpdateRef.class.equals(clazz);
     }
 
