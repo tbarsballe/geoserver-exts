@@ -29,8 +29,9 @@
           if (msgElt) {
             mapmeterElts.msg.container.show();
             msgElt.show();
-          } else if (reason === 'missingApiKey') {
-            // missing api key is ok
+          } else if (reason === 'missingApiKey' ||
+                     reason === 'missingCredentials') {
+            // missing api key or credentials are ok to ignore
           } else {
             mapmeterElts.msg.container.show();
             mapmeterElts.msg.unknown.text(mapmeterData.error);
@@ -65,9 +66,6 @@
     var unauthorized = $('<span></span>')
       .attr('class', 'error unauthorized')
       .html('User is unauthorized to view API key.');
-    var missingCredentials = $('<span></span>')
-      .attr('class', 'error missing-credentials')
-      .html('Missing Mapmeter credentials.');
     var invalidApiKey = $('<span></span>')
       .attr('class', 'error invalid-apikey')
       .html('Invalid API key.');
@@ -83,7 +81,6 @@
           .text('Mapmeter Error: ')
           .append(serverExpired)
           .append(unauthorized)
-          .append(missingCredentials)
           .append(invalidApiKey)
           .append(unknown));
 
@@ -99,7 +96,6 @@
         container: msgContainer,
         serverExpired: serverExpired,
         unauthorized: unauthorized,
-        missingCredentials: missingCredentials,
         invalidApiKey: invalidApiKey,
         unknown: unknown
       }
