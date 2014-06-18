@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.wicket.Session;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.form.AjaxButton;
 import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxButton;
@@ -14,12 +13,10 @@ import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.PasswordTextField;
 import org.apache.wicket.markup.html.form.RequiredTextField;
 import org.apache.wicket.markup.html.link.ExternalLink;
-import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.util.lang.Objects;
 import org.geotools.util.logging.Logging;
 import org.opengeo.mapmeter.monitor.config.MapmeterConfiguration;
-import org.opengeo.mapmeter.monitor.saas.MapmeterEnableResult;
 import org.opengeo.mapmeter.monitor.saas.MapmeterMessageStorageResult;
 import org.opengeo.mapmeter.monitor.saas.MapmeterSaasCredentials;
 import org.opengeo.mapmeter.monitor.saas.MapmeterSaasException;
@@ -54,8 +51,6 @@ public class MapmeterPage extends GeoServerSecuredPage {
     private Form<?> credentialsConvertForm;
 
     private Form<?> credentialsSaveForm;
-
-    private FeedbackPanel feedbackPanel;
 
     public MapmeterPage() {
         GeoServerApplication geoServerApplication = getGeoServerApplication();
@@ -132,10 +127,6 @@ public class MapmeterPage extends GeoServerSecuredPage {
                 }
             }
         }
-
-        feedbackPanel = new FeedbackPanel("mapmeter-feedback");
-        feedbackPanel.setOutputMarkupId(true);
-        add(feedbackPanel);
 
         addApiKeyForm(apiKey);
         WebMarkupContainer apiWarning = addApiKeyEnvWarning(apiKey);
@@ -248,6 +239,12 @@ public class MapmeterPage extends GeoServerSecuredPage {
                     setFeedbackError("API key must be set first.", target);
                 }
             }
+
+            @Override
+            protected void onError(AjaxRequestTarget target, Form<?> form) {
+                target.addComponent(feedbackPanel);
+            }
+
         };
 
         apiKeyForm.add(apiKeyValidateButton);
@@ -269,17 +266,9 @@ public class MapmeterPage extends GeoServerSecuredPage {
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
                 try {
-                    MapmeterEnableResult mapmeterEnableResult = mapmeterService.startFreeTrial();
-                    String apikey = mapmeterEnableResult.getServerApiKey();
-                    apiKeyField.getModel().setObject(apikey);
-                    setFeedbackInfo("Mapmeter trial activated", target);
-                    enableMapmeterForm.setVisible(false);
-                    credentialsConvertForm.setVisible(true);
-                    apiKeyValidateButton.setVisible(true);
-                    target.addComponent(apiKeyField);
-                    target.addComponent(enableMapmeterForm);
-                    target.addComponent(credentialsConvertForm);
-                    target.addComponent(apiKeyValidateButton);
+                    mapmeterService.startFreeTrial();
+                    getSession().info("Mapmeter trial activated");
+                    setResponsePage(MapmeterPage.class);
                 } catch (IOException e) {
                     setFeedbackError("IO Error activating mapmeter: " + e.getLocalizedMessage(),
                             target);
@@ -322,7 +311,6 @@ public class MapmeterPage extends GeoServerSecuredPage {
 
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
-                target.addComponent(feedbackPanel);
                 String username = mapmeterCredentialsUsername.getModel().getObject().trim();
                 String password1 = mapmeterCredentialsPassword1.getModel().getObject().trim();
                 String password2 = mapmeterCredentialsPassword2.getModel().getObject().trim();
@@ -334,13 +322,8 @@ public class MapmeterPage extends GeoServerSecuredPage {
                         password2);
                 try {
                     mapmeterService.convertMapmeterCredentials(newCredentials);
-                    credentialsConvertForm.setVisible(false);
-                    credentialsSaveForm.setVisible(true);
-                    mapmeterCredentialsUpdateUsername.getModel().setObject(username);
-                    setFeedbackInfo("Mapmeter credentials converted", target);
-                    target.addComponent(credentialsConvertForm);
-                    target.addComponent(credentialsSaveForm);
-                    target.addComponent(mapmeterCredentialsUpdateUsername);
+                    getSession().info("Mapmeter credentials converted");
+                    setResponsePage(MapmeterPage.class);
                 } catch (IOException e) {
                     LOGGER.log(Level.SEVERE, e.getMessage(), e);
                     setFeedbackError("Error converting mapmeter credentials: " + e.getMessage(),
@@ -406,7 +389,6 @@ public class MapmeterPage extends GeoServerSecuredPage {
 
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
-                target.addComponent(feedbackPanel);
                 String username = mapmeterCredentialsUpdateUsername.getModel().getObject().trim();
                 String password1 = mapmeterCredentialsPassword1.getModel().getObject().trim();
                 String password2 = mapmeterCredentialsPassword2.getModel().getObject().trim();
@@ -420,7 +402,8 @@ public class MapmeterPage extends GeoServerSecuredPage {
                     mapmeterConfiguration.setMapmeterSaasCredentials(mapmeterSaasCredentials);
                     try {
                         mapmeterConfiguration.save();
-                        setFeedbackInfo("Credentials saved", target);
+                        getSession().info("Credentials saved");
+                        setResponsePage(MapmeterPage.class);
                     } catch (IOException e) {
                         LOGGER.log(Level.SEVERE, e.getMessage(), e);
                         setFeedbackError(
@@ -444,13 +427,13 @@ public class MapmeterPage extends GeoServerSecuredPage {
     }
 
     private void setFeedbackError(String msg, AjaxRequestTarget target) {
-        Session.get().cleanupFeedbackMessages();
+        getSession().cleanupFeedbackMessages();
         feedbackPanel.error(msg);
         target.addComponent(feedbackPanel);
     }
 
     private void setFeedbackInfo(String msg, AjaxRequestTarget target) {
-        Session.get().cleanupFeedbackMessages();
+        getSession().cleanupFeedbackMessages();
         feedbackPanel.info(msg);
         target.addComponent(feedbackPanel);
     }
