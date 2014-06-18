@@ -2,7 +2,8 @@
   margin: 2em 0;
 }
 
-.mapmeter-container .apikey-field {
+.mapmeter-container input[type=text],
+.mapmeter-container input[type=password] {
   width: 350px;
 }
 
