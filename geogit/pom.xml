@@ -214,39 +214,28 @@
               <artifactSet>
                 <includes>
                   <include>org.geogit:*</include>
+                  <include>org.geogit:geogit-mongodb</include>
+                  <include>org.geogit:geogit-sqlite-xerial</include>
+                  <include>org.geogit:geogit-sqlite-core</include>
+                  <include>net.sf.py4j:py4j</include>
+                  
+                  <include>com.beust:jcommander</include>
+                  <include>com.google.code.gson:gson</include>
+                  <include>com.googlecode.json-simple:json-simple</include>
                   <include>com.google.guava:guava</include>
                   <include>com.google.inject.extensions:guice-multibindings</include>
                   <include>com.google.inject:guice</include>
-                  <include>javax.inject:javax.inject</include>
-                  <include>aopalliance:aopalliance</include>
-                  <include>com.google.inject.extensions:guice-multibindings</include>
-                  <include>com.google.code.gson:gson</include>
                   <include>com.ning:compress-lzf</include>
-                  <include>com.tinkerpop.blueprints:blueprints-core</include>
-                  <include>com.fasterxml.jackson.datatype:jackson-datatype-json-org</include>
-                  <include>com.fasterxml.jackson.core:jackson-core</include>
-                  <include>com.fasterxml.jackson.core:jackson-databind</include>
-                  <include>com.fasterxml.jackson.core:jackson-annotations</include>
-                  <include>org.json:json</include>
-                  <include>colt:colt</include>
-                  <include>concurrent:concurrent</include>
-                  <include>commons-beanutils:commons-beanutils-core</include>
-                  <include>com.tinkerpop.gremlin:gremlin-java</include>
-                  <include>com.tinkerpop:pipes</include>
-                  <include>org.geogit:geogit-mongodb</include>
-                  <include>org.mongodb:mongo-java-driver</include>
-                  <include>org.geogit:geogit-sqlite-xerial</include>
-                  <include>org.geogit:geogit-sqlite-core</include>
-                  <include>org.xerial:sqlite-jdbc</include>
-                  <include>net.sf.py4j:py4j</include>
                   <include>com.sleepycat:je</include>
+                  <include>javax.inject:javax.inject</include>
+                  <include>jline:jline</include>
+                  <include>org.mongodb:mongo-java-driver</include>
                   <include>org.xerial:spatialite-jdbc</include>
+                  <include>org.xerial:sqlite-jdbc</include>
+                  
                   <include>org.geotools.jdbc:gt-jdbc-spatialite</include>
                   <include>org.geotools:gt-geojson</include>
                   
-                  <include>com.beust:jcommander</include>
-                  <include>jline:jline</include>
-                  <include>com.googlecode.json-simple:json-simple</include>
                   
                   <!-- Ignore these, lets use geoserver's logging mechanism
                   <include>org.slf4j:slf4j-api</include>
