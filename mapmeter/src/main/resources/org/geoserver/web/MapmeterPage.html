@@ -65,10 +65,13 @@
   </form>
 
   <form wicket:id="mapmeter-credentials-save-form">
-      <fieldset>
+    <fieldset>
       <legend>Update Mapmeter Credentials</legend>
     </fieldset>
     <p wicket:id="mapmeter-credentials-save-invalid-credentials" class="invalid-credentials">The currently configured Mapmeter credentials are invalid.</p>
+    <p wicket:id="mapmeter-credentials-save-valid-credentials-login-message">
+      To view more details on your GeoServer instance, please visit Mapmeter: <a wicket:id="mapmeter-credentials-save-baseurl" href="#">https://app.mapmeter.com</a>
+    </p>
     <p>Update the Mapmeter credentials used to fetch data.</p>
     <ul>
       <li>

@@ -13,6 +13,7 @@ import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.PasswordTextField;
 import org.apache.wicket.markup.html.form.RequiredTextField;
+import org.apache.wicket.markup.html.link.ExternalLink;
 import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.util.lang.Objects;
@@ -89,6 +90,7 @@ public class MapmeterPage extends GeoServerSecuredPage {
         boolean shouldDisplayConvertForm = false;
         boolean shouldDisplayCredentialsUpdateForm = false;
         boolean isInvalidMapmeterCredentials = false;
+        boolean containsValidMapmeterCredentials = false;
 
         if (!isOnPremise) {
             if (!maybeApiKey.isPresent()) {
@@ -105,6 +107,7 @@ public class MapmeterPage extends GeoServerSecuredPage {
                             shouldDisplayConvertForm = true;
                         } else {
                             shouldDisplayCredentialsUpdateForm = true;
+                            containsValidMapmeterCredentials = true;
                         }
                     } catch (IOException e) {
                         LOGGER.log(Level.SEVERE, "IO Error checking mapmeter user state", e);
@@ -141,7 +144,8 @@ public class MapmeterPage extends GeoServerSecuredPage {
 
         addMapmeterEnableForm(baseUrl);
         addCredentialsConvertForm(baseUrl);
-        addCredentialsSaveForm(isInvalidMapmeterCredentials, currentUsername);
+        addCredentialsSaveForm(isInvalidMapmeterCredentials, containsValidMapmeterCredentials,
+                currentUsername, baseUrl);
 
         enableMapmeterForm.setOutputMarkupId(true);
         enableMapmeterForm.setOutputMarkupPlaceholderTag(true);
@@ -369,7 +373,8 @@ public class MapmeterPage extends GeoServerSecuredPage {
         add(credentialsConvertForm);
     }
 
-    private void addCredentialsSaveForm(boolean isInvalidMapmeterCredentials, String currentUsername) {
+    private void addCredentialsSaveForm(boolean isInvalidMapmeterCredentials,
+            boolean containsValidMapmeterCredentials, String currentUsername, String baseUrl) {
         credentialsSaveForm = new Form<Void>("mapmeter-credentials-save-form");
 
         mapmeterCredentialsUpdateUsername = new RequiredTextField<String>(
@@ -384,6 +389,14 @@ public class MapmeterPage extends GeoServerSecuredPage {
                 "mapmeter-credentials-save-invalid-credentials");
         invalidCredentialsLabel.setVisible(isInvalidMapmeterCredentials);
         credentialsSaveForm.add(invalidCredentialsLabel);
+
+        WebMarkupContainer validCredentialsLoginMessage = new WebMarkupContainer(
+                "mapmeter-credentials-save-valid-credentials-login-message");
+        validCredentialsLoginMessage.setVisible(containsValidMapmeterCredentials);
+        ExternalLink mapmeterSaasLink = new ExternalLink("mapmeter-credentials-save-baseurl",
+                baseUrl, baseUrl);
+        validCredentialsLoginMessage.add(mapmeterSaasLink);
+        credentialsSaveForm.add(validCredentialsLoginMessage);
 
         IndicatingAjaxButton credentialsSaveButton = new IndicatingAjaxButton(
                 "mapmeter-credentials-save-button") {
