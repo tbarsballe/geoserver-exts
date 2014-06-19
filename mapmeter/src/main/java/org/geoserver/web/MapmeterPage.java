@@ -179,13 +179,8 @@ public class MapmeterPage extends GeoServerSecuredPage {
                         mapmeterConfiguration.setApiKey(apiKey);
                         mapmeterConfiguration.save();
                     }
-                    setFeedbackInfo("API key saved", target);
-                    apiKeyValidateButton.setVisible(true);
-                    enableMapmeterForm.setVisible(false);
-                    credentialsSaveForm.setVisible(true);
-                    target.addComponent(apiKeyValidateButton);
-                    target.addComponent(enableMapmeterForm);
-                    target.addComponent(credentialsSaveForm);
+                    getSession().info("API key saved");
+                    setResponsePage(MapmeterPage.class);
                 } catch (IOException e) {
                     String msg = "Failure saving api key: " + apiKey;
                     LOGGER.log(Level.SEVERE, msg, e);
