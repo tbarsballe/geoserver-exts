@@ -62,12 +62,16 @@ public class MapmeterDataResource extends AbstractResource {
             LOGGER.log(Level.INFO, errMsg);
             return ImmutableMap.<String, Object> of("error", errMsg, "reason", "missingCredentials");
         } catch (MapmeterSaasException e) {
-            LOGGER.log(Level.SEVERE, "Failure fetching mapmeter data", e);
+            int statusCode = e.getStatusCode();
+            if (statusCode == 401) {
+                LOGGER.log(Level.WARNING, "Invalid mapmeter credentials");
+            } else {
+                LOGGER.log(Level.SEVERE, "Mapmeter data resource: Failure response from mapmeter when fetching data", e);
+            }
             Map<String, Object> result = Maps.newHashMap();
             result.put("error", e.getMessage());
 
             Map<String, Object> response = e.getResponse();
-            int statusCode = e.getStatusCode();
 
             // if we have a reason from mapmeter, use that
             Object reasonObj = response.get("reason");
@@ -81,7 +85,7 @@ public class MapmeterDataResource extends AbstractResource {
             if (statusCode == 403) {
                 result.put("reason", "serverExpired");
             } else if (statusCode == 401) {
-                result.put("reason", "missingCredentials");
+                result.put("reason", "invalidCredentials");
             } else if (statusCode == 400) {
                 result.put("reason", "invalidApiKey");
             }

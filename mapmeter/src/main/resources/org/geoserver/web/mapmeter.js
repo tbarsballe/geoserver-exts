@@ -30,8 +30,9 @@
             mapmeterElts.msg.container.show();
             msgElt.show();
           } else if (reason === 'missingApiKey' ||
-                     reason === 'missingCredentials') {
-            // missing api key or credentials are ok to ignore
+                     reason === 'missingCredentials' ||
+                     reason === 'invalidCredentials') {
+            // these types of errors are ok to ignore here
           } else {
             mapmeterElts.msg.container.show();
             mapmeterElts.msg.unknown.text(mapmeterData.error);

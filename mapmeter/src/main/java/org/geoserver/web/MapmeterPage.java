@@ -117,10 +117,10 @@ public class MapmeterPage extends GeoServerSecuredPage {
                             isInvalidMapmeterCredentials = true;
                             shouldDisplayCredentialsUpdateForm = true;
                         } else {
-                            LOGGER.log(Level.SEVERE, "Unexpected mapmeter response");
+                            LOGGER.log(Level.SEVERE,
+                                    "Mapmeter Page: Failure mapmeter saas response when fetching user state",
+                                    e);
                         }
-                        LOGGER.log(Level.SEVERE,
-                                "Mapmeter saas exception when fetching user state", e);
                     } catch (MissingMapmeterSaasCredentialsException e) {
                         // this shouldn't really happen, because we're checking for credentials above before entering this branch
                         // but it's possible that it changed in between via REST
