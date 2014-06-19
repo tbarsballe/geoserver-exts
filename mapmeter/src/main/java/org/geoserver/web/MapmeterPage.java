@@ -402,7 +402,6 @@ public class MapmeterPage extends GeoServerSecuredPage {
                     mapmeterConfiguration.setMapmeterSaasCredentials(mapmeterSaasCredentials);
                     try {
                         mapmeterConfiguration.save();
-                        getSession().info("Credentials saved");
                         setResponsePage(MapmeterPage.class);
                     } catch (IOException e) {
                         LOGGER.log(Level.SEVERE, e.getMessage(), e);
