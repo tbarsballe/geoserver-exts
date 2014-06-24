@@ -33,7 +33,7 @@ import org.geogit.cli.test.functional.general.CLITestContextBuilder;
 import org.geogit.geotools.data.GeoGitDataStore;
 import org.geogit.geotools.data.GeoGitDataStoreFactory;
 import org.geogit.storage.ObjectSerializingFactory;
-import org.geogit.storage.datastream.DataStreamSerializationFactory;
+import org.geogit.storage.datastream.DataStreamSerializationFactoryV1;
 import org.geogit.test.integration.RepositoryTestCase;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.CatalogFactory;
@@ -209,7 +209,7 @@ public class GeoServerRESTIntegrationTest extends GeoServerSystemTestSupport {
 
         responseStream = getBinaryInputStream(servletResponse);
 
-        ObjectSerializingFactory factory = new DataStreamSerializationFactory();
+        ObjectSerializingFactory factory = DataStreamSerializationFactoryV1.INSTANCE;
 
         RevObject actual = factory.createObjectReader().read(oid, responseStream);
         RevObject expected = geogit.command(RevObjectParse.class).setObjectId(oid).call().get();
@@ -252,7 +252,7 @@ public class GeoServerRESTIntegrationTest extends GeoServerSystemTestSupport {
 
         responseStream = getBinaryInputStream(servletResponse);
 
-        ObjectSerializingFactory factory = new DataStreamSerializationFactory();
+        ObjectSerializingFactory factory = DataStreamSerializationFactoryV1.INSTANCE;
 
         Iterator<RevObject> objects = new ObjectStreamIterator(responseStream, factory);
         RevObject actual = Iterators.getLast(objects);
