@@ -6,7 +6,7 @@ Building
 
 geoserver-exts currently depends on a recent version of geoserver master. You can build that first, or have the geoserver-exts build pull down the latest geoserver snapshot.
 
-    git clone git@github.com:opengeo/geoserver-exts.git
+    git clone git@github.com:boundlessgeo/geoserver-exts.git
     cd geoserver-exts
     mvn install
 
