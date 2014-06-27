@@ -15,50 +15,32 @@ import java.util.Map;
 
 import org.apache.commons.io.FilenameUtils;
 import org.geotools.data.DataStore;
+import org.geotools.data.DataStoreFactorySpi;
 import org.geotools.data.DataUtilities;
-import org.geotools.data.FileDataStore;
-import org.geotools.data.FileDataStoreFactorySpi;
+import org.geotools.data.ogr.OGR;
+import org.geotools.data.ogr.OGRDataStore;
+import org.geotools.data.ogr.bridj.BridjOGR;
+import org.geotools.data.ogr.bridj.BridjOGRDataStoreFactory;
 import org.geotools.util.KVP;
-import org.geoserver.importer.csv.parse.CSVAttributesOnlyStrategy;
-import org.geoserver.importer.csv.parse.CSVLatLonStrategy;
-import org.geoserver.importer.csv.parse.CSVSpecifiedLatLngStrategy;
-import org.geoserver.importer.csv.parse.CSVSpecifiedWKTStrategy;
-import org.geoserver.importer.csv.parse.CSVStrategy;
 
-public class GDBDataStoreFactory implements FileDataStoreFactorySpi {
+public class GDBDataStoreFactory implements DataStoreFactorySpi {
 
-    private static final String FILE_TYPE = "csv";
-
+    private static final String FILE_TYPE = "gdb";
     public static final String[] EXTENSIONS = new String[] { "." + FILE_TYPE };
-
     public static final Param FILE_PARAM = new Param("file", File.class, FILE_TYPE + " file", false);
-
     public static final Param URL_PARAM = new Param("url", URL.class, FILE_TYPE + " file", false);
-
     public static final Param NAMESPACEP = new Param("namespace", URI.class,
             "uri to the namespace", false, null, new KVP(Param.LEVEL, "advanced"));
-
-    public static final Param STRATEGYP = new Param("strategy", String.class, "strategy", false);
-
-    public static final Param LATFIELDP = new Param("latField", String.class,
-            "Latitude field. Assumes a CSVSpecifiedLatLngStrategy", false);
-
-    public static final Param LnGFIELDP = new Param("lngField", String.class,
-            "Longitude field. Assumes a CSVSpecifiedLatLngStrategy", false);
-
-    public static final Param WKTP = new Param("wktField", String.class,
-            "WKT field. Assumes a CSVSpecifiedWKTStrategy", false);
-
     public static final Param[] parametersInfo = new Param[] { FILE_PARAM };
 
     @Override
     public String getDisplayName() {
-        return FILE_TYPE.toUpperCase();
+        return "FileGDB";
     }
 
     @Override
     public String getDescription() {
-        return "Comma delimited text file";
+        return "FileGDB Import";
     }
 
     @Override
@@ -98,11 +80,11 @@ public class GDBDataStoreFactory implements FileDataStoreFactorySpi {
     @Override
     public boolean isAvailable() {
         try {
-            CSVDataStore.class.getName();
+            BridjOGRDataStoreFactory factory = new BridjOGRDataStoreFactory();
+            return factory.isAvailable(true);
         } catch (Exception e) {
             return false;
         }
-        return true;
     }
 
     @Override
@@ -110,11 +92,11 @@ public class GDBDataStoreFactory implements FileDataStoreFactorySpi {
         return Collections.emptyMap();
     }
 
-    public FileDataStore createDataStoreFromFile(File file) throws IOException {
+    public DataStore createDataStoreFromFile(File file) throws IOException {
         return createDataStoreFromFile(file, null);
     }
 
-    public FileDataStore createDataStoreFromFile(File file, URI namespace) throws IOException {
+    public DataStore createDataStoreFromFile(File file, URI namespace) throws IOException {
         if (file == null) {
             throw new IllegalArgumentException("Cannot create store from null file");
         } else if (!file.exists()) {
@@ -125,7 +107,7 @@ public class GDBDataStoreFactory implements FileDataStoreFactorySpi {
     }
 
     @Override
-    public FileDataStore createDataStore(Map<String, Serializable> params) throws IOException {
+    public DataStore createDataStore(Map<String, Serializable> params) throws IOException {
         File file = fileFromParams(params);
         if (file == null) {
             throw new IllegalArgumentException(
@@ -135,38 +117,10 @@ public class GDBDataStoreFactory implements FileDataStoreFactorySpi {
         return createDataStoreFromFile(file, namespace, params);
     }
 
-    private FileDataStore createDataStoreFromFile(File file, URI namespace,
+    private DataStore createDataStoreFromFile(File file, URI namespace,
             Map<String, Serializable> params) throws IOException {
-        CSVFileState csvFileState = new CSVFileState(file, namespace);
-        Object strategyParam = STRATEGYP.lookUp(params);
-        CSVStrategy csvStrategy = null;
-        if (strategyParam != null) {
-            String strategyString = strategyParam.toString();
-            if (strategyString.equalsIgnoreCase("guess")) {
-                csvStrategy = new CSVLatLonStrategy(csvFileState);
-            } else if (strategyString.equalsIgnoreCase("specify")) {
-                Object latParam = LATFIELDP.lookUp(params);
-                Object lngParam = LnGFIELDP.lookUp(params);
-                if (latParam == null || lngParam == null) {
-                    throw new IllegalArgumentException(
-                            "'specify' csv strategy selected, but lat/lng params both not specified");
-                }
-                csvStrategy = new CSVSpecifiedLatLngStrategy(csvFileState, latParam.toString(),
-                        lngParam.toString());
-            } else if (strategyString.equalsIgnoreCase("wkt")) {
-                Object wktParam = WKTP.lookUp(params);
-                if (wktParam == null) {
-                    throw new IllegalArgumentException(
-                            "'wkt' csv strategy selected, but wktField param not specified");
-                }
-                csvStrategy = new CSVSpecifiedWKTStrategy(csvFileState, wktParam.toString());
-            } else {
-                csvStrategy = new CSVAttributesOnlyStrategy(csvFileState);
-            }
-        } else {
-            csvStrategy = new CSVAttributesOnlyStrategy(csvFileState);
-        }
-        return new CSVDataStore(csvFileState, csvStrategy);
+        OGR ogr = new BridjOGR();
+    	return new OGRDataStore(file.getAbsolutePath(), "FileGDB", namespace, ogr);
     }
 
     @Override
@@ -174,28 +128,12 @@ public class GDBDataStoreFactory implements FileDataStoreFactorySpi {
         return createDataStore(params);
     }
 
-    @Override
-    public FileDataStore createDataStore(URL url) throws IOException {
-        File file = DataUtilities.urlToFile(url);
-        return createDataStoreFromFile(file);
-    }
-
-    @Override
     public String[] getFileExtensions() {
         return EXTENSIONS;
     }
 
-    @Override
     public boolean canProcess(URL url) {
         return canProcessExtension(DataUtilities.urlToFile(url).toString());
     }
 
-    @Override
-    public String getTypeName(URL url) throws IOException {
-        DataStore ds = createDataStore(url);
-        String[] names = ds.getTypeNames();
-        assert names.length == 1 : "Invalid number of type names for csv file store";
-        ds.dispose();
-        return names[0];
-    }
 }

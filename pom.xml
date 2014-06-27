@@ -368,6 +368,11 @@
         <version>${gt.version}</version>
       </dependency>
       <dependency>
+        <groupId>org.geotools</groupId>
+        <artifactId>gt-ogr</artifactId>
+        <version>${gt.version}</version>
+      </dependency>
+      <dependency>
         <groupId>org.restlet</groupId>
         <artifactId>org.restlet.ext.fileupload</artifactId>
         <version>1.0.8</version>
@@ -481,6 +486,7 @@
     <module>mapmeter</module>
     <module>printng</module>
     <module>web</module>
+    <module>importer-gdb</module>
     <module>gsr</module>
     <module>mongodb</module>
     <module>geogit</module>

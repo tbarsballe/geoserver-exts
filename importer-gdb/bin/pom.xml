@@ -24,19 +24,12 @@
     </dependency>
     <dependency>
       <groupId>org.geotools</groupId>
-      <artifactId>gt-ogr-bridj</artifactId>
+      <artifactId>gt-ogr</artifactId>
       <version>${gt.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <!--  Test dependencies -->
-    <dependency>
-      <groupId>org.geoserver.importer</groupId>
-      <artifactId>gs-importer-core</artifactId>
-      <version>${project.version}</version>
-      <classifier>tests</classifier>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

@@ -4,193 +4,131 @@
  */
 package org.geoserver.importer.gdb;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.geoserver.importer.ImporterTestUtils.unpack;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Collections;
-import java.util.HashMap;
+import java.net.URLDecoder;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
+import org.apache.commons.io.IOUtils;
+import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
-import org.geotools.data.FileDataStore;
+import org.geotools.util.KVP;
 import org.junit.Before;
 import org.junit.Test;
-import org.geoserver.importer.csv.parse.CSVAttributesOnlyStrategy;
-import org.geoserver.importer.csv.parse.CSVLatLonStrategy;
-import org.geoserver.importer.csv.parse.CSVSpecifiedLatLngStrategy;
-import org.geoserver.importer.csv.parse.CSVSpecifiedWKTStrategy;
-import org.geoserver.importer.csv.parse.CSVStrategy;
 
 public class GDBDataStoreFactoryTest {
 
     private GDBDataStoreFactory factory;
 
-    private File file;
-
     private URL locationsResource;
+
+    private File file;
 
     @Before
     public void setUp() throws Exception {
         factory = new GDBDataStoreFactory();
-        locationsResource = DataUtilities.fileToURL(new File(unpack("csv/locations.zip"), "locations.csv"));
-        //locationsResource = CSVDataStoreFactory.class.getResource("locations.csv");
-        assert locationsResource != null : "Could not find locations.csv resource";
+        File archive = testData("locations.zip");
+        
+        File unpack = File.createTempFile("importer", "data", new File("target"));
+        unpack.delete();
+        unpack.mkdirs();
+        unpack( archive, unpack);
+        locationsResource = DataUtilities.fileToURL(unpack);
+
+        assert locationsResource != null : "Could not find locations.gdb resource";
         file = DataUtilities.urlToFile(locationsResource);
     }
-
     @Test
-    public void testBasicGetters() throws MalformedURLException {
-        assertEquals("CSV", factory.getDisplayName());
-        assertEquals("Comma delimited text file", factory.getDescription());
-        assertTrue(factory.canProcess(locationsResource));
-        assertTrue(factory.getImplementationHints().isEmpty());
-        assertArrayEquals(new String[] { ".csv" }, factory.getFileExtensions());
-        assertNotNull("Invalid Parameter Info", factory.getParametersInfo());
+    public void testIsAvailable() throws Exception {
+        boolean available = factory.isAvailable();
+        assertTrue("avaialble", available);
     }
-
-    @Test
-    public void testCreateDataStoreFileParams() throws Exception {
-        Map<String, Serializable> fileParams = new HashMap<String, Serializable>(1);
-        fileParams.put("file", file);
-        FileDataStore dataStore = factory.createDataStore(fileParams);
-        assertNotNull("Could not create datastore from file params", dataStore);
-    }
-
-    @Test
-    public void testCreateDataStoreURLParams() throws Exception {
-        Map<String, Serializable> urlParams = new HashMap<String, Serializable>(1);
-        urlParams.put("url", locationsResource);
-        FileDataStore dataStore = factory.createDataStore(urlParams);
-        assertNotNull("Could not create datastore from url params", dataStore);
-    }
-
+    
+    @SuppressWarnings("unchecked")
     @Test
     public void testCreateDataStoreURL() throws MalformedURLException, IOException {
-        FileDataStore dataStore = factory.createDataStore(locationsResource);
+        Map<String, Serializable> params = (Map) new KVP( GDBDataStoreFactory.URL_PARAM.key, locationsResource );
+        DataStore dataStore = factory.createDataStore(params);
         assertNotNull("Failure creating data store", dataStore);
     }
-
-    @Test
-    public void testGetTypeName() throws IOException {
-        FileDataStore dataStore = factory.createDataStore(locationsResource);
-        String[] typeNames = dataStore.getTypeNames();
-        assertEquals("Invalid number of type names", 1, typeNames.length);
-        assertEquals("Invalid type name", "locations", typeNames[0]);
-    }
-
-    @Test
-    public void testCanProcessFileParams() {
-        Map<String, Serializable> fileParams = new HashMap<String, Serializable>(1);
-        fileParams.put("file", file);
-        assertTrue("Did not process file params", factory.canProcess(fileParams));
-    }
-
-    @Test
-    public void testCanProcessURLParams() {
-        Map<String, Serializable> urlParams = new HashMap<String, Serializable>(1);
-        urlParams.put("url", locationsResource);
-        assertTrue("Did not process url params", factory.canProcess(urlParams));
-    }
-
-    @Test
-    public void testInvalidParamsCreation() throws Exception {
-        Map<String, Serializable> params = Collections.emptyMap();
-        try {
-            factory.createDataStore(params);
-        } catch (IllegalArgumentException e) {
-            assertTrue(true);
-            return;
-        } catch (Exception e) {
+    
+    private static File testData(String path ) throws IOException {
+        URL url = GDBDataStoreFactory.class.getResource("test-data/"+path);
+        if( url == null ) {
+            throw new FileNotFoundException("Could not find locations.zip");
         }
-        fail("Did not throw illegal argument exception for null file");
-    }
-
-    @Test
-    public void testFileDoesNotExist() throws Exception {
-        try {
-            factory.createDataStoreFromFile(new File("/tmp/does-not-exist.csv"));
-        } catch (IllegalArgumentException e) {
-            assertTrue(true);
-            return;
-        } catch (Exception e) {
+        File file = new File(URLDecoder.decode(url.getPath(), "UTF-8"));
+        if (!file.exists()) {
+            throw new FileNotFoundException("Can not locate test-data for \"" + path + '"');
         }
-        assertTrue("Did not throw illegal argument exception for non-existent file", false);
+        return file;
     }
-
-    @Test
-    public void testCSVStrategyDefault() throws Exception {
-        CSVDataStore datastore = (CSVDataStore) factory.createDataStoreFromFile(file);
-        CSVStrategy csvStrategy = datastore.getCSVStrategy();
-        assertEquals("Unexpected default csv strategy", CSVAttributesOnlyStrategy.class,
-                csvStrategy.getClass());
-    }
-
-    @Test
-    public void testCSVStrategyGuess() throws Exception {
-        Map<String, Serializable> params = new HashMap<String, Serializable>();
-        params.put("strategy", "guess");
-        params.put("file", file);
-        CSVDataStore datastore = (CSVDataStore) factory.createDataStore(params);
-        CSVStrategy csvStrategy = datastore.getCSVStrategy();
-        assertEquals("Unexpected strategy", CSVLatLonStrategy.class, csvStrategy.getClass());
-    }
-
-    @Test
-    public void testCSVStrategySpecifiedBadParams() throws Exception {
-        Map<String, Serializable> params = new HashMap<String, Serializable>();
-        params.put("strategy", "specify");
-        params.put("file", file);
+    //
+    // Utility Methods
+    //
+    private static void unpackFile(ZipInputStream in, File outdir, String name) throws IOException {
+        File file = new File(outdir, name);
+        FileOutputStream out = new FileOutputStream(file);
         try {
-            factory.createDataStore(params);
-        } catch (IllegalArgumentException e) {
-            return;
+            IOUtils.copy(in, out);
+        } finally {
+            out.close();
         }
-        fail("Expected illegal argument exception for missing latField and lngField");
     }
 
-    @Test
-    public void testCSVStrategySpecified() throws Exception {
-        Map<String, Serializable> params = new HashMap<String, Serializable>();
-        params.put("strategy", "specify");
-        params.put("file", file);
-        params.put("latField", "foo");
-        params.put("lngField", "bar");
-        CSVDataStore datastore = (CSVDataStore) factory.createDataStore(params);
-        CSVStrategy csvStrategy = datastore.getCSVStrategy();
-        assertEquals("Unexpected strategy", CSVSpecifiedLatLngStrategy.class,
-                csvStrategy.getClass());
+    private static boolean mkdirs(File outdir, String path) {
+        if( path == null ) return false;
+        File directory = new File(outdir, path);
+        if (!directory.exists()) {
+            return directory.mkdirs();
+        }
+        return false;
     }
 
-    @Test
-    public void testCSVStrategyWKTMissingWktField() throws IOException {
-        Map<String, Serializable> params = new HashMap<String, Serializable>();
-        params.put("strategy", "wkt");
-        params.put("file", file);
+    private static String directoryName(String name) {
+        int s = name.lastIndexOf(File.separatorChar);
+        return s == -1 ? null : name.substring(0, s);
+    }
+
+    /***
+     * Unpack archive to directory (maintaining directory structure).
+     * @param archive
+     * @param directory
+     */
+    public static void unpack(File archive, File directory) throws IOException {
+        // see http://stackoverflow.com/questions/10633595/java-zip-how-to-unzip-folder
+        ZipInputStream zip = new ZipInputStream(new FileInputStream(archive));
         try {
-            factory.createDataStore(params);
-        } catch (IllegalArgumentException e) {
-            return;
+            for( ZipEntry entry; (entry = zip.getNextEntry()) != null; ) {
+                String name = entry.getName();
+                if (entry.isDirectory()) {
+                    mkdirs(directory, name);
+                    continue;
+                }
+                /*
+                 * this part is necessary because file entry can come before directory entry where is file located i.e.: /foo/foo.txt /foo/
+                 */
+                String dir = directoryName(name);
+                if (dir != null){
+                    mkdirs(directory, dir);
+                }
+                unpackFile(zip, directory, name);
+            }
+            zip.close();
         }
-        fail("Expected illegal argument exception for missing wktField");
-    }
-
-    @Test
-    public void testCSVStrategyWKT() throws IOException {
-        Map<String, Serializable> params = new HashMap<String, Serializable>();
-        params.put("strategy", "wkt");
-        params.put("wktField", "whatever");
-        params.put("file", file);
-        CSVDataStore datastore = (CSVDataStore) factory.createDataStore(params);
-        CSVStrategy csvStrategy = datastore.getCSVStrategy();
-        assertEquals("Unexpected strategy", CSVSpecifiedWKTStrategy.class, csvStrategy.getClass());
+        finally {
+            zip.close();
+        }
     }
 }
