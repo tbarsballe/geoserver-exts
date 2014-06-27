@@ -480,13 +480,24 @@
     </snapshotRepository>
   </distributionManagement>
 
+  <profiles>
+    <!-- ================================================== -->
+    <!--     Modules not yet included in the build          -->
+    <!-- ================================================== -->
+    <profile>
+      <id>pending</id>
+      <modules>
+        <module>importer-gdb</module>
+      </modules>
+    </profile>
+  </profiles>
+
   <modules>
     <module>cluster</module>
     <module>metrics</module>
     <module>mapmeter</module>
     <module>printng</module>
     <module>web</module>
-    <module>importer-gdb</module>
     <module>gsr</module>
     <module>mongodb</module>
     <module>geogit</module>
