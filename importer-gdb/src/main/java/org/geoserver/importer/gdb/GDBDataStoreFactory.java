@@ -12,6 +12,11 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
 import org.geotools.data.DataStore;
@@ -22,35 +27,41 @@ import org.geotools.data.ogr.OGRDataStore;
 import org.geotools.data.ogr.bridj.BridjOGR;
 import org.geotools.data.ogr.bridj.BridjOGRDataStoreFactory;
 import org.geotools.util.KVP;
+import org.geotools.util.logging.Logging;
 
 public class GDBDataStoreFactory implements DataStoreFactorySpi {
-
+    private static final Logger LOGGING =  Logging.getLogger("org.geoserver.importer.gdb");
+    
+    /** Choice of OpenFileGDB or FileGDB (which requires SDK) */
+    private static final String DRIVER = "FileGDB";
+    
     private static final String FILE_TYPE = "gdb";
-    public static final String[] EXTENSIONS = new String[] { "." + FILE_TYPE };
+    public static final String[] EXTENSIONS = new String[] { FILE_TYPE };
     public static final Param FILE_PARAM = new Param("file", File.class, FILE_TYPE + " file", false);
     public static final Param URL_PARAM = new Param("url", URL.class, FILE_TYPE + " file", false);
     public static final Param NAMESPACEP = new Param("namespace", URI.class,
             "uri to the namespace", false, null, new KVP(Param.LEVEL, "advanced"));
     public static final Param[] parametersInfo = new Param[] { FILE_PARAM };
 
+    private boolean singleWarning = false;
+
+    /** Constructor for Service Provider Interface */
+    public GDBDataStoreFactory(){
+    }
+    
     @Override
     public String getDisplayName() {
-        return "FileGDB";
+        return DRIVER;
     }
 
     @Override
     public String getDescription() {
-        return "FileGDB Import";
+        return DRIVER + "Import";
     }
 
     @Override
     public Param[] getParametersInfo() {
         return parametersInfo;
-    }
-
-    private boolean canProcessExtension(String filename) {
-        String extension = FilenameUtils.getExtension(filename);
-        return FILE_TYPE.equalsIgnoreCase(extension);
     }
 
     private File fileFromParams(Map<String, Serializable> params) throws IOException {
@@ -70,7 +81,7 @@ public class GDBDataStoreFactory implements DataStoreFactorySpi {
         try {
             File file = fileFromParams(params);
             if (file != null) {
-                return canProcessExtension(file.getPath());
+                return file.getName().equalsIgnoreCase( FILE_TYPE ); 
             }
         } catch (IOException e) {
         }
@@ -81,7 +92,20 @@ public class GDBDataStoreFactory implements DataStoreFactorySpi {
     public boolean isAvailable() {
         try {
             BridjOGRDataStoreFactory factory = new BridjOGRDataStoreFactory();
-            return factory.isAvailable(true);
+            if( factory.isAvailable(true) ){
+                Set<String> supported = factory.getAvailableDrivers() ;
+                for( String driver : supported ){
+                    if( DRIVER.equals( driver )){
+                        return true;
+                    }
+                }
+                if(!singleWarning){
+                    SortedSet<String> sorted = new TreeSet<String>( supported );
+                    LOGGING.log(Level.WARNING, "Check OGR Envrionment: "+DRIVER+" not supported: "+sorted);
+                    singleWarning = true;
+                }
+            }
+            return false;
         } catch (Exception e) {
             return false;
         }
@@ -111,7 +135,7 @@ public class GDBDataStoreFactory implements DataStoreFactorySpi {
         File file = fileFromParams(params);
         if (file == null) {
             throw new IllegalArgumentException(
-                    "Could not find file from params to create csv data store");
+                    "Could not find file from params to access GDB");
         }
         URI namespace = (URI) NAMESPACEP.lookUp(params);
         return createDataStoreFromFile(file, namespace, params);
@@ -120,20 +144,15 @@ public class GDBDataStoreFactory implements DataStoreFactorySpi {
     private DataStore createDataStoreFromFile(File file, URI namespace,
             Map<String, Serializable> params) throws IOException {
         OGR ogr = new BridjOGR();
-    	return new OGRDataStore(file.getAbsolutePath(), "FileGDB", namespace, ogr);
+        if( file.getName().equalsIgnoreCase(FILE_TYPE)){
+            file = file.getParentFile();
+        }
+    	return new OGRDataStore(file.getAbsolutePath(), DRIVER, namespace, ogr);
     }
 
     @Override
     public DataStore createNewDataStore(Map<String, Serializable> params) throws IOException {
         return createDataStore(params);
-    }
-
-    public String[] getFileExtensions() {
-        return EXTENSIONS;
-    }
-
-    public boolean canProcess(URL url) {
-        return canProcessExtension(DataUtilities.urlToFile(url).toString());
     }
 
 }

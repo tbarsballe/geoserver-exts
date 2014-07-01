@@ -4,8 +4,7 @@
  */
 package org.geoserver.importer.gdb;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,56 +15,117 @@ import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import org.apache.commons.io.IOUtils;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
+import org.geotools.data.ogr.bridj.BridjOGRDataStoreFactory;
 import org.geotools.util.KVP;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opengis.feature.type.Name;
 
 public class GDBDataStoreFactoryTest {
+    /**
+     * If OGR environment is not available factory will be null and the test skipped.
+     */
+    static boolean skip = false;
 
-    private GDBDataStoreFactory factory;
+    /**
+     * Factory obtained during setup.
+     */
+    private static GDBDataStoreFactory factory = null;
 
-    private URL locationsResource;
+    private static Logger LOGGING;
+
+    private static Level loggingLevel;
+
+    private URL resourceURL;
 
     private File file;
 
-    @Before
-    public void setUp() throws Exception {
+    private File gdbFile;
+
+    private URL gdbURL;
+
+    private File locationsFile;
+
+    @BeforeClass
+    public static void beforeClass() {
+        // check Environment is available
         factory = new GDBDataStoreFactory();
-        File archive = testData("locations.zip");
-        
+        skip = !factory.isAvailable();
+        if (skip) {
+            System.out.println("GDBDataStoreFactoryTest skipped - OGR Environment not available");
+            System.out
+                    .println("Check library path -      example DYLD_LIBRARY_PATH=/usr/local/opengeo/lib");
+            System.out
+                    .println("Check driver path -       example GDAL_DRIVER_PATH=/user/local/opengeo/lib/gdal_plugins");
+            System.out.println("Check path includes ogr - example PATH=/user/local/opengeo/bin");
+        }
+        LOGGING = org.geotools.util.logging.Logging.getLogger("org.geotools.data.ogr");
+        loggingLevel = LOGGING.getLevel();
+        LOGGING.setLevel(Level.FINEST);
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        LOGGING.setLevel(loggingLevel);
+    }
+
+    @Before
+    public void before() throws Exception {
+        if (skip)
+            return;
+
+        File archive = data("locations.zip");
         File unpack = File.createTempFile("importer", "data", new File("target"));
         unpack.delete();
         unpack.mkdirs();
-        unpack( archive, unpack);
-        locationsResource = DataUtilities.fileToURL(unpack);
+        unpack(archive, unpack);
+        resourceURL = DataUtilities.fileToURL(unpack);
+        System.out.println("locations.gdb unpacked into: " + resourceURL);
 
-        assert locationsResource != null : "Could not find locations.gdb resource";
-        file = DataUtilities.urlToFile(locationsResource);
+        assert resourceURL != null : "Could not find locations.gdb resource";
+        File resource = DataUtilities.urlToFile(resourceURL);
+
+        File gdbDirectory = new File(resource, "locations.gdb");
+
+        gdbFile = new File(gdbDirectory, "gdb");
+        gdbURL = DataUtilities.fileToURL(gdbFile);
+
+        System.out.println("Unpacked URL: " + resourceURL);
+        System.out.println("Unpacked File: " + resource);
+        System.out.println("Locations Dir: " + gdbDirectory);
+        System.out.println("Locations GDB: " + gdbFile);
+        System.out.println("Locations URL: " + gdbURL);
     }
-    @Test
-    public void testIsAvailable() throws Exception {
-        boolean available = factory.isAvailable();
-        assertTrue("avaialble", available);
-    }
-    
+
     @SuppressWarnings("unchecked")
     @Test
     public void testCreateDataStoreURL() throws MalformedURLException, IOException {
-        Map<String, Serializable> params = (Map) new KVP( GDBDataStoreFactory.URL_PARAM.key, locationsResource );
+        if (skip)
+            return;
+
+        Map<String, Serializable> params = (Map) new KVP(GDBDataStoreFactory.URL_PARAM.key, gdbURL);
         DataStore dataStore = factory.createDataStore(params);
         assertNotNull("Failure creating data store", dataStore);
+
+        List<Name> names = dataStore.getNames();
+        assertEquals(1, names.size());
     }
-    
-    private static File testData(String path ) throws IOException {
-        URL url = GDBDataStoreFactory.class.getResource("test-data/"+path);
-        if( url == null ) {
+
+    private static File data(String path) throws IOException {
+        URL url = GDBDataStoreFactory.class.getResource("test-data/" + path);
+        if (url == null) {
             throw new FileNotFoundException("Could not find locations.zip");
         }
         File file = new File(URLDecoder.decode(url.getPath(), "UTF-8"));
@@ -74,6 +134,7 @@ public class GDBDataStoreFactoryTest {
         }
         return file;
     }
+
     //
     // Utility Methods
     //
@@ -88,7 +149,8 @@ public class GDBDataStoreFactoryTest {
     }
 
     private static boolean mkdirs(File outdir, String path) {
-        if( path == null ) return false;
+        if (path == null)
+            return false;
         File directory = new File(outdir, path);
         if (!directory.exists()) {
             return directory.mkdirs();
@@ -103,6 +165,7 @@ public class GDBDataStoreFactoryTest {
 
     /***
      * Unpack archive to directory (maintaining directory structure).
+     * 
      * @param archive
      * @param directory
      */
@@ -110,7 +173,7 @@ public class GDBDataStoreFactoryTest {
         // see http://stackoverflow.com/questions/10633595/java-zip-how-to-unzip-folder
         ZipInputStream zip = new ZipInputStream(new FileInputStream(archive));
         try {
-            for( ZipEntry entry; (entry = zip.getNextEntry()) != null; ) {
+            for (ZipEntry entry; (entry = zip.getNextEntry()) != null;) {
                 String name = entry.getName();
                 if (entry.isDirectory()) {
                     mkdirs(directory, name);
@@ -120,14 +183,13 @@ public class GDBDataStoreFactoryTest {
                  * this part is necessary because file entry can come before directory entry where is file located i.e.: /foo/foo.txt /foo/
                  */
                 String dir = directoryName(name);
-                if (dir != null){
+                if (dir != null) {
                     mkdirs(directory, dir);
                 }
                 unpackFile(zip, directory, name);
             }
             zip.close();
-        }
-        finally {
+        } finally {
             zip.close();
         }
     }
