@@ -103,6 +103,19 @@
               <forkMode>${test.forkMode}</forkMode>
         </configuration>
       </plugin>
+
+      <plugin>
+       <artifactId>maven-assembly-plugin</artifactId>
+       <version>2.1</version>
+       <configuration>
+        <descriptors>
+         <descriptor>ext-importer-gdb.xml</descriptor>
+        </descriptors>
+        <!--finalName>geoserver-2.5-SNAPSHOT</finalName>
+        <outputDirectory>${project.build.directory}/release</outputDirectory-->
+       </configuration>
+      </plugin>
+      
     </plugins>
 
     <testResources>
