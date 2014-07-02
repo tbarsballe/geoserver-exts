@@ -24,7 +24,7 @@
     </dependency>
     <dependency>
       <groupId>org.geotools</groupId>
-      <artifactId>gt-ogr-bridj</artifactId>
+      <artifactId>gt-ogr-jni</artifactId>
       <version>${gt.version}</version>
       <scope>provided</scope>
     </dependency>

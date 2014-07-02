@@ -24,8 +24,8 @@ import org.geotools.data.DataStoreFactorySpi;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.ogr.OGR;
 import org.geotools.data.ogr.OGRDataStore;
-import org.geotools.data.ogr.bridj.BridjOGR;
-import org.geotools.data.ogr.bridj.BridjOGRDataStoreFactory;
+import org.geotools.data.ogr.jni.JniOGR;
+import org.geotools.data.ogr.jni.JniOGRDataStoreFactory;
 import org.geotools.util.KVP;
 import org.geotools.util.logging.Logging;
 
@@ -91,7 +91,7 @@ public class GDBDataStoreFactory implements DataStoreFactorySpi {
     @Override
     public boolean isAvailable() {
         try {
-            BridjOGRDataStoreFactory factory = new BridjOGRDataStoreFactory();
+            JniOGRDataStoreFactory factory = new JniOGRDataStoreFactory();
             if( factory.isAvailable(true) ){
                 Set<String> supported = factory.getAvailableDrivers() ;
                 for( String driver : supported ){
@@ -143,7 +143,7 @@ public class GDBDataStoreFactory implements DataStoreFactorySpi {
 
     private DataStore createDataStoreFromFile(File file, URI namespace,
             Map<String, Serializable> params) throws IOException {
-        OGR ogr = new BridjOGR();
+        OGR ogr = new JniOGR();
         if( file.getName().equalsIgnoreCase(FILE_TYPE)){
             file = file.getParentFile();
         }

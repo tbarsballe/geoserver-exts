@@ -25,7 +25,6 @@ import java.util.zip.ZipInputStream;
 import org.apache.commons.io.IOUtils;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataUtilities;
-import org.geotools.data.ogr.bridj.BridjOGRDataStoreFactory;
 import org.geotools.util.KVP;
 import org.junit.AfterClass;
 import org.junit.Before;
