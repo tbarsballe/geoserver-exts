@@ -16,9 +16,7 @@
       <directory>target/dependency</directory>
       <outputDirectory></outputDirectory>
       <includes>
-        <include>*gt-ogr-bridj*</include>
         <include>*gt-ogr-core*</include>
-        <include>*bridj-0.6-c-only*</include>
       </includes>
     </fileSet>
   </fileSets>
