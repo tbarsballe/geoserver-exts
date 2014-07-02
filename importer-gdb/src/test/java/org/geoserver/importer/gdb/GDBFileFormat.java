@@ -41,7 +41,6 @@ import org.opengis.filter.Filter;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.google.common.base.Optional;
-import com.sun.tools.javac.code.Source;
 
 /**
  * Custom VectorFormat for GDBDataStoreFactory restricting
