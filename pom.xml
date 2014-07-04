@@ -168,7 +168,10 @@
         <version>2.3</version>
         <configuration>
           <descriptors>
-            <descriptor>assembly.xml</descriptor>
+            <descriptor>assembly/cluster.xml</descriptor>
+            <descriptor>assembly/gsr.xml</descriptor>
+            <descriptor>assembly/mapmeter.xml</descriptor>
+            <descriptor>assembly/mongodb.xml</descriptor>
           </descriptors>
         </configuration>
       </plugin>
