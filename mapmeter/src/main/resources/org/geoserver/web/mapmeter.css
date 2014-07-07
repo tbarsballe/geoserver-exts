@@ -17,13 +17,14 @@
 }
 
 #mapmeter-chart-container,
+#mapmeter-teaser-container,
 #mapmeter-msg-container,
 #mapmeter-msg-container .error {
   display: none;
 }
 
 #mapmeter-chart {
-  width: 500px;
+  width: 600px;
   height: 150px;
   clear: both;
   margin: 2em 0;
@@ -66,4 +67,33 @@
 #mapmeter-chart .y.axis path {
   fill: none;
   stroke: #666;
+}
+
+#mapmeter-teaser-container {
+  margin: 100px 0 0 100px;
+  border: 3px solid #CCC;
+  width: 600px;
+  height: 70px;
+}
+
+#mapmeter-teaser-container .mapmeter-link {
+  float: left;
+  width: 150px;
+  padding: 0.75em;
+  background-color: #00A78D;
+  color: #FFF;
+  margin: 1em 1em;
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: bold;
+}
+
+a.mapmeter-link:hover {
+  text-decoration: none;
+}
+
+#mapmeter-teaser-container p {
+  float: left;
+  width: 370px;
+  margin: 0.5em 1em;
 }

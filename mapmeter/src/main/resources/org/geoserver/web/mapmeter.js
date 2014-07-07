@@ -44,6 +44,13 @@
       } else if (mapmeterData.data) {
         mapmeterElts.chart.container.show();
         mapmeter.drawChart(mapmeterElts.chart.element, mapmeterData);
+        mapmeter.fetchConfiguration(function(mapmeterConfig) {
+          if (mapmeterConfig.baseurl) {
+            mapmeterElts.teaser.link.attr('href', mapmeterConfig.baseurl);
+            mapmeterElts.teaser.mapmeterUrl.text(mapmeterConfig.baseurl);
+            mapmeterElts.teaser.container.show();
+          }
+        });
       } else {
         log('Unknown response when fetching mapmeter data');
       }
@@ -74,6 +81,20 @@
       .attr('class', 'error unknown')
       .html('Mapmeter error');
 
+    var teaserLink = $('<a></a>')
+      .attr('href', '#')
+      .attr('class', 'mapmeter-link')
+      .text('View on Mapmeter');
+    var teaserText = $('<p></p>')
+      .text('This graph displays a high-level summary. To view more details on your GeoServer instance, please visit Mapmeter: ');
+    var teaserMapmeterUrl = $('<span></span>');
+    teaserText.append(teaserMapmeterUrl);
+    var teaserContainer = $('<div></div>')
+      .attr('id', 'mapmeter-teaser-container');
+    teaserContainer
+      .append(teaserLink)
+      .append(teaserText);
+
     var msgContainer = $('<div></div>')
       .attr('id', 'mapmeter-msg-container')
       .append(
@@ -87,7 +108,9 @@
 
     containerJqueryElt
       .append(chartContainer)
-      .append(msgContainer);
+      .append(msgContainer)
+      .append(teaserContainer);
+
     return {
       chart: {
         container: chartContainer,
@@ -99,12 +122,21 @@
         unauthorized: unauthorized,
         invalidApiKey: invalidApiKey,
         unknown: unknown
+      },
+      teaser: {
+        container: teaserContainer,
+        link: teaserLink,
+        mapmeterUrl: teaserMapmeterUrl
       }
     };
   };
 
   mapmeter.fetchData = function(cb) {
     $.getJSON('../rest/mapmeter/data.json', cb);
+  };
+
+  mapmeter.fetchConfiguration = function(cb) {
+    $.getJSON('../rest/mapmeter/configuration.json', cb);
   };
 
   mapmeter.drawChart = function(jqueryDomElt, mapmeterData) {
