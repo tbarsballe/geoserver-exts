@@ -92,19 +92,46 @@ public class GDBDataStoreFactory implements DataStoreFactorySpi {
     public boolean isAvailable() {
         try {
             JniOGRDataStoreFactory factory = new JniOGRDataStoreFactory();
-            if( factory.isAvailable(true) ){
-                Set<String> supported = factory.getAvailableDrivers() ;
+            boolean available = factory.isAvailable(true);
+            if( available ){
+                Set<String> supported = factory.getAvailableDrivers();
+                boolean checkDriver = false;
                 for( String driver : supported ){
                     if( DRIVER.equals( driver )){
-                        return true;
+                        checkDriver = true;
+                        break;
                     }
                 }
+                // check environment
+                String GDAL_DATA =  System.getenv("GDAL_DATA");
+                
+                // optional environment
+                String DYLD_LIBRARY_PATH = System.getenv("DYLD_LIBRARY_PATH");
+                String LD_LIBRARY_PATH = System.getenv("LD_LIBRARY_PATH");
+                String GDAL_DRIVER_PATH = System.getenv("GDAL_DRIVER_PATH");
+                String CPL_LOG = System.getenv("CPL_LOG");
+                String CPL_LOGS_ERRORS = System.getenv("CPL_LOG_ERRORS");
+                
+                boolean checkEnv = GDAL_DATA != null && !GDAL_DATA.isEmpty(); 
+                
                 if(!singleWarning){
-                    SortedSet<String> sorted = new TreeSet<String>( supported );
-                    LOGGING.log(Level.WARNING, "Check OGR Envrionment: "+DRIVER+" not supported: "+sorted);
                     singleWarning = true;
+                    if( checkDriver ){
+                        LOGGING.log(Level.FINE, "OGR Envrionment: "+DRIVER+" supported");
+                    }
+                    else {
+                        SortedSet<String> sorted = new TreeSet<String>( supported );
+                        LOGGING.log(Level.WARNING, "OGR Envrionment: "+DRIVER+" not supported: "+sorted);
+                    }
+                    LOGGING.log(Level.FINE, "Environment variable GDAL_DATA="+GDAL_DATA);
+                    LOGGING.log(Level.FINE, "Environment variable DYLD_LIBRARY_PATH="+DYLD_LIBRARY_PATH);
+                    LOGGING.log(Level.FINE, "Environment variable LD_LIBRARY_PATH="+LD_LIBRARY_PATH);
+                    LOGGING.log(Level.FINE, "Environment variable GDAL_DRIVER_PATH="+GDAL_DRIVER_PATH);
+                    LOGGING.log(Level.FINE, "Environment variable CPL_LOG="+CPL_LOG);
+                    LOGGING.log(Level.FINE, "Environment variable CPL_LOGS_ERRORS="+CPL_LOGS_ERRORS);
                 }
-            }
+                return checkDriver && checkEnv;
+            }            
             return false;
         } catch (Exception e) {
             return false;
