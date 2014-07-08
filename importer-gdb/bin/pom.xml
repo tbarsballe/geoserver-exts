@@ -24,12 +24,19 @@
     </dependency>
     <dependency>
       <groupId>org.geotools</groupId>
-      <artifactId>gt-ogr</artifactId>
+      <artifactId>gt-ogr-jni</artifactId>
       <version>${gt.version}</version>
       <scope>provided</scope>
     </dependency>
 
     <!--  Test dependencies -->
+    <dependency>
+      <groupId>org.geoserver.importer</groupId>
+      <artifactId>gs-importer-core</artifactId>
+      <version>${project.version}</version>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -64,34 +71,51 @@
 
   <build>
     <plugins>
+
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>org/geoserver/uploader/**</exclude>
-          </excludes>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.15</version>
+          <configuration>
+              <runOrder>alphabetical</runOrder>
+              <includes>
+                <include>**/*Test.java</include>
+              </includes>
+              <excludes>
+                <exclude>${online.skip.pattern}</exclude>
+                <exclude>${stress.skip.pattern}</exclude>
+                <exclude>${test.exclude.pattern}</exclude>
+              </excludes>
+              <argLine>-Xmx${test.maxHeapSize} ${jvm.opts} -Djava.awt.headless=${java.awt.headless} -Djava.io.tmpdir="${java.io.tmpdir}" -Djava.library.path="${env.GT_GDAL}"</argLine>
+              <environmentVariables>
+                  <!-- example GT_GDAL = /usr/local/opengeo/lib -->
+                  <PATH>${env.GT_GDAL}${path.separator}${env.PATH}</PATH>
+                  <DYLD_LIBRARY_PATH>${env.GT_GDAL}${path.separator}${env.DYLD_LIBRARY_PATH}</DYLD_LIBRARY_PATH>
+                  <LD_LIBRARY_PATH>${env.GT_GDAL}${path.separator}${env.LD_LIBRARY_PATH}</LD_LIBRARY_PATH>
+                  
+                  <GDAL_DRIVER_PATH>${env.GT_GDAL}${path.separator}gdal_plugins</GDAL_DRIVER_PATH>
+              </environmentVariables>
+              <testFailureIgnore>
+                ${allow.test.failure.ignore}
+              </testFailureIgnore>
+              <printSummary>true</printSummary>
+              <redirectTestOutputToFile>false</redirectTestOutputToFile>
+              <forkMode>${test.forkMode}</forkMode>
         </configuration>
       </plugin>
 
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.3</version>
-        <configuration>
-          <descriptors>
-            <descriptor>assembly.xml</descriptor>
-          </descriptors>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
+       <artifactId>maven-assembly-plugin</artifactId>
+       <version>2.1</version>
+       <configuration>
+        <descriptors>
+         <descriptor>ext-importer-gdb.xml</descriptor>
+        </descriptors>
+        <!--finalName>geoserver-2.5-SNAPSHOT</finalName>
+        <outputDirectory>${project.build.directory}/release</outputDirectory-->
+       </configuration>
       </plugin>
+      
     </plugins>
 
     <testResources>
