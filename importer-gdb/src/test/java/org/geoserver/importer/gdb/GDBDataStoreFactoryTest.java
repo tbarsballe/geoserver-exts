@@ -63,12 +63,18 @@ public class GDBDataStoreFactoryTest {
         factory = new GDBDataStoreFactory();
         skip = !factory.isAvailable();
         if (skip) {
-            System.out.println("GDBDataStoreFactoryTest skipped - OGR Environment not available");
-            System.out
-                    .println("Check library path -      example DYLD_LIBRARY_PATH=/usr/local/opengeo/lib");
-            System.out
-                    .println("Check driver path -       example GDAL_DRIVER_PATH=/user/local/opengeo/lib/gdal_plugins");
-            System.out.println("Check path includes ogr - example PATH=/user/local/opengeo/bin");
+            System.out.println("GDBDataStoreFactoryTest skipped - Check OGR Environment");
+            System.out.println( "System Environment Variables:");
+            System.out.println( "GDAL_DATA = "+ System.getenv("GDAL_DATA"));
+            System.out.println( "DYLD_LIBRARY_PATH = "+ System.getenv("DYLD_LIBRARY_PATH"));
+            System.out.println( "LD_LIBRARY_PATH = "+ System.getenv("LD_LIBRARY_PATH"));
+            System.out.println( "GDAL_DRIVER_PATH = "+ System.getenv("GDAL_DRIVER_PATH"));
+            System.out.println( "CPL_LOG = "+  System.getenv("CPL_LOG"));
+            System.out.println( "CPL_LOG_ERRORS = "+  System.getenv("CPL_LOG_ERRORS"));
+            System.out.println( "System Environment:");
+            
+            System.out.println( "Java System Properties:");
+            System.out.println( "java.library.path = "+  System.getProperty("java.library.path"));
         }
         LOGGING = org.geotools.util.logging.Logging.getLogger("org.geotools.data.ogr");
         loggingLevel = LOGGING.getLevel();

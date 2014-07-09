@@ -18,7 +18,6 @@ import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.commons.io.FilenameUtils;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFactorySpi;
 import org.geotools.data.DataUtilities;
@@ -92,47 +91,76 @@ public class GDBDataStoreFactory implements DataStoreFactorySpi {
     public boolean isAvailable() {
         try {
             JniOGRDataStoreFactory factory = new JniOGRDataStoreFactory();
-            boolean available = factory.isAvailable(true);
+            boolean available = false;
+            Throwable loadException = null;
+            try {
+                available = factory.isAvailable(false);
+            }
+            catch (Throwable t){
+                loadException = t;
+            }
+            
+            boolean checkDriver = false;
+            
+            Set<String> supported = Collections.emptySet();
             if( available ){
-                Set<String> supported = factory.getAvailableDrivers();
-                boolean checkDriver = false;
+                supported = factory.getAvailableDrivers();
                 for( String driver : supported ){
                     if( DRIVER.equals( driver )){
                         checkDriver = true;
                         break;
                     }
                 }
-                // check environment
-                String GDAL_DATA =  System.getenv("GDAL_DATA");
+            }
+            // check environment
+            String GDAL_DATA =  System.getenv("GDAL_DATA");
+            
+            // optional environment
+            String DYLD_LIBRARY_PATH = System.getenv("DYLD_LIBRARY_PATH");
+            String LD_LIBRARY_PATH = System.getenv("LD_LIBRARY_PATH");
+            String GDAL_DRIVER_PATH = System.getenv("GDAL_DRIVER_PATH");
+            String CPL_LOG = System.getenv("CPL_LOG");
+            String CPL_LOGS_ERRORS = System.getenv("CPL_LOG_ERRORS");
+            
+            boolean checkEnv = true;
+            
+            if( GDAL_DATA != null && !GDAL_DATA.isEmpty() ){
+                File gdalData = new File(GDAL_DATA);
+                if( !gdalData.exists() ){
+                    LOGGING.warning("GDAL_DATA directory does not exist");
+                    checkEnv = false;
+                }
+                else if( !gdalData.isDirectory() ){
+                    LOGGING.warning("GDAL_DATA is not a directory");
+                    checkEnv = false;
+                }
+            }
                 
-                // optional environment
-                String DYLD_LIBRARY_PATH = System.getenv("DYLD_LIBRARY_PATH");
-                String LD_LIBRARY_PATH = System.getenv("LD_LIBRARY_PATH");
-                String GDAL_DRIVER_PATH = System.getenv("GDAL_DRIVER_PATH");
-                String CPL_LOG = System.getenv("CPL_LOG");
-                String CPL_LOGS_ERRORS = System.getenv("CPL_LOG_ERRORS");
+            if(!singleWarning){
+                singleWarning = true;
+                Level level = (available && checkDriver && checkEnv) ? Level.FINE : Level.INFO;
                 
-                boolean checkEnv = GDAL_DATA != null && !GDAL_DATA.isEmpty(); 
-                
-                if(!singleWarning){
-                    singleWarning = true;
+                if( available ){
+                    LOGGING.log(level, "OGR Envrionment: "+DRIVER+" supported");
                     if( checkDriver ){
-                        LOGGING.log(Level.FINE, "OGR Envrionment: "+DRIVER+" supported");
+                        LOGGING.log(level, "OGR Envrionment: "+DRIVER+" supported");
                     }
                     else {
                         SortedSet<String> sorted = new TreeSet<String>( supported );
                         LOGGING.log(Level.WARNING, "OGR Envrionment: "+DRIVER+" not supported: "+sorted);
                     }
-                    LOGGING.log(Level.FINE, "Environment variable GDAL_DATA="+GDAL_DATA);
-                    LOGGING.log(Level.FINE, "Environment variable DYLD_LIBRARY_PATH="+DYLD_LIBRARY_PATH);
-                    LOGGING.log(Level.FINE, "Environment variable LD_LIBRARY_PATH="+LD_LIBRARY_PATH);
-                    LOGGING.log(Level.FINE, "Environment variable GDAL_DRIVER_PATH="+GDAL_DRIVER_PATH);
-                    LOGGING.log(Level.FINE, "Environment variable CPL_LOG="+CPL_LOG);
-                    LOGGING.log(Level.FINE, "Environment variable CPL_LOGS_ERRORS="+CPL_LOGS_ERRORS);
                 }
-                return checkDriver && checkEnv;
-            }            
-            return false;
+                else {
+                    LOGGING.log(level, "OGR JniOGRDataStoreFactory load 'gdaljni' failed.",loadException);
+                }
+                LOGGING.log(level, "Environment variable GDAL_DATA="+GDAL_DATA);
+                LOGGING.log(level, "Environment variable DYLD_LIBRARY_PATH="+DYLD_LIBRARY_PATH);
+                LOGGING.log(level, "Environment variable LD_LIBRARY_PATH="+LD_LIBRARY_PATH);
+                LOGGING.log(level, "Environment variable GDAL_DRIVER_PATH="+GDAL_DRIVER_PATH);
+                LOGGING.log(level, "Environment variable CPL_LOG="+CPL_LOG);
+                LOGGING.log(level, "Environment variable CPL_LOGS_ERRORS="+CPL_LOGS_ERRORS);
+            }
+            return available && checkDriver && checkEnv;
         } catch (Exception e) {
             return false;
         }
