@@ -35,6 +35,6 @@ public class RuleEncoder extends Encoder<Rule> {
     }
 
     String toStringOrNull(double d) {
-        return d > 0 && d != Double.NaN ? String.valueOf(d) : null;
+        return d > 0 && !Double.isNaN(d) ? String.valueOf(d) : null;
     }
 }
