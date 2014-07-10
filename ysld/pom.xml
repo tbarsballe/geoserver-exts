@@ -12,7 +12,7 @@
   
   <groupId>org.opengeo</groupId>
   <artifactId>gt-ysld</artifactId>
-  <name>com.boundlessgeo.ysld.Ysld Parser/Encoder</name>
+  <name>Ysld Parser/Encoder</name>
   <description>
   YAML based representation of SLD.
   </description>
