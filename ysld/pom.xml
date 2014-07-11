@@ -12,27 +12,15 @@
   
   <groupId>org.opengeo</groupId>
   <artifactId>ysld</artifactId>
-  <name>Ysld Parser/Encoder</name>
+  <name>Ysld</name>
+  <packaging>pom</packaging>
   <description>
   YAML based representation of SLD.
   </description>
-  
-  <dependencies>
-    <dependency>
-      <groupId>org.geoserver</groupId>
-      <artifactId>gs-main</artifactId>
-      <version>${gs.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.yaml</groupId>
-      <artifactId>snakeyaml</artifactId>
-      <version>1.13</version>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+
+  <modules>
+    <module>gt-ysld</module>
+    <module>gs-ysld</module>
+  </modules>
 
 </project>

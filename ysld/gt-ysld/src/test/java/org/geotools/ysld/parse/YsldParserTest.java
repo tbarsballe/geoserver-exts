@@ -1,17 +1,24 @@
-package org.geotools.ysld.transform.sld;
+package org.geotools.ysld.parse;
 
-import org.geotools.ysld.YamlObj;
 import org.geotools.ysld.YsldTests;
+import org.geotools.filter.Filters;
+import org.geotools.filter.text.ecql.ECQL;
+import org.geotools.styling.*;
+import org.geotools.styling.Font;
+import org.geotools.styling.Stroke;
 import org.junit.Test;
-import org.yaml.snakeyaml.Yaml;
+import org.opengis.style.ContrastMethod;
 
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamReader;
+import java.awt.*;
+import java.io.IOException;
+import java.io.StringReader;
 import java.io.StringWriter;
 
+import static org.geotools.ysld.Ysld.transform;
+import static org.geotools.ysld.Ysld.xmlReader;
 import static org.junit.Assert.assertEquals;
 
-public class SldTransformerTest {
+public class YsldParserTest {
 
     @Test
     public void testPointSimple() throws Exception {
@@ -33,17 +40,13 @@ public class SldTransformerTest {
         //     </Rule>
         //   </FeatureTypeStyle>
         // </UserStyle>
-        YamlObj style = transform("point", "simple.sld");
-        assertEquals("SLD Cook Book: Simple Point With Stroke", style.s("title"));
+        Style style = parse("point", "simple.sld");
+        assertEquals("SLD Cook Book: Simple Point With Stroke", style.getTitle());
 
-        YamlObj rule = style.o("feature-styles", 0).o("rules", 0);
-
-        YamlObj point = rule.o("symbolizers", 0).o("point");
-        assertEquals(6, point.i("size").intValue());
-
-        YamlObj mark = point.o("symbols", 0).o("mark");
-        assertEquals("circle", mark.s("shape"));
-        assertEquals("#FF0000", mark.o("fill").s("color"));
+        PointSymbolizer point = SLD.pointSymbolizer(style);
+        assertEquals("circle", SLD.wellKnownName(SLD.mark(point)));
+        assertEquals(Color.red, SLD.color(SLD.fill(point)));
+        assertEquals(6, SLD.pointSize(point));
     }
 
     @Test
@@ -70,15 +73,16 @@ public class SldTransformerTest {
         //        </Rule>
         //      </FeatureTypeStyle>
         //    </UserStyle>
-        YamlObj style = transform("point", "stroke.sld");
+        Style style = parse("point", "stroke.sld");
 
-        YamlObj mark =
-            style.o("feature-styles", 0).o("rules", 0).o("symbolizers", 0).o("point").o("symbols", 0).o("mark");
-        assertEquals("circle", mark.s("shape"));
+        PointSymbolizer point = SLD.pointSymbolizer(style);
+        assertEquals(6, SLD.pointSize(point));
 
-        assertEquals("#FF0000", mark.o("fill").s("color"));
-        assertEquals("#000000", mark.o("stroke").s("color"));
-        assertEquals(2, mark.o("stroke").i("width").intValue());
+        Mark mark = SLD.pointMark(style);
+        assertEquals("circle", SLD.wellKnownName(mark));
+        assertEquals(Color.red, SLD.color(mark.getFill()));
+        assertEquals(Color.black, SLD.color(mark.getStroke()));
+        assertEquals(2, SLD.width(mark.getStroke()));
     }
 
     @Test
@@ -101,12 +105,14 @@ public class SldTransformerTest {
         //        </Rule>
         //      </FeatureTypeStyle>
         //    </UserStyle>
-        YamlObj style = transform("point", "graphic.sld");
+        Style style = parse("point", "graphic.sld");
 
-        YamlObj eg =
-            style.o("feature-styles", 0).o("rules", 0).o("symbolizers", 0).o("point").o("symbols", 0).o("external");
-        assertEquals("image/png", eg.s("format"));
-        assertEquals("smileyface.png", eg.s("url"));
+        Graphic graphic = SLD.graphic(SLD.pointSymbolizer(style));
+        assertEquals(32, Filters.asInt(graphic.getSize()));
+
+        ExternalGraphic external = (ExternalGraphic) graphic.graphicalSymbols().get(0);
+        assertEquals("smileyface.png", external.getLocation().getPath());
+        assertEquals("image/png", external.getFormat());
     }
 
     @Test
@@ -162,19 +168,34 @@ public class SldTransformerTest {
         //        </Rule>
         //      </FeatureTypeStyle>
         //    </UserStyle>
-        YamlObj style = transform("point", "zoom.sld");
+        Style style = parse("point", "zoom.sld");
+        Rule rule = style.featureTypeStyles().get(0).rules().get(0);
+        assertEquals("Large", rule.getName());
+        assertEquals(160000000.0, rule.getMaxScaleDenominator(), 0.1);
 
-        YamlObj rule = style.o("feature-styles", 0).o("rules", 0);
-        assertEquals("Large", rule.s("name"));
-        assertEquals("(,160000000)", rule.s("scale"));
+        PointSymbolizer point = (PointSymbolizer) rule.symbolizers().get(0);
+        assertEquals("circle", SLD.wellKnownName(SLD.mark(point)));
+        assertEquals(color("CC3300"), SLD.color(SLD.fill(point)));
+        assertEquals(12, SLD.pointSize(point));
 
-        rule = style.o("feature-styles", 0).o("rules", 1);
-        assertEquals("Medium", rule.s("name"));
-        assertEquals("(160000000,320000000)", rule.s("scale"));
+        rule = style.featureTypeStyles().get(0).rules().get(1);
+        assertEquals("Medium", rule.getName());
+        assertEquals(160000000.0, rule.getMinScaleDenominator(), 0.1);
+        assertEquals(320000000.0, rule.getMaxScaleDenominator(), 0.1);
 
-        rule = style.o("feature-styles", 0).o("rules", 2);
-        assertEquals("Small", rule.s("name"));
-        assertEquals("(320000000,)", rule.s("scale"));
+        point = (PointSymbolizer) rule.symbolizers().get(0);
+        assertEquals("circle", SLD.wellKnownName(SLD.mark(point)));
+        assertEquals(color("CC3300"), SLD.color(SLD.fill(point)));
+        assertEquals(8, SLD.pointSize(point));
+
+        rule = style.featureTypeStyles().get(0).rules().get(2);
+        assertEquals("Small", rule.getName());
+        assertEquals(320000000.0, rule.getMinScaleDenominator(), 0.1);
+
+        point = (PointSymbolizer) rule.symbolizers().get(0);
+        assertEquals("circle", SLD.wellKnownName(SLD.mark(point)));
+        assertEquals(color("CC3300"), SLD.color(SLD.fill(point)));
+        assertEquals(4, SLD.pointSize(point));
     }
 
     @Test
@@ -253,19 +274,19 @@ public class SldTransformerTest {
         //        </Rule>
         //      </FeatureTypeStyle>
         //    </UserStyle>
-        YamlObj style = transform("point", "attribute.sld");
+        Style style = parse("point", "attribute.sld");
 
-        YamlObj rule = style.o("feature-styles", 0).o("rules", 0);
-        assertEquals("SmallPop", rule.s("name"));
-        assertEquals("pop < '50000'", rule.s("filter"));
+        Rule rule = style.featureTypeStyles().get(0).rules().get(0);
+        assertEquals("SmallPop", rule.getName());
+        assertEquals("pop < '50000'", ECQL.toCQL(rule.getFilter()));
 
-        rule = style.o("feature-styles", 0).o("rules", 1);
-        assertEquals("MediumPop", rule.s("name"));
-        assertEquals("(pop >= '50000' AND pop < '100000')", rule.s("filter"));
+        rule = style.featureTypeStyles().get(0).rules().get(1);
+        assertEquals("MediumPop", rule.getName());
+        assertEquals("pop >= '50000' AND pop < '100000'", ECQL.toCQL(rule.getFilter()));
 
-        rule = style.o("feature-styles", 0).o("rules", 2);
-        assertEquals("LargePop", rule.s("name"));
-        assertEquals("pop >= '100000'", rule.s("filter"));
+        rule = style.featureTypeStyles().get(0).rules().get(2);
+        assertEquals("LargePop", rule.getName());
+        assertEquals("pop >= '100000'", ECQL.toCQL(rule.getFilter()));
     }
 
     @Test
@@ -289,11 +310,13 @@ public class SldTransformerTest {
         //     </Rule>
         //   </FeatureTypeStyle>
         // </UserStyle>
-        YamlObj style = transform("point", "rotated-square.sld");
+        Style style = parse("point", "rotated-square.sld");
 
-        YamlObj point = style.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("point");
-        assertEquals(12, point.i("size").intValue());
-        assertEquals(45, point.i("rotation").intValue());
+        PointSymbolizer point = SLD.pointSymbolizer(style);
+        assertEquals("square", SLD.wellKnownName(SLD.mark(point)));
+        assertEquals(color("009900"), SLD.color(SLD.fill(point)));
+        assertEquals(12, SLD.pointSize(point));
+        assertEquals(45, Filters.asInt(SLD.graphic(point).getRotation()));
     }
 
     @Test
@@ -321,15 +344,15 @@ public class SldTransformerTest {
         //        </Rule>
         //      </FeatureTypeStyle>
         //    </UserStyle>
-        YamlObj style = transform("point", "transparent-triangle.sld");
+        Style style = parse("point", "transparent-triangle.sld");
 
-        YamlObj mark =
-            style.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("point").o("symbols", 0).o("mark");
-        assertEquals("triangle", mark.s("shape"));
-        assertEquals("#009900", mark.o("fill").s("color"));
-        assertEquals(0.2, mark.o("fill").d("opacity"), 0.1);
-        assertEquals("#000000", mark.o("stroke").s("color"));
-        assertEquals(2, mark.o("stroke").i("width").intValue());
+        PointSymbolizer point = SLD.pointSymbolizer(style);
+        assertEquals("triangle", SLD.wellKnownName(SLD.mark(point)));
+        assertEquals(color("009900"), SLD.color(SLD.fill(point)));
+        assertEquals(0.2, SLD.opacity(SLD.fill(point)), 0.1);
+        assertEquals(Color.black, SLD.color(SLD.stroke(point)));
+        assertEquals(2, SLD.width(SLD.stroke(point)));
+        assertEquals(12, SLD.pointSize(point));
     }
 
     @Test
@@ -361,12 +384,11 @@ public class SldTransformerTest {
         //        </Rule>
         //      </FeatureTypeStyle>
         //    </UserStyle>
-        YamlObj style = transform("point", "default-label.sld");
+        Style style = parse("point", "default-label.sld");
 
-        YamlObj text =
-            style.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
-        assertEquals("[name]", text.s("label"));
-        assertEquals("#000000", text.o("fill").s("color"));
+        TextSymbolizer text = SLD.textSymbolizer(style);
+        assertEquals("name", SLD.textLabelString(text));
+        assertEquals(Color.black, SLD.textFontFill(text));
     }
 
     @Test
@@ -415,23 +437,23 @@ public class SldTransformerTest {
         //        </Rule>
         //      </FeatureTypeStyle>
         //    </UserStyle>
-        YamlObj style = transform("point", "styled-label.sld");
+        Style style = parse("point", "styled-label.sld");
 
-        YamlObj text =
-            style.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
+        TextSymbolizer text = SLD.textSymbolizer(style);
+        assertEquals("name", SLD.textLabelString(text));
+        assertEquals(Color.black, SLD.textFontFill(text));
 
-        assertEquals("[name]", text.s("label"));
+        Font font = SLD.font(text);
+        assertEquals("Arial", Filters.asString(font.getFamily().get(0)));
+        assertEquals(12, Filters.asInt(font.getSize()));
+        assertEquals("bold", Filters.asString(font.getWeight()));
+        assertEquals("normal", Filters.asString(font.getStyle()));
 
-        assertEquals("Arial", text.o("font").s("family"));
-        assertEquals(12, text.o("font").i("size").intValue());
-        assertEquals("normal", text.o("font").s("style"));
-        assertEquals("bold", text.o("font").s("weight"));
-
-        assertEquals("point", text.o("placement").s("type"));
-        assertEquals("(0.5,0.0)", text.o("placement").s("anchor"));
-        assertEquals("(0,5)", text.o("placement").s("displacement"));
-
-        assertEquals("#000000", text.o("fill").s("color"));
+        PointPlacement placement = (PointPlacement) text.getLabelPlacement();
+        assertEquals(0.5, Filters.asDouble(placement.getAnchorPoint().getAnchorPointX()), 0.1);
+        assertEquals(0.0, Filters.asDouble(placement.getAnchorPoint().getAnchorPointY()), 0.1);
+        assertEquals(0, Filters.asInt(placement.getDisplacement().getDisplacementX()));
+        assertEquals(5, Filters.asInt(placement.getDisplacement().getDisplacementY()));
     }
 
     @Test
@@ -481,12 +503,24 @@ public class SldTransformerTest {
         //     </Rule>
         //   </FeatureTypeStyle>
         // </UserStyle>
-        YamlObj style = transform("point", "rotated-label.sld");
-        YamlObj text =
-            style.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
+        Style style = parse("point", "rotated-label.sld");
 
-        YamlObj pp = text.o("placement");
-        assertEquals(-45, pp.i("rotation").intValue());
+        TextSymbolizer text = SLD.textSymbolizer(style);
+        assertEquals("name", SLD.textLabelString(text));
+        assertEquals(color("990099"), SLD.textFontFill(text));
+
+        Font font = SLD.font(text);
+        assertEquals("Arial", Filters.asString(font.getFamily().get(0)));
+        assertEquals(12, Filters.asInt(font.getSize()));
+        assertEquals("bold", Filters.asString(font.getWeight()));
+        assertEquals("normal", Filters.asString(font.getStyle()));
+
+        PointPlacement placement = (PointPlacement) text.getLabelPlacement();
+        assertEquals(0.5, Filters.asDouble(placement.getAnchorPoint().getAnchorPointX()), 0.1);
+        assertEquals(0.0, Filters.asDouble(placement.getAnchorPoint().getAnchorPointY()), 0.1);
+        assertEquals(0, Filters.asInt(placement.getDisplacement().getDisplacementX()));
+        assertEquals(25, Filters.asInt(placement.getDisplacement().getDisplacementY()));
+        assertEquals(-45, Filters.asInt(placement.getRotation()));
     }
 
     @Test
@@ -504,12 +538,13 @@ public class SldTransformerTest {
         //        </Rule>
         //      </FeatureTypeStyle>
         //    </UserStyle>
-        YamlObj style = transform("line", "simple.sld");
-        YamlObj line =
-            style.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("line");
-        assertEquals("#000000", line.o("stroke").s("color"));
-        assertEquals(3, line.o("stroke").i("width").intValue());
+        Style style = parse("line", "simple.sld");
+
+        LineSymbolizer line = SLD.lineSymbolizer(style);
+        assertEquals(Color.black, SLD.lineColor(line));
+        assertEquals(3, SLD.lineWidth(line));
     }
+
     @Test
     public void testLineWithAttribute() throws Exception {
         //    <UserStyle>
@@ -567,32 +602,34 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj style = transform("line", "attribute.sld");
+        Style style = parse("line", "attribute.sld");
 
+        FeatureTypeStyle featureStyle = style.featureTypeStyles().get(0);
+        Rule rule = featureStyle.rules().get(0);
+        assertEquals("local-road", rule.getName());
+        assertEquals("type = 'local-road'", ECQL.toCQL(rule.getFilter()));
 
-        YamlObj rule = style.o("feature-styles", 0).o("rules", 0);
-        assertEquals("local-road", rule.s("name"));
-        assertEquals("type = 'local-road'", rule.s("filter"));
+        LineSymbolizer line = (LineSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("009933"), SLD.color(line));
+        assertEquals(2, SLD.width(line));
 
-        YamlObj line = rule.o("symbolizers", 0).o("line");
-        assertEquals("#009933", line.o("stroke").s("color"));
-        assertEquals(2, line.o("stroke").i("width").intValue());
+        featureStyle = style.featureTypeStyles().get(1);
+        rule = featureStyle.rules().get(0);
+        assertEquals("secondary", rule.getName());
+        assertEquals("type = 'secondary'", ECQL.toCQL(rule.getFilter()));
 
-        rule = style.o("feature-styles", 1).o("rules", 0);
-        assertEquals("secondary", rule.s("name"));
-        assertEquals("type = 'secondary'", rule.s("filter"));
+        line = (LineSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("0055CC"), SLD.color(line));
+        assertEquals(3, SLD.width(line));
 
-        line = rule.o("symbolizers", 0).o("line");
-        assertEquals("#0055CC", line.o("stroke").s("color"));
-        assertEquals(3, line.o("stroke").i("width").intValue());
+        featureStyle = style.featureTypeStyles().get(2);
+        rule = featureStyle.rules().get(0);
+        assertEquals("highway", rule.getName());
+        assertEquals("type = 'highway'", ECQL.toCQL(rule.getFilter()));
 
-        rule = style.o("feature-styles", 2).o("rules", 0);
-        assertEquals("highway", rule.s("name"));
-        assertEquals("type = 'highway'", rule.s("filter"));
-
-        line = rule.o("symbolizers", 0).o("line");
-        assertEquals("#FF0000", line.o("stroke").s("color"));
-        assertEquals(6, line.o("stroke").i("width").intValue());
+        line = (LineSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("FF0000"), SLD.color(line));
+        assertEquals(6, SLD.width(line));
     }
 
     @Test
@@ -623,20 +660,23 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj style = transform("line", "border.sld");
+        Style style = parse("line", "border.sld");
 
-        YamlObj rule = style.o("feature-styles", 0).o("rules", 0);
-        YamlObj line = rule.o("symbolizers", 0).o("line");
-        assertEquals("#333333", line.o("stroke").s("color"));
-        assertEquals(5, line.o("stroke").i("width").intValue());
-        assertEquals("round", line.o("stroke").s("linecap"));
+        FeatureTypeStyle featureStyle = style.featureTypeStyles().get(0);
+        LineSymbolizer line = SLD.lineSymbolizer(featureStyle);
 
-        rule = style.o("feature-styles", 1).o("rules", 0);
-        line = rule.o("symbolizers", 0).o("line");
-        assertEquals("#6699FF", line.o("stroke").s("color"));
-        assertEquals(3, line.o("stroke").i("width").intValue());
-        assertEquals("round", line.o("stroke").s("linecap"));
+        assertEquals(color("333333"), SLD.color(line));
+        assertEquals(5, SLD.width(line));
+        assertEquals("round", SLD.lineLinecap(line));
+
+        featureStyle = style.featureTypeStyles().get(1);
+        line = SLD.lineSymbolizer(featureStyle);
+
+        assertEquals(color("6699FF"), SLD.color(line));
+        assertEquals(3, SLD.width(line));
+        assertEquals("round", SLD.lineLinecap(line));
     }
+
     @Test
     public void testLineWithCurvedLabel() throws Exception {
 
@@ -665,11 +705,10 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj style = transform("line", "curved-label.sld");
-        YamlObj text = style.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
-        assertEquals("[name]", text.s("label"));
-        assertEquals("#000000", text.o("fill").s("color"));
-        assertEquals(true, text.o("options").b("follow-line"));
+        Style style = parse("line", "curved-label.sld");
+        TextSymbolizer text = SLD.textSymbolizer(style);
+        assertEquals("name", SLD.textLabelString(text));
+        assertEquals("true", text.getOptions().get("followLine"));
     }
 
     @Test
@@ -706,23 +745,29 @@ public class SldTransformerTest {
         //        </Rule>
         //      </FeatureTypeStyle>
         //    </UserStyle>
-        YamlObj style = transform("line", "dash-dot.sld");
-        YamlObj rule = style.o("feature-styles", 0).o("rules", 0);
+        Style style = parse("line", "dash-dot.sld");
 
-        YamlObj line = rule.o("symbolizers", 0).o("line");
-        assertEquals("#0000FF", line.o("stroke").s("color"));
-        assertEquals(1, line.o("stroke").i("width").intValue());
-        assertEquals("10 10", line.o("stroke").s("dasharray"));
 
-        line = rule.o("symbolizers", 1).o("line");
-        assertEquals("5 15", line.o("stroke").s("dasharray"));
-        assertEquals(7.5, line.o("stroke").d("dashoffset"), 0.1);
+        LineSymbolizer line = (LineSymbolizer) SLD.rules(style)[0].symbolizers().get(0);
+        assertEquals(Color.blue, SLD.color(line));
+        assertEquals(1, SLD.width(line));
+        assertEquals(10f, SLD.lineDash(line)[0], 0.1);
+        assertEquals(10f, SLD.lineDash(line)[0], 0.1);
 
-        YamlObj g = line.o("stroke").o("graphic-stroke");
-        assertEquals(5, g.i("size").intValue());
-        assertEquals("circle", g.o("symbols", 0).o("mark").s("shape"));
-        assertEquals("#000033", g.o("symbols", 0).o("mark").o("stroke").s("color"));
-        assertEquals(1, g.o("symbols", 0).o("mark").o("stroke").i("width").intValue());
+        line = (LineSymbolizer) SLD.rules(style)[0].symbolizers().get(1);
+        Stroke stroke = line.getStroke();
+
+        assertEquals(5f, SLD.lineDash(line)[0], 0.1);
+        assertEquals(15f, SLD.lineDash(line)[1], 0.1);
+        assertEquals(7.5, Filters.asDouble(stroke.getDashOffset()), 0.1);
+
+        Graphic g = stroke.getGraphicStroke();
+        assertEquals(5, Filters.asInt(g.getSize()));
+
+        Mark mark = SLD.mark(g);
+        assertEquals("circle", SLD.wellKnownName(mark));
+        assertEquals(color("000033"), SLD.color(mark.getStroke()));
+        assertEquals(1, SLD.width(mark.getStroke()));
     }
 
     @Test
@@ -742,11 +787,12 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj style = transform("line", "dashed-line.sld");
-        YamlObj stroke = style.o("feature-styles", 0).o("rules", 0).o("symbolizers", 0).o("line").o("stroke");
-        assertEquals("#0000FF", stroke.s("color"));
-        assertEquals(3, stroke.i("width").intValue());
-        assertEquals("5 2", stroke.s("dasharray"));
+        Style style = parse("line", "dashed-line.sld");
+        LineSymbolizer line = SLD.lineSymbolizer(style);
+        assertEquals(Color.blue, SLD.color(line));
+        assertEquals(3, SLD.width(line));
+        assertEquals(5f, SLD.lineDash(line)[0], 0.1);
+        assertEquals(2f, SLD.lineDash(line)[1], 0.1);
     }
     @Test
     public void testLineWithDashspace() throws Exception {
@@ -778,18 +824,19 @@ public class SldTransformerTest {
         //     </FeatureTypeStyle>
         //   </UserStyle>
 
-        YamlObj style = transform("line", "dash-space.sld");
-        YamlObj stroke = style.o("feature-styles", 0).o("rules", 0).o("symbolizers", 0).o("line").o("stroke");
+        Style style = parse("line", "dash-space.sld");
 
-        assertEquals("4 6", stroke.s("dasharray"));
-        YamlObj g = stroke.o("graphic-stroke");
+        LineSymbolizer line = SLD.lineSymbolizer(style);
+        assertEquals(4f, SLD.lineDash(line)[0], 0.1);
+        assertEquals(6f, SLD.lineDash(line)[1], 0.1);
 
-        assertEquals(4, g.i("size").intValue());
-        assertEquals("circle", g.o("symbols", 0).o("mark").s("shape"));
-        assertEquals("#666666", g.o("symbols", 0).o("mark").o("fill").s("color"));
-        assertEquals("#333333", g.o("symbols", 0).o("mark").o("stroke").s("color"));
-        assertEquals(1, g.o("symbols", 0).o("mark").o("stroke").i("width").intValue());
+        Mark mark = SLD.mark(line.getStroke().getGraphicStroke());
+        assertEquals("circle", SLD.wellKnownName(mark));
+        assertEquals(color("666666"), SLD.color(mark.getFill()));
+        assertEquals(color("333333"), SLD.color(mark.getStroke()));
+        assertEquals(1, SLD.width(mark.getStroke()));
     }
+
     @Test
     public void testLineWithDefaultLabel() throws Exception {
         //    <UserStyle>
@@ -814,14 +861,13 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj style = transform("line", "default-label.sld");
+        Style style = parse("line", "default-label.sld");
+        LineSymbolizer line = SLD.lineSymbolizer(style);
+        assertEquals(Color.red, SLD.color(line));
 
-        YamlObj line = style.o("feature-styles", 0).o("rules", 0).o("symbolizers", 0).o("line");
-        assertEquals("#FF0000", line.o("stroke").s("color"));
-
-        YamlObj text = style.o("feature-styles", 0).o("rules", 0).o("symbolizers", 1).o("text");
-        assertEquals("[name]", text.s("label"));
-        assertEquals("#000000", text.o("fill").s("color"));
+        TextSymbolizer text = SLD.textSymbolizer(style);
+        assertEquals("name", SLD.textLabelString(text));
+        assertEquals(Color.black, SLD.color(text.getFill()));
     }
 
     @Test
@@ -856,15 +902,24 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj style = transform("line", "railroad.sld");
+        Style style = parse("line", "railroad.sld");
 
-        YamlObj line = style.o("feature-styles", 0).o("rules", 0).o("symbolizers", 1).o("line");
-        YamlObj mark = line.o("stroke").o("graphic-stroke").o("symbols", 0).o("mark");
-        assertEquals("shape://vertline", mark.s("shape"));
-        assertEquals("#333333", mark.o("stroke").s("color"));
-        assertEquals(1, mark.o("stroke").i("width").intValue());
+        LineSymbolizer line = (LineSymbolizer) SLD.rules(style)[0].symbolizers().get(0);
+        assertEquals(color("333333"), SLD.color(line));
+        assertEquals(3, SLD.width(line));
 
+        line = (LineSymbolizer) SLD.rules(style)[0].symbolizers().get(1);
+
+        Graphic g = line.getStroke().getGraphicStroke();
+
+        Mark mark = SLD.mark(g);
+        assertEquals("shape://vertline", SLD.wellKnownName(mark));
+        assertEquals(color("333333"), SLD.color(mark.getStroke()));
+        assertEquals(1, SLD.width(mark.getStroke()));
+
+        assertEquals(12, Filters.asInt(g.getSize()));
     }
+
     @Test
     public void testLineWithZoom() throws Exception {
         //    <UserStyle>
@@ -904,31 +959,32 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj style = transform("line", "zoom.sld");
+        Style style = parse("line", "zoom.sld");
 
-        YamlObj rule = style.o("feature-styles", 0).o("rules", 0);
-        assertEquals("Large", rule.s("name"));
-        assertEquals("(,180000000)", rule.s("scale"));
+        Rule rule = style.featureTypeStyles().get(0).rules().get(0);
+        assertEquals("Large", rule.getName());
+        assertEquals(180000000d, rule.getMaxScaleDenominator(), 0.1);
 
-        YamlObj line = rule.o("symbolizers", 0).o("line");
-        assertEquals("#009933", line.o("stroke").s("color"));
-        assertEquals(6, line.o("stroke").i("width").intValue());
+        LineSymbolizer line = (LineSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("009933"), SLD.color(line));
+        assertEquals(6, SLD.width(line));
 
-        rule = style.o("feature-styles", 0).o("rules", 1);
-        assertEquals("Medium", rule.s("name"));
-        assertEquals("(180000000,360000000)", rule.s("scale"));
+        rule = style.featureTypeStyles().get(0).rules().get(1);
+        assertEquals("Medium", rule.getName());
+        assertEquals(360000000d, rule.getMaxScaleDenominator(), 0.1);
+        assertEquals(180000000d, rule.getMinScaleDenominator(), 0.1);
 
-        line = rule.o("symbolizers", 0).o("line");
-        assertEquals("#009933", line.o("stroke").s("color"));
-        assertEquals(4, line.o("stroke").i("width").intValue());
+        line = (LineSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("009933"), SLD.color(line));
+        assertEquals(4, SLD.width(line));
 
-        rule = style.o("feature-styles", 0).o("rules", 2);
-        assertEquals("Small", rule.s("name"));
-        assertEquals("(360000000,)", rule.s("scale"));
+        rule = style.featureTypeStyles().get(0).rules().get(2);
+        assertEquals("Small", rule.getName());
+        assertEquals(360000000d, rule.getMinScaleDenominator(), 0.1);
 
-        line = rule.o("symbolizers", 0).o("line");
-        assertEquals("#009933", line.o("stroke").s("color"));
-        assertEquals(2, line.o("stroke").i("width").intValue());
+        line = (LineSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("009933"), SLD.color(line));
+        assertEquals(2, SLD.width(line));
     }
 
     @Test
@@ -961,17 +1017,21 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj style = transform("line", "optimized-label.sld");
+        Style style = parse("line", "optimized-label.sld");
 
-        YamlObj text = style.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
-        assertEquals("[name]", text.s("label"));
-        assertEquals("#000000", text.o("fill").s("color"));
-        assertEquals(true, text.o("options").b("follow-line"));
-        assertEquals(90, text.o("options").i("max-angle-delta").intValue());
-        assertEquals(400, text.o("options").i("max-displacement").intValue());
-        assertEquals(150, text.o("options").i("repeat").intValue());
+        LineSymbolizer line = SLD.lineSymbolizer(style);
+        assertEquals(Color.red, SLD.color(line));
 
+        TextSymbolizer text = SLD.textSymbolizer(style);
+        assertEquals("name", SLD.textLabelString(text));
+        assertEquals(Color.black, SLD.color(text.getFill()));
+
+        assertEquals("true", text.getOptions().get("followLine"));
+        assertEquals("90", text.getOptions().get("maxAngleDelta"));
+        assertEquals("400", text.getOptions().get("maxDisplacement"));
+        assertEquals("150", text.getOptions().get("repeat"));
     }
+
     @Test
     public void testLineWithOptimizedAndStyledLabel() throws Exception {
         //    <UserStyle>
@@ -1008,22 +1068,25 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj style = transform("line", "optimized-styled-label.sld");
+        Style style = parse("line", "optimized-styled-label.sld");
 
-        YamlObj text = style.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
+        LineSymbolizer line = SLD.lineSymbolizer(style);
+        assertEquals(Color.red, SLD.color(line));
 
-        assertEquals("[name]", text.s("label"));
-        assertEquals("#000000", text.o("fill").s("color"));
+        TextSymbolizer text = SLD.textSymbolizer(style);
+        assertEquals("name", SLD.textLabelString(text));
+        assertEquals(Color.black, SLD.color(text.getFill()));
 
-        assertEquals("Arial", text.o("font").s("family"));
-        assertEquals(10, text.o("font").i("size").intValue());
-        assertEquals("normal", text.o("font").s("style"));
-        assertEquals("bold", text.o("font").s("weight"));
+        Font font = SLD.font(text);
+        assertEquals("Arial", Filters.asString(font.getFontFamily()));
+        assertEquals(10, Filters.asInt(font.getSize()));
+        assertEquals("normal", Filters.asString(font.getStyle()));
+        assertEquals("bold", Filters.asString(font.getWeight()));
 
-        assertEquals(true, text.o("options").b("follow-line"));
-        assertEquals(90, text.o("options").i("max-angle-delta").intValue());
-        assertEquals(400, text.o("options").i("max-displacement").intValue());
-        assertEquals(150, text.o("options").i("repeat").intValue());
+        assertEquals("true", text.getOptions().get("followLine"));
+        assertEquals("90", text.getOptions().get("maxAngleDelta"));
+        assertEquals("400", text.getOptions().get("maxDisplacement"));
+        assertEquals("150", text.getOptions().get("repeat"));
     }
 
     @Test
@@ -1041,10 +1104,10 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("poly", "simple.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
+        Style style = parse("poly", "simple.sld");
 
-        assertEquals("#000080", poly.o("fill").s("color"));
+        PolygonSymbolizer poly = SLD.polySymbolizer(style);
+        assertEquals(color("000080"), SLD.color(poly.getFill()));
     }
 
     @Test
@@ -1106,28 +1169,28 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("poly", "attribute.sld");
+        Style style = parse("poly", "attribute.sld");
 
-        YamlObj rule = obj.o("feature-styles", 0).o("rules", 0);
-        assertEquals("SmallPop", rule.s("name"));
-        assertEquals("pop < '200000'", rule.s("filter"));
+        Rule rule = style.featureTypeStyles().get(0).rules().get(0);
+        assertEquals("SmallPop", rule.getName());
+        assertEquals("pop < '200000'", ECQL.toCQL(rule.getFilter()));
 
-        YamlObj poly = rule.o("symbolizers",0).o("polygon");
-        assertEquals("#66FF66", poly.o("fill").s("color"));
+        PolygonSymbolizer poly = (PolygonSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("66FF66"), SLD.color(poly.getFill()));
 
-        rule = obj.o("feature-styles", 0).o("rules", 1);
-        assertEquals("MediumPop", rule.s("name"));
-        assertEquals("(pop >= '200000' AND pop < '500000')", rule.s("filter"));
+        rule = style.featureTypeStyles().get(0).rules().get(1);
+        assertEquals("MediumPop", rule.getName());
+        assertEquals("pop >= '200000' AND pop < '500000'", ECQL.toCQL(rule.getFilter()));
 
-        poly = rule.o("symbolizers",0).o("polygon");
-        assertEquals("#33CC33", poly.o("fill").s("color"));
+        poly = (PolygonSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("33CC33"), SLD.color(poly.getFill()));
 
-        rule = obj.o("feature-styles", 0).o("rules", 2);
-        assertEquals("LargePop", rule.s("name"));
-        assertEquals("pop > '500000'", rule.s("filter"));
+        rule = style.featureTypeStyles().get(0).rules().get(2);
+        assertEquals("LargePop", rule.getName());
+        assertEquals("pop > '500000'", ECQL.toCQL(rule.getFilter()));
 
-        poly = rule.o("symbolizers",0).o("polygon");
-        assertEquals("#009900", poly.o("fill").s("color"));
+        poly = (PolygonSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("009900"), SLD.color(poly.getFill()));
 
     }
 
@@ -1155,15 +1218,15 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("poly", "default-label.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
-        YamlObj text = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
+        Style style = parse("poly", "default-label.sld");
 
-        assertEquals("#40FF40", poly.o("fill").s("color"));
-        assertEquals("#FFFFFF", poly.o("stroke").s("color"));
-        assertEquals(2, poly.o("stroke").i("width").intValue());
+        PolygonSymbolizer poly = SLD.polySymbolizer(style);
+        assertEquals(color("40FF40"), SLD.color(poly.getFill()));
+        assertEquals(color("FFFFFF"), SLD.color(poly.getStroke()));
+        assertEquals(2, SLD.width(poly.getStroke()));
 
-        assertEquals("[name]", text.s("label"));
+        TextSymbolizer text = SLD.textSymbolizer(style);
+        assertEquals("name", SLD.textLabelString(text));
     }
 
     @Test
@@ -1191,13 +1254,15 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("poly", "graphic-fill.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
+        Style style = parse("poly", "graphic-fill.sld");
 
-        YamlObj g = poly.o("fill").o("graphic").o("symbols", 0).o("external");
-        assertEquals("colorblocks.png", g.s("url"));
-        assertEquals("image/png", g.s("format"));
-        assertEquals(93, poly.o("fill").o("graphic").i("size").intValue());
+        PolygonSymbolizer poly = SLD.polySymbolizer(style);
+        Graphic g = poly.getFill().getGraphicFill();
+
+        ExternalGraphic external = (ExternalGraphic) g.graphicalSymbols().get(0);
+        assertEquals("file:colorblocks.png", external.getLocation().toString());
+        assertEquals("image/png", external.getFormat());
+        assertEquals(93, Filters.asInt(g.getSize()));
     }
 
     @Test
@@ -1230,12 +1295,18 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("poly", "halo-label.sld");
-        YamlObj text = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
-        assertEquals("[name]", text.s("label"));
-        assertEquals(3, text.o("halo").i("radius").intValue());
-        assertEquals("#FFFFFF", text.o("halo").o("fill").s("color"));
+        Style style = parse("poly", "halo-label.sld");
 
+        PolygonSymbolizer poly = SLD.polySymbolizer(style);
+        assertEquals(color("40FF40"), SLD.color(poly.getFill()));
+        assertEquals(color("FFFFFF"), SLD.color(poly.getStroke()));
+        assertEquals(2, SLD.width(poly.getStroke()));
+
+        TextSymbolizer text = SLD.textSymbolizer(style);
+        assertEquals("name", SLD.textLabelString(text));
+
+        assertEquals(color("FFFFFF"), SLD.textHaloFill(text));
+        assertEquals(3, SLD.textHaloWidth(text));
     }
 
     @Test
@@ -1264,15 +1335,17 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("poly", "hatch-fill.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
+        Style style = parse("poly", "hatch-fill.sld");
 
-        YamlObj mark = poly.o("fill").o("graphic").o("symbols", 0).o("mark");
-        assertEquals("shape://times", mark.s("shape"));
-        assertEquals("#990099", mark.o("stroke").s("color"));
-        assertEquals(1, mark.o("stroke").i("width").intValue());
+        PolygonSymbolizer poly = SLD.polySymbolizer(style);
 
-        assertEquals(16, poly.o("fill").o("graphic").i("size").intValue());
+        Mark mark = SLD.mark(poly.getFill().getGraphicFill());
+        assertEquals("shape://times", Filters.asString(mark.getWellKnownName()));
+
+        assertEquals(color("990099"), SLD.color(mark.getStroke()));
+        assertEquals(1, SLD.width(mark.getStroke()));
+
+        assertEquals(16, Filters.asInt(poly.getFill().getGraphicFill().getSize()));
     }
 
     @Test
@@ -1294,12 +1367,12 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("poly", "stroke.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
+        Style style = parse("poly", "stroke.sld");
 
-        assertEquals("#000080", poly.o("fill").s("color"));
-        assertEquals("#FFFFFF", poly.o("stroke").s("color"));
-        assertEquals(2, poly.o("stroke").i("width").intValue());
+        PolygonSymbolizer poly = SLD.polySymbolizer(style);
+        assertEquals(color("000080"), SLD.color(poly.getFill()));
+        assertEquals(color("FFFFFF"), SLD.color(poly.getStroke()));
+        assertEquals(2, SLD.width(poly.getStroke()));
     }
 
     @Test
@@ -1345,22 +1418,29 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("poly", "styled-label.sld");
-        YamlObj text = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",1).o("text");
-        assertEquals("[name]", text.s("label"));
+        Style style = parse("poly", "styled-label.sld");
 
-        assertEquals("Arial", text.o("font").s("family"));
-        assertEquals(11, text.o("font").i("size").intValue());
-        assertEquals("normal", text.o("font").s("style"));
-        assertEquals("bold", text.o("font").s("weight"));
+        PolygonSymbolizer poly = SLD.polySymbolizer(style);
+        assertEquals(color("40FF40"), SLD.color(poly.getFill()));
+        assertEquals(color("FFFFFF"), SLD.color(poly.getStroke()));
+        assertEquals(2, SLD.width(poly.getStroke()));
 
-        assertEquals("point", text.o("placement").s("type"));
-        assertEquals("(0.5,0.5)", text.o("placement").s("anchor"));
+        TextSymbolizer text = SLD.textSymbolizer(style);
+        assertEquals("name", SLD.textLabelString(text));
+        assertEquals(Color.black, SLD.color(text.getFill()));
 
-        assertEquals("#000000", text.o("fill").s("color"));
+        PointPlacement place = (PointPlacement) text.getLabelPlacement();
+        assertEquals(0.5, Filters.asDouble(place.getAnchorPoint().getAnchorPointX()), 0.1);
+        assertEquals(0.5, Filters.asDouble(place.getAnchorPoint().getAnchorPointY()), 0.1);
 
-        assertEquals(60, text.o("options").i("auto-wrap").intValue());
-        assertEquals(150, text.o("options").i("max-displacement").intValue());
+        Font font = SLD.font(text);
+        assertEquals("Arial", Filters.asString(font.getFontFamily()));
+        assertEquals(11, Filters.asInt(font.getSize()));
+        assertEquals("normal", Filters.asString(font.getStyle()));
+        assertEquals("bold", Filters.asString(font.getWeight()));
+
+        assertEquals("60", text.getOptions().get("autoWrap"));
+        assertEquals("150", text.getOptions().get("maxDisplacement"));
     }
 
     @Test
@@ -1383,14 +1463,14 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("poly", "transparent.sld");
-        YamlObj poly = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("polygon");
+        Style style = parse("poly", "transparent.sld");
 
-        assertEquals("#000080", poly.o("fill").s("color"));
-        assertEquals(0.5, poly.o("fill").d("opacity"), 0.1);
+        PolygonSymbolizer poly = SLD.polySymbolizer(style);
+        assertEquals(color("000080"), SLD.color(poly.getFill()));
+        assertEquals(0.5, SLD.opacity(poly.getFill()), 0.1);
 
-        assertEquals("#FFFFFF", poly.o("stroke").s("color"));
-        assertEquals(2, poly.o("stroke").i("width").intValue());
+        assertEquals(color("FFFFFF"), SLD.color(poly.getStroke()));
+        assertEquals(2, SLD.width(poly.getStroke()));
     }
 
     @Test
@@ -1463,47 +1543,35 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("poly", "zoom.sld");
+        Style style = parse("poly", "zoom.sld");
 
-        YamlObj rule = obj.o("feature-styles", 0).o("rules", 0);
-        assertEquals("Large", rule.s("name"));
-        assertEquals("(,100000000)", rule.s("scale"));
+        Rule rule = style.featureTypeStyles().get(0).rules().get(0);
+        assertEquals("Large", rule.getName());
+        assertEquals(100000000d, rule.getMaxScaleDenominator(), 0.1);
 
-        YamlObj poly = rule.o("symbolizers",0).o("polygon");
-        assertEquals("#0000CC", poly.o("fill").s("color"));
-        assertEquals("#000000", poly.o("stroke").s("color"));
-        assertEquals(7, poly.o("stroke").i("width").intValue());
+        PolygonSymbolizer poly = (PolygonSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("0000CC"), SLD.color(poly.getFill()));
+        assertEquals(color("000000"), SLD.color(poly.getStroke()));
+        assertEquals(7, SLD.width(poly.getStroke()));
 
-        YamlObj text = rule.o("symbolizers",1).o("text");
-        assertEquals("[name]", text.s("label"));
-        assertEquals("Arial", text.o("font").s("family"));
-        assertEquals(14, text.o("font").i("size").intValue());
-        assertEquals("normal", text.o("font").s("style"));
-        assertEquals("bold", text.o("font").s("weight"));
+        rule = style.featureTypeStyles().get(0).rules().get(1);
+        assertEquals("Medium", rule.getName());
+        assertEquals(200000000d, rule.getMaxScaleDenominator(), 0.1);
+        assertEquals(100000000d, rule.getMinScaleDenominator(), 0.1);
 
-        assertEquals("point", text.o("placement").s("type"));
-        assertEquals("(0.5,0.5)", text.o("placement").s("anchor"));
+        poly = (PolygonSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("0000CC"), SLD.color(poly.getFill()));
+        assertEquals(color("000000"), SLD.color(poly.getStroke()));
+        assertEquals(4, SLD.width(poly.getStroke()));
 
-        assertEquals("#FFFFFF", text.o("fill").s("color"));
+        rule = style.featureTypeStyles().get(0).rules().get(2);
+        assertEquals("Small", rule.getName());
+        assertEquals(200000000d, rule.getMinScaleDenominator(), 0.1);
 
-        rule = obj.o("feature-styles", 0).o("rules", 1);
-        assertEquals("Medium", rule.s("name"));
-        assertEquals("(100000000,200000000)", rule.s("scale"));
-
-        poly = rule.o("symbolizers",0).o("polygon");
-        assertEquals("#0000CC", poly.o("fill").s("color"));
-        assertEquals("#000000", poly.o("stroke").s("color"));
-        assertEquals(4, poly.o("stroke").i("width").intValue());
-
-        rule = obj.o("feature-styles", 0).o("rules", 2);
-        assertEquals("Small", rule.s("name"));
-        assertEquals("(200000000,)", rule.s("scale"));
-
-        poly = rule.o("symbolizers",0).o("polygon");
-        poly = rule.o("symbolizers",0).o("polygon");
-        assertEquals("#0000CC", poly.o("fill").s("color"));
-        assertEquals("#000000", poly.o("stroke").s("color"));
-        assertEquals(1, poly.o("stroke").i("width").intValue());
+        poly = (PolygonSymbolizer) rule.symbolizers().get(0);
+        assertEquals(color("0000CC"), SLD.color(poly.getFill()));
+        assertEquals(color("000000"), SLD.color(poly.getStroke()));
+        assertEquals(1, SLD.width(poly.getStroke()));
     }
 
     @Test
@@ -1522,11 +1590,17 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("raster", "alpha-channel.sld");
-        YamlObj raster = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("raster");
+        Style style = parse("raster", "alpha-channel.sld");
+        RasterSymbolizer raster = SLD.rasterSymbolizer(style);
 
-        assertEquals("(#008000,,70,)", raster.o("color-map").s("entries", 0));
-        assertEquals("(#008000,0,256,)", raster.o("color-map").s("entries", 1));
+        ColorMapEntry e = raster.getColorMap().getColorMapEntry(0);
+        assertEquals("#008000", Filters.asString(e.getColor()));
+        assertEquals(70, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(1);
+        assertEquals("#008000", Filters.asString(e.getColor()));
+        assertEquals(256, Filters.asInt(e.getQuantity()));
+        assertEquals(0, Filters.asInt(e.getOpacity()));
     }
 
     @Test
@@ -1549,13 +1623,21 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("raster", "brightness-and-contrast.sld");
-        YamlObj raster = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("raster");
+        Style style = parse("raster", "brightness-and-contrast.sld");
 
-        assertEquals("normalize", raster.o("contrast-enhancement").s("mode"));
-        assertEquals(0.5, raster.o("contrast-enhancement").d("gamma"), 0.1);
-        assertEquals("(#008000,,70,)", raster.o("color-map").s("entries", 0));
-        assertEquals("(#663333,,256,)", raster.o("color-map").s("entries", 1));
+        RasterSymbolizer raster = SLD.rasterSymbolizer(style);
+
+        ContrastEnhancement contrast = raster.getContrastEnhancement();
+        assertEquals(0.5, Filters.asDouble(contrast.getGammaValue()), 0.1);
+        assertEquals(ContrastMethod.NORMALIZE, contrast.getMethod());
+
+        ColorMapEntry e = raster.getColorMap().getColorMapEntry(0);
+        assertEquals("#008000", Filters.asString(e.getColor()));
+        assertEquals(70, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(1);
+        assertEquals("#663333", Filters.asString(e.getColor()));
+        assertEquals(256, Filters.asInt(e.getQuantity()));
     }
 
     @Test
@@ -1574,12 +1656,17 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("raster", "discrete-colors.sld");
-        YamlObj raster = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("raster");
+        Style style = parse("raster", "discrete-colors.sld");
 
-        assertEquals("intervals", raster.o("color-map").s("type"));
-        assertEquals("(#008000,,150,)", raster.o("color-map").s("entries", 0));
-        assertEquals("(#663333,,256,)", raster.o("color-map").s("entries", 1));
+        RasterSymbolizer raster = SLD.rasterSymbolizer(style);
+
+        ColorMapEntry e = raster.getColorMap().getColorMapEntry(0);
+        assertEquals("#008000", Filters.asString(e.getColor()));
+        assertEquals(150, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(1);
+        assertEquals("#663333", Filters.asString(e.getColor()));
+        assertEquals(256, Filters.asInt(e.getQuantity()));
     }
 
     @Test
@@ -1604,17 +1691,41 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("raster", "many-color-gradient.sld");
-        YamlObj raster = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("raster");
+        Style style = parse("raster", "many-color-gradient.sld");
 
-        assertEquals("(#000000,,95,)", raster.o("color-map").s("entries", 0));
-        assertEquals("(#0000FF,,110,)", raster.o("color-map").s("entries", 1));
-        assertEquals("(#00FF00,,135,)", raster.o("color-map").s("entries", 2));
-        assertEquals("(#FF0000,,160,)", raster.o("color-map").s("entries", 3));
-        assertEquals("(#FF00FF,,185,)", raster.o("color-map").s("entries", 4));
-        assertEquals("(#FFFF00,,210,)", raster.o("color-map").s("entries", 5));
-        assertEquals("(#00FFFF,,235,)", raster.o("color-map").s("entries", 6));
-        assertEquals("(#FFFFFF,,256,)", raster.o("color-map").s("entries", 7));
+        RasterSymbolizer raster = SLD.rasterSymbolizer(style);
+
+        ColorMapEntry e = raster.getColorMap().getColorMapEntry(0);
+        assertEquals("#000000", Filters.asString(e.getColor()));
+        assertEquals(95, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(1);
+        assertEquals("#0000FF", Filters.asString(e.getColor()));
+        assertEquals(110, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(2);
+        assertEquals("#00FF00", Filters.asString(e.getColor()));
+        assertEquals(135, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(3);
+        assertEquals("#FF0000", Filters.asString(e.getColor()));
+        assertEquals(160, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(4);
+        assertEquals("#FF00FF", Filters.asString(e.getColor()));
+        assertEquals(185, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(5);
+        assertEquals("#FFFF00", Filters.asString(e.getColor()));
+        assertEquals(210, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(6);
+        assertEquals("#00FFFF", Filters.asString(e.getColor()));
+        assertEquals(235, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(7);
+        assertEquals("#FFFFFF", Filters.asString(e.getColor()));
+        assertEquals(256, Filters.asInt(e.getQuantity()));
 
     }
 
@@ -1635,12 +1746,21 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("raster", "three-color-gradient.sld");
-        YamlObj raster = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("raster");
+        Style style = parse("raster", "three-color-gradient.sld");
 
-        assertEquals("(#0000FF,,150,)", raster.o("color-map").s("entries", 0));
-        assertEquals("(#FFFF00,,200,)", raster.o("color-map").s("entries", 1));
-        assertEquals("(#FF0000,,250,)", raster.o("color-map").s("entries", 2));
+        RasterSymbolizer raster = SLD.rasterSymbolizer(style);
+
+        ColorMapEntry e = raster.getColorMap().getColorMapEntry(0);
+        assertEquals("#0000FF", Filters.asString(e.getColor()));
+        assertEquals(150, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(1);
+        assertEquals("#FFFF00", Filters.asString(e.getColor()));
+        assertEquals(200, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(2);
+        assertEquals("#FF0000", Filters.asString(e.getColor()));
+        assertEquals(250, Filters.asInt(e.getQuantity()));
     }
 
     @Test
@@ -1660,12 +1780,19 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("raster", "transparent-gradient.sld");
-        YamlObj raster = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("raster");
+        Style style = parse("raster", "transparent-gradient.sld");
 
-        assertEquals(0.3, raster.d("opacity"), 0.1);
-        assertEquals("(#008000,,70,)", raster.o("color-map").s("entries", 0));
-        assertEquals("(#663333,,256,)", raster.o("color-map").s("entries", 1));
+        RasterSymbolizer raster = SLD.rasterSymbolizer(style);
+
+        assertEquals(0.3, Filters.asDouble(raster.getOpacity()), 0.1);
+
+        ColorMapEntry e = raster.getColorMap().getColorMapEntry(0);
+        assertEquals("#008000", Filters.asString(e.getColor()));
+        assertEquals(70, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(1);
+        assertEquals("#663333", Filters.asString(e.getColor()));
+        assertEquals(256, Filters.asInt(e.getQuantity()));
     }
 
     @Test
@@ -1684,37 +1811,33 @@ public class SldTransformerTest {
         //      </FeatureTypeStyle>
         //    </UserStyle>
 
-        YamlObj obj = transform("raster", "two-color-gradient.sld");
-        YamlObj raster = obj.o("feature-styles", 0).o("rules", 0).o("symbolizers",0).o("raster");
+        Style style = parse("raster", "two-color-gradient.sld");
 
-        assertEquals("(#008000,,70,)", raster.o("color-map").s("entries", 0));
-        assertEquals("(#663333,,256,)", raster.o("color-map").s("entries", 1));
+        RasterSymbolizer raster = SLD.rasterSymbolizer(style);
+
+        ColorMapEntry e = raster.getColorMap().getColorMapEntry(0);
+        assertEquals("#008000", Filters.asString(e.getColor()));
+        assertEquals(70, Filters.asInt(e.getQuantity()));
+
+        e = raster.getColorMap().getColorMapEntry(1);
+        assertEquals("#663333", Filters.asString(e.getColor()));
+        assertEquals(256, Filters.asInt(e.getQuantity()));
+        
     }
 
-    SldTransformer transformer(String dirname, String filename) throws Exception {
-        StringWriter yaml = new StringWriter();
-        XMLInputFactory factory = XMLInputFactory.newFactory();
-        XMLStreamReader xml =
-            factory.createXMLStreamReader(YsldTests.sld(dirname, filename));
-        return new SldTransformer(xml, yaml);
+    Style parse(String dir, String file) throws IOException {
+        StringWriter writer = new StringWriter();
+        transform(xmlReader(YsldTests.sld(dir, file)), writer);
+
+        //System.out.println(writer.toString());
+        YsldParser p = new YsldParser(new StringReader(writer.toString()));
+        return SLD.defaultStyle(p.parse());
     }
 
-    YamlObj yaml(SldTransformer transformer) throws Exception {
-        String yaml = ((StringWriter)transformer.context().output()).toString();
-        return new YamlObj(new Yaml().load(yaml));
-    }
-
-    YamlObj transform(String dirname, String filename) throws Exception {
-        SldTransformer tx = transformer(dirname, filename);
-        tx.context().trace();
-        try {
-            tx.transform();
-            return yaml(tx);
-        }
-        catch(Exception e) {
-            ((TracingEmitter)tx.context().emitter()).dump(System.out);
-            throw e;
-        }
+    Color color(String hex) {
+        return new Color(
+            Integer.valueOf( hex.substring( 0, 2 ), 16 ),
+            Integer.valueOf( hex.substring( 2, 4 ), 16 ),
+            Integer.valueOf( hex.substring( 4, 6 ), 16 ) );
     }
 }
-
