@@ -19,19 +19,9 @@
   
   <dependencies>
     <dependency>
-      <groupId>org.geotools</groupId>
-      <artifactId>gt-main</artifactId>
-      <version>${gt.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.geotools</groupId>
-      <artifactId>gt-cql</artifactId>
-      <version>${gt.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.geotools.xsd</groupId>
-      <artifactId>gt-xsd-filter</artifactId>
-      <version>${gt.version}</version>
+      <groupId>org.geoserver</groupId>
+      <artifactId>gs-main</artifactId>
+      <version>${gs.version}</version>
     </dependency>
     <dependency>
       <groupId>org.yaml</groupId>
