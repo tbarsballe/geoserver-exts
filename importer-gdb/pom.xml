@@ -20,13 +20,11 @@
       <groupId>org.geoserver.importer</groupId>
       <artifactId>gs-importer-core</artifactId>
       <version>${gs.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.geotools</groupId>
       <artifactId>gt-ogr-jni</artifactId>
       <version>${gt.version}</version>
-      <scope>provided</scope>
     </dependency>
 
     <!--  Test dependencies -->
