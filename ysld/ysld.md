@@ -120,7 +120,8 @@ Rule filters are specified as CQL/ECQL parse-able filters. A simple example:
     - filter: [type] = 'highway'
       symbolizers:
       - line:
-          stroke-width: 5
+          stroke:
+            width: 5
 
 See the [cql_docs] and this [cql_tutorial] for more information about the CQL 
 syntax. 
