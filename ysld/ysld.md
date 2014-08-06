@@ -167,7 +167,8 @@ it is possible to support variables and mix ins. An example of a color variable:
 
     redish: &redish #DD0000
     point:
-      fill-color: *redish
+      fill:
+        color: *redish
 
 An named "anchor" is declared with the `&` character and then referenced with 
 the `*` character. This same feature can be used to do "mix-ins" as well:
