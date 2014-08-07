@@ -2,6 +2,50 @@
 
 The following is an outline of the Ysld language:
 
+    #
+    # common definitions, not actually part of the syntax
+    #
+    define:
+      graphic: &graphic
+        symbols:
+        - mark:
+            shape: <shape>
+            <<: *fill
+            <<: *stroke
+        - external:
+            url: <text>
+            format: <text>
+        anchor: <tuple>
+        displacement: <tuple>
+        opacity: <expression>
+        rotation: <expression>
+        size: <expression>
+        options: <options>
+        gap: <expression>
+        initial-gap: <expression>
+
+      fill: &fill
+        fill-color: <color>
+        fill-opacity: <expression>
+        fill-graphic: 
+          <<: *graphic
+
+      stroke: &stroke 
+        stroke-color: <color>
+        stroke-width: <expression>
+        stroke-opacity: <expression>
+        stroke-linejoin: <expression>
+        stroke-linecap: <expression>
+        stroke-dasharray: <float[]>
+        stroke-dashoffset: <expression>
+        stroke-graphic-fill: 
+          <<: *graphic
+        stroke-graphic-stroke: 
+          <<: *graphic
+
+    #
+    # start of syntax
+    #
     name: <text>
     title: <text>
     abstract: <text>
@@ -20,40 +64,15 @@ The following is an outline of the Ysld language:
         filter: <filter>
         else: <bool>
         symbolizers:
-        - point: &graphic
-            symbols:
-            - mark:
-                shape: <shape>
-                fill: &fill
-                  color: <color>
-                  opacity: <expression>
-                  graphic: *graphic
-                stroke: &stroke
-                  color: <color>
-                  width: <expression>
-                  opacity: <expression>
-                  linejoin: <expression>
-                  linecap: <expression>
-                  dasharray: <float[]>
-                  dashoffset: <expression>
-            - external:
-                url: <text>
-                format: <text>
-            anchor: <tuple>
-            displacement: <tuple>
-            opacity: <expression>
-            rotation: <expression>
-            size: <expression>
-            options: <options>
-            gap: <expression>
-            initial-gap: <expression>
+        - point:
+            <<: *graphic
         - line: 
-            stroke: *stroke
+            <<: *stroke
             offset: <expression>
             options: <options>
         - polygon:
-            fill: *fill
-            stroke: *stroke
+            <<: *fill
+            <<: *stroke
             offset: <expression>
             displacement: <tuple>
         - raster: 
@@ -67,18 +86,17 @@ The following is an outline of the Ysld language:
               gamma: <expression>
         - text:
             label: <expression>
+            font-family: <expression>
+            font-size: <expression>
+            font-style: <expression>
+            font-weight: <expression>
             placement:
               type: point|line
               offset: <expression>
               anchor: <tuple>
               displacement: <tuple>
               rotation: <expression>
-            font:
-              family: <expression>
-              size: <expression>
-              style: <expression>
-              weight: <expression>
-            fill: *fill;
+            <<: *fill
             options: <options>
 
 <a name="expression"></a>
@@ -95,9 +113,8 @@ The following are some simple examples:
 
 ### Literals
 
-    stroke:
-      width: 10
-      linecap: 'butt'
+    stroke-width: 10
+    stroke-linecap: 'butt'
 
 Note: Single quotes are needed for string literals to differentiate them from
 attribute references. 
@@ -120,8 +137,7 @@ Rule filters are specified as CQL/ECQL parse-able filters. A simple example:
     - filter: [type] = 'highway'
       symbolizers:
       - line:
-          stroke:
-            width: 5
+          stroke-width: 5
 
 See the [cql_docs] and this [cql_tutorial] for more information about the CQL 
 syntax. 
@@ -158,8 +174,7 @@ For example:
 
 Lists and arrays are specified as space delimited. For example:
 
-    stroke:
-      dasharray: 5 2 1 2
+    stroke-dasharray: 5 2 1 2
 
 ## Anchors & References
 
@@ -168,8 +183,7 @@ it is possible to support variables and mix ins. An example of a color variable:
 
     redish: &redish #DD0000
     point:
-      fill:
-        color: *redish
+      fill-color: *redish
 
 An named "anchor" is declared with the `&` character and then referenced with 
 the `*` character. This same feature can be used to do "mix-ins" as well:
