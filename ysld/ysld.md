@@ -101,6 +101,14 @@ The following is an outline of the Ysld language:
 
 <a name="expression"></a>
 
+## Colors
+
+Colors literals can be specified either as a 6 digit hex string or a 3 argument 
+rgb function call. Examples:
+
+    stroke-color: #ff00ff
+    fill-color: rgb(255,0,255)
+
 ## Expressions
 
 Expressions are specified as CQL/ECQL parse-able expression strings. See the 
