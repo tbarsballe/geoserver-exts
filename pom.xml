@@ -497,6 +497,7 @@
 
   <modules>
     <module>cluster</module>
+    <module>csv</module>
     <module>metrics</module>
     <module>mapmeter</module>
     <module>printng</module>
