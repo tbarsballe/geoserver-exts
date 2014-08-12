@@ -25,9 +25,9 @@
 
   <repositories>
     <repository>
-      <id>opengeo</id>
-      <name>OpenGeo Maven Repository</name>
-      <url>http://repo.opengeo.org/</url>
+      <id>boundless</id>
+      <name>Boundless Maven Repository</name>
+      <url>http://holonet.boundlessgeo.com/main</url>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
@@ -56,14 +56,6 @@
       </snapshots>
     </repository>
   </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>opengeo</id>
-      <name>OpenGeo Maven Repository</name>
-      <url>http://repo.opengeo.org</url>
-    </pluginRepository>
-  </pluginRepositories>
 
   <build>
     <resources>
@@ -462,15 +454,15 @@
 
   <distributionManagement>
     <repository>
-      <id>opengeo</id>
-      <name>OpenGeo Maven Repository</name>
-      <url>dav:http://repo.opengeo.org</url>
+      <id>boundless</id>
+      <name>Boundless Maven Repository</name>
+      <url>http://repo.boundlessgeo.com/main</url>
       <uniqueVersion>false</uniqueVersion>
     </repository>
     <snapshotRepository>
-      <id>opengeo</id>
-      <name>OpenGeo Maven Repository</name>
-      <url>dav:http://repo.opengeo.org</url>
+      <id>boundless</id>
+      <name>Boundless Maven Repository</name>
+      <url>http://repo.boundlessgeo.com/main</url>
       <uniqueVersion>false</uniqueVersion>
     </snapshotRepository>
   </distributionManagement>
