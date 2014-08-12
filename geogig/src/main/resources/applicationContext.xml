@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+
+  <bean id="geogigDispatcherMapping" class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
+    <property name="alwaysUseFullPath" value="true" />
+    <property name="mappings">
+      <props>
+        <prop key="/geogig">geogigDispatcher</prop>
+        <prop key="/geogig/**">geogigDispatcher</prop>
+      </props>
+    </property>
+  </bean>
+
+  <bean id="geogigDispatcher" class="org.geogig.geoserver.rest.GeogigDispatcher" >
+    <constructor-arg ref="catalog"/>
+  </bean>
+
+  <bean id="GeogigLayerIntegrationListener" class="org.geogig.geoserver.wms.GeogigLayerIntegrationListener" >
+    <constructor-arg ref="geoServer"/>
+  </bean>
+
+</beans>
