@@ -11,22 +11,20 @@
   </parent>
 
   <groupId>org.opengeo.geoserver</groupId>
-  <artifactId>gs-importer-gdb</artifactId>
+  <artifactId>gs-fgdb</artifactId>
   <packaging>jar</packaging>
-  <name>OpenGeo File GeoDatabase Importer</name>
+  <name>ESRI File GeoDatabase Support</name>
 
   <dependencies>
     <dependency>
       <groupId>org.geoserver.importer</groupId>
       <artifactId>gs-importer-core</artifactId>
       <version>${gs.version}</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.geotools</groupId>
       <artifactId>gt-ogr-jni</artifactId>
       <version>${gt.version}</version>
-      <scope>provided</scope>
     </dependency>
 
     <!--  Test dependencies -->

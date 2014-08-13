@@ -164,6 +164,7 @@
             <descriptor>assembly/gsr.xml</descriptor>
             <descriptor>assembly/mapmeter.xml</descriptor>
             <descriptor>assembly/mongodb.xml</descriptor>
+            <descriptor>assembly/fgdb.xml</descriptor>
           </descriptors>
         </configuration>
       </plugin>
@@ -480,18 +481,6 @@
     </snapshotRepository>
   </distributionManagement>
 
-  <profiles>
-    <!-- ================================================== -->
-    <!--     Modules not yet included in the build          -->
-    <!-- ================================================== -->
-    <profile>
-      <id>pending</id>
-      <modules>
-        <module>importer-gdb</module>
-      </modules>
-    </profile>
-  </profiles>
-
   <modules>
     <module>cluster</module>
     <module>metrics</module>
@@ -502,6 +491,7 @@
     <module>mongodb</module>
     <module>geogig</module>
     <module>ysld</module>
+    <module>fgdb</module>
   </modules>
 
   <properties>
