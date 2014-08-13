@@ -2,7 +2,7 @@
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
  */
-package org.geoserver.importer.gdb;
+package org.geoserver.fgdb;
 
 import java.awt.RenderingHints.Key;
 import java.io.File;
@@ -28,8 +28,8 @@ import org.geotools.data.ogr.jni.JniOGRDataStoreFactory;
 import org.geotools.util.KVP;
 import org.geotools.util.logging.Logging;
 
-public class GDBDataStoreFactory implements DataStoreFactorySpi {
-    private static final Logger LOGGING =  Logging.getLogger("org.geoserver.importer.gdb");
+public class FGDBDataStoreFactory implements DataStoreFactorySpi {
+    private static final Logger LOGGING =  Logging.getLogger(FGDBDataStoreFactory.class);
     
     /** Choice of OpenFileGDB or FileGDB (which requires SDK) */
     private static final String DRIVER = "FileGDB";
@@ -45,7 +45,7 @@ public class GDBDataStoreFactory implements DataStoreFactorySpi {
     private boolean singleWarning = false;
 
     /** Constructor for Service Provider Interface */
-    public GDBDataStoreFactory(){
+    public FGDBDataStoreFactory(){
     }
     
     @Override

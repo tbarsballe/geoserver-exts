@@ -1,58 +1,48 @@
-package org.geoserver.importer.gdb;
+package org.geoserver.fgdb;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.commons.io.FilenameUtils;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.catalog.LayerInfo;
 import org.geoserver.catalog.StoreInfo;
 import org.geoserver.catalog.WorkspaceInfo;
-import org.geoserver.importer.Directory;
 import org.geoserver.importer.FileData;
 import org.geoserver.importer.ImportData;
 import org.geoserver.importer.ImportTask;
 import org.geoserver.importer.VectorFormat;
 import org.geoserver.importer.job.ProgressMonitor;
-import org.geotools.data.DataAccess;
 import org.geotools.data.DataStore;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.FeatureSource;
 import org.geotools.data.Query;
 import org.geotools.data.Transaction;
-import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
-import org.geotools.util.NullProgressListener;
 import org.geotools.util.logging.Logging;
 import org.opengis.feature.Feature;
-import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.feature.type.Name;
 import org.opengis.filter.Filter;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
-import com.google.common.base.Optional;
-
 /**
  * Custom VectorFormat for GDBDataStoreFactory restricting
- * OGR Driver to FileDB.
+ * OGR Driver to FileGDB.
  *  
  * @author Jody Garnett
  */
-public class GDBFileFormat extends VectorFormat {
-    private static final Logger LOGGER =  Logging.getLogger("org.geoserver.importer.gdb.GDBFileFormat");
+public class FGDBFileFormat extends VectorFormat {
+    private static final Logger LOGGER =  Logging.getLogger(FGDBFileFormat.class);
     
     /** Factory wrapper */
-    final static GDBDataStoreFactory factory = new GDBDataStoreFactory();
+    final static FGDBDataStoreFactory factory = new FGDBDataStoreFactory();
 
     @SuppressWarnings("rawtypes")
     @Override
@@ -78,7 +68,7 @@ public class GDBFileFormat extends VectorFormat {
 
     @Override
     public String getName() {
-        return "GDB";
+        return "FileGDB";
     }
 
     @Override

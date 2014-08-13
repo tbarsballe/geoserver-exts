@@ -3,6 +3,6 @@
 
 <beans>
   <!--  format beans -->
-  <bean id="gdbFormat" class="org.geoserver.importer.gdb.GDBFileFormat"/>
+  <bean id="gdbFormat" class="org.geoserver.importer.fgdb.FGDBFileFormat"/>
 
 </beans>

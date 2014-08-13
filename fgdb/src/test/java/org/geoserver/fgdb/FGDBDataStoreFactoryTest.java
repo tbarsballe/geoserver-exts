@@ -2,7 +2,7 @@
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
  */
-package org.geoserver.importer.gdb;
+package org.geoserver.fgdb;
 
 import static org.junit.Assert.*;
 
@@ -32,7 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opengis.feature.type.Name;
 
-public class GDBDataStoreFactoryTest {
+public class FGDBDataStoreFactoryTest {
     /**
      * If OGR environment is not available factory will be null and the test skipped.
      */
@@ -41,7 +41,7 @@ public class GDBDataStoreFactoryTest {
     /**
      * Factory obtained during setup.
      */
-    private static GDBDataStoreFactory factory = null;
+    private static FGDBDataStoreFactory factory = null;
 
     private static Logger LOGGING;
 
@@ -60,7 +60,7 @@ public class GDBDataStoreFactoryTest {
     @BeforeClass
     public static void beforeClass() {
         // check Environment is available
-        factory = new GDBDataStoreFactory();
+        factory = new FGDBDataStoreFactory();
         skip = !factory.isAvailable();
         if (skip) {
             System.out.println("GDBDataStoreFactoryTest skipped - Check OGR Environment");
@@ -120,7 +120,7 @@ public class GDBDataStoreFactoryTest {
         if (skip)
             return;
 
-        Map<String, Serializable> params = (Map) new KVP(GDBDataStoreFactory.URL_PARAM.key, gdbURL);
+        Map<String, Serializable> params = (Map) new KVP(FGDBDataStoreFactory.URL_PARAM.key, gdbURL);
         DataStore dataStore = factory.createDataStore(params);
         assertNotNull("Failure creating data store", dataStore);
 
@@ -129,7 +129,7 @@ public class GDBDataStoreFactoryTest {
     }
 
     private static File data(String path) throws IOException {
-        URL url = GDBDataStoreFactory.class.getResource("test-data/" + path);
+        URL url = FGDBDataStoreFactory.class.getResource("test-data/" + path);
         if (url == null) {
             throw new FileNotFoundException("Could not find locations.zip");
         }
