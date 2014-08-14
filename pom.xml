@@ -25,9 +25,9 @@
 
   <repositories>
     <repository>
-      <id>opengeo</id>
-      <name>OpenGeo Maven Repository</name>
-      <url>http://repo.opengeo.org/</url>
+      <id>boundless</id>
+      <name>Boundless Maven Repository</name>
+      <url>http://repo.boundlessgeo.com/main</url>
       <snapshots>
         <enabled>true</enabled>
       </snapshots>
@@ -56,14 +56,6 @@
       </snapshots>
     </repository>
   </repositories>
-
-  <pluginRepositories>
-    <pluginRepository>
-      <id>opengeo</id>
-      <name>OpenGeo Maven Repository</name>
-      <url>http://repo.opengeo.org</url>
-    </pluginRepository>
-  </pluginRepositories>
 
   <build>
     <resources>
@@ -172,6 +164,7 @@
             <descriptor>assembly/gsr.xml</descriptor>
             <descriptor>assembly/mapmeter.xml</descriptor>
             <descriptor>assembly/mongodb.xml</descriptor>
+            <descriptor>assembly/fgdb.xml</descriptor>
           </descriptors>
         </configuration>
       </plugin>
@@ -475,30 +468,18 @@
 
   <distributionManagement>
     <repository>
-      <id>opengeo</id>
-      <name>OpenGeo Maven Repository</name>
-      <url>dav:http://repo.opengeo.org</url>
+      <id>boundless</id>
+      <name>Boundless Maven Repository</name>
+      <url>http://repo.boundlessgeo.com/main</url>
       <uniqueVersion>false</uniqueVersion>
     </repository>
     <snapshotRepository>
-      <id>opengeo</id>
-      <name>OpenGeo Maven Repository</name>
-      <url>dav:http://repo.opengeo.org</url>
+      <id>boundless</id>
+      <name>Boundless Maven Repository</name>
+      <url>http://repo.boundlessgeo.com/main</url>
       <uniqueVersion>false</uniqueVersion>
     </snapshotRepository>
   </distributionManagement>
-
-  <profiles>
-    <!-- ================================================== -->
-    <!--     Modules not yet included in the build          -->
-    <!-- ================================================== -->
-    <profile>
-      <id>pending</id>
-      <modules>
-        <module>importer-gdb</module>
-      </modules>
-    </profile>
-  </profiles>
 
   <modules>
     <module>cluster</module>
@@ -508,8 +489,9 @@
     <module>web</module>
     <module>gsr</module>
     <module>mongodb</module>
-    <module>geogit</module>
+    <module>geogig</module>
     <module>ysld</module>
+    <module>fgdb</module>
   </modules>
 
   <properties>
