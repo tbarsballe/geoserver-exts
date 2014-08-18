@@ -43,6 +43,10 @@ The following is an outline of the Ysld language:
         stroke-graphic-stroke: 
           <<: *graphic
 
+      symbolizer: &symbolizer
+        geometry: <expression>
+        options: <options>
+
     #
     # start of syntax
     #
@@ -66,15 +70,17 @@ The following is an outline of the Ysld language:
         symbolizers:
         - point:
             <<: *graphic
+            <<: *symbolizer
         - line: 
             <<: *stroke
             offset: <expression>
-            options: <options>
+            <<: *symbolizer
         - polygon:
             <<: *fill
             <<: *stroke
             offset: <expression>
             displacement: <tuple>
+            <<: *symbolizer
         - raster: 
             color-map: 
               type: ramp|intervals|values
@@ -84,6 +90,7 @@ The following is an outline of the Ysld language:
             contrast-enhancement: 
               mode: normalize|histogram|none
               gamma: <expression>
+            <<: *symbolizer
         - text:
             label: <expression>
             font-family: <expression>
@@ -97,7 +104,7 @@ The following is an outline of the Ysld language:
               displacement: <tuple>
               rotation: <expression>
             <<: *fill
-            options: <options>
+            <<: *symbolizer
 
 <a name="expression"></a>
 
