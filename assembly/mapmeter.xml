@@ -26,7 +26,7 @@
         <include>wicket-datetime-*.jar</include>
         <include>poi-*.jar</include>
         <include>joda-time-*.jar</include>
-	<include>geoip-*.jar
+        <include>geoip-*.jar</include>
       </includes>
     </fileSet>
   </fileSets>
