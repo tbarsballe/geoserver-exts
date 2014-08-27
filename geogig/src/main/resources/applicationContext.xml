@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 <beans>
-
   <bean id="geogigDispatcherMapping" class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
     <property name="alwaysUseFullPath" value="true" />
     <property name="mappings">
@@ -20,4 +19,11 @@
     <constructor-arg ref="geoServer"/>
   </bean>
 
+  <bean id="geogigDataStorePanel" class="org.geoserver.web.data.resource.DataStorePanelInfo">
+    <property name="id" value="geogig"/>
+    <property name="factoryClass" value="org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory"/>
+    <property name="iconBase" value="org.geoserver.web.GeoServerApplication"/>
+    <property name="icon" value="img/icons/geosilk/database_vector.png"/>
+    <property name="componentClass" value="org.geogig.geoserver.web.data.store.geogig.GeoGigDataStoreEditPanel"/>
+  </bean>
 </beans>
