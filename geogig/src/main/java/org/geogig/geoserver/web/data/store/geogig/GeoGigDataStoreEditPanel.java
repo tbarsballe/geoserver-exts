@@ -63,12 +63,12 @@ public final class GeoGigDataStoreEditPanel extends StoreEditPanel {
     }
 
     private void addConnectionPrototypePanel(DataStoreInfo storeInfo) {
-        final String resourceKey = RESOURCE_KEY_PREFIX + ".prototype";
-        Label label = new Label("prototypeLabel", new ResourceModel(resourceKey));
-        final String title = String.valueOf(new ResourceModel(resourceKey + ".title").getObject());
-        final SimpleAttributeModifier titleSetter = new SimpleAttributeModifier("title", title);
-        label.add(titleSetter);
-        add(label);
+//        final String resourceKey = RESOURCE_KEY_PREFIX + ".prototype";
+//        Label label = new Label("prototypeLabel", new ResourceModel(resourceKey));
+//        final String title = String.valueOf(new ResourceModel(resourceKey + ".title").getObject());
+//        final SimpleAttributeModifier titleSetter = new SimpleAttributeModifier("title", title);
+//        label.add(titleSetter);
+//        add(label);
     }
 
     private FormComponent addTextPanel(final IModel paramsModel, final Param param) {
