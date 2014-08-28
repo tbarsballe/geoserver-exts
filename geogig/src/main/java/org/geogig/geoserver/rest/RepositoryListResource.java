@@ -54,7 +54,7 @@ public class RepositoryListResource extends MapResource {
         Request request = getRequest();
         CatalogRepositoryProvider repoFinder = (CatalogRepositoryProvider) repositoryProvider(request);
 
-        List<DataStoreInfo> geogigStores = repoFinder.findGeogigStores(request);
+        List<DataStoreInfo> geogigStores = repoFinder.findGeogigStores();
 
         List<String> repoNames = Lists.newArrayListWithCapacity(geogigStores.size());
         for (DataStoreInfo info : geogigStores) {

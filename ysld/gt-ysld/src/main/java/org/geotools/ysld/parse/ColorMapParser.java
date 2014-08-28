@@ -7,16 +7,12 @@ import org.geotools.styling.ColorMapEntry;
 import org.geotools.ysld.YamlMap;
 import org.geotools.ysld.YamlObject;
 import org.geotools.ysld.YamlSeq;
-import org.yaml.snakeyaml.events.Event;
-import org.yaml.snakeyaml.events.MappingEndEvent;
-import org.yaml.snakeyaml.events.ScalarEvent;
-import org.yaml.snakeyaml.events.SequenceEndEvent;
 
-public abstract class ColorMapHandler extends YsldParseHandler {
+public abstract class ColorMapParser extends YsldParseHandler {
 
     ColorMap colorMap;
 
-    public ColorMapHandler(Factory factory) {
+    public ColorMapParser(Factory factory) {
         super(factory);
         colorMap = factory.style.createColorMap();
     }
@@ -41,15 +37,15 @@ public abstract class ColorMapHandler extends YsldParseHandler {
                 LOG.warning("Unknown color map type: " + value);
             }
         }
-        context.push("entries", new EntriesHandler());
+        context.push("entries", new EntriesParser());
     }
 
     protected abstract void colorMap(ColorMap colorMap);
 
-    class EntriesHandler extends YsldParseHandler {
+    class EntriesParser extends YsldParseHandler {
 
-        protected EntriesHandler() {
-            super(ColorMapHandler.this.factory);
+        protected EntriesParser() {
+            super(ColorMapParser.this.factory);
         }
 
         @Override

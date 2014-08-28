@@ -234,7 +234,7 @@
                   <include>com.beust:jcommander</include>
                   <include>com.google.code.gson:gson</include>
                   <include>com.googlecode.json-simple:json-simple</include>
-                  <include>com.google.guava:guava</include>
+                  <!--include>com.google.guava:guava</include> now geoserver is on guava-17 just like geogig-->
                   <include>com.google.inject.extensions:guice-multibindings</include>
                   <include>com.google.inject:guice</include>
                   <include>com.ning:compress-lzf</include>
@@ -257,16 +257,16 @@
                    -->
                 </includes>
               </artifactSet>
+              <!--
               <relocations>
                 <relocation>
-                  <!-- 
                     rename the guava package. Remove this relocation and add an exclude 
                     once geoserver adopts the same guava version than geogig
-                   -->
                   <pattern>com.google.common</pattern>
                   <shadedPattern>shaded.com.google.common</shadedPattern>
                 </relocation>
               </relocations>
+              -->
             </configuration>
           </execution>
         </executions>
