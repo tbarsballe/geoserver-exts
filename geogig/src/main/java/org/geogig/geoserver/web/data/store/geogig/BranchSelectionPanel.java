@@ -25,19 +25,35 @@ public class BranchSelectionPanel extends Panel {
     private static final long serialVersionUID = 1L; 
 
     private final DropDownChoice choice;
+    private final Form storeEditForm;
     private final FormComponent repositoryComponent;
+    private GeoGigConnector connector = new GeoGigConnector() {
+        public List<String> listBranches(Serializable repository) throws IOException {
+            GeoGigDataStoreFactory factory = new GeoGigDataStoreFactory();
+            Map<String, Serializable> parameters = new HashMap<String, Serializable>();
+            parameters.put(GeoGigDataStoreFactory.REPOSITORY.key, repository);
+            GeoGigDataStore store = factory.createDataStore(parameters);
+            List<Ref> refs = store.getGeogig().command(BranchListOp.class).call();
+            List<String> names = new ArrayList<String>();
+            for (Ref r : refs) {
+                names.add(r.localName());
+            }
+            return names;
+        }
+    };
 
     public BranchSelectionPanel(String id, IModel paramsModel, Form storeEditForm, FormComponent repositoryComponent) {
         super(id);
         final MapModel branchNameModel = new MapModel(paramsModel, BRANCH.key);
         final List<String> choices = new ArrayList<String>();
         this.repositoryComponent = repositoryComponent;
+        this.storeEditForm = storeEditForm;
         choice = new DropDownChoice("branchDropDown", branchNameModel, choices);
         choice.setOutputMarkupId(true);
         choice.setNullValid(true);
         choice.setRequired(false);
         add(choice);
-        updateChoices();
+        updateChoices(false);
 
         final AjaxSubmitLink refreshLink = new AjaxSubmitLink("refresh", storeEditForm) {
             private static final long serialVersionUID = 1L;
@@ -49,38 +65,28 @@ public class BranchSelectionPanel extends Panel {
 
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form form) {
-                updateChoices();
+                updateChoices(true);
                 target.addComponent(choice);
+                target.addComponent(BranchSelectionPanel.this.storeEditForm);
             }
         };
         add(refreshLink);
-    }
-
-    private List<String> getBranchNames(Serializable repository) throws IOException {
-        GeoGigDataStoreFactory factory = new GeoGigDataStoreFactory();
-        Map<String, Serializable> parameters = new HashMap<String, Serializable>();
-        parameters.put(GeoGigDataStoreFactory.REPOSITORY.key, repository);
-        GeoGigDataStore store = factory.createDataStore(parameters);
-        List<Ref> refs = store.getGeogig().command(BranchListOp.class).call();
-        List<String> names = new ArrayList<String>();
-        for (Ref r : refs) {
-            names.add(r.localName());
-        }
-        return names;
     }
 
     public FormComponent getFormComponent() {
         return choice;
     }
 
-    private void updateChoices() {
+    private void updateChoices(boolean reportError) {
         final Serializable repository = (Serializable) repositoryComponent.getModelObject();
         List<String> branchNames;
         try {
-            branchNames = getBranchNames(repository);
+            branchNames = connector.listBranches(repository);
         } catch (IOException e) {
+            if (reportError) storeEditForm.error(e.getMessage());
             branchNames = new ArrayList<String>();
         } catch (RuntimeException e) {
+            if (reportError) storeEditForm.error(e.getMessage());
             branchNames = new ArrayList<String>();
         }
         String current = (String) choice.getModelObject();
@@ -88,5 +94,9 @@ public class BranchSelectionPanel extends Panel {
             branchNames.add(0, current);
         }
         choice.setChoices(branchNames);
+    }
+
+    void setGeoGigConnector(GeoGigConnector connector) {
+        this.connector = connector;
     }
 }
