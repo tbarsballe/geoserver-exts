@@ -4,9 +4,6 @@
  */
 package org.geogig.geoserver.web;
 
-import java.io.File;
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -14,13 +11,9 @@ import java.util.List;
 import org.apache.wicket.extensions.markup.html.repeater.util.SortParam;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.LoadableDetachableModel;
-import org.geogig.geoserver.rest.CatalogRepositoryProvider;
-import org.geogig.geoserver.web.config.RepositoryInfo;
-import org.geoserver.catalog.Catalog;
-import org.geoserver.catalog.DataStoreInfo;
-import org.geoserver.web.GeoServerApplication;
+import org.geogig.geoserver.config.RepositoryInfo;
+import org.geogig.geoserver.config.RepositoryManager;
 import org.geoserver.web.wicket.GeoServerDataProvider;
-import org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory;
 
 public class RepositoryProvider extends GeoServerDataProvider<RepositoryInfo> {
 
@@ -99,21 +92,8 @@ public class RepositoryProvider extends GeoServerDataProvider<RepositoryInfo> {
     }
 
     private static List<RepositoryInfo> mockItems() {
-        GeoServerApplication application = GeoServerApplication.get();
-        Catalog catalog = application.getCatalog();
-        CatalogRepositoryProvider repositoryProvider = new CatalogRepositoryProvider(catalog);
-        List<DataStoreInfo> geoeogigStores = repositoryProvider.findGeogigStores();
-        List<RepositoryInfo> infos = new ArrayList<RepositoryInfo>(geoeogigStores.size());
-        for (DataStoreInfo info : geoeogigStores) {
-            RepositoryInfo ri = new RepositoryInfo();
-            Serializable location = info.getConnectionParameters().get(
-                    GeoGigDataStoreFactory.REPOSITORY.key);
-            String locationStr = String.valueOf(location);
-            ri.setLocation(locationStr);
-            ri.setName(new File(locationStr).getName());
-            infos.add(ri);
-        }
-        return infos;
+        List<RepositoryInfo> repos = RepositoryManager.get().getAll();
+        return repos;
     }
 
 }

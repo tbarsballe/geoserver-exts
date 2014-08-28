@@ -6,7 +6,7 @@ import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.extensions.ajax.markup.html.modal.ModalWindow;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.model.IModel;
-import org.geogig.geoserver.web.config.RepositoryInfo;
+import org.geogig.geoserver.config.RepositoryInfo;
 import org.geoserver.web.GeoServerBasePage;
 import org.geoserver.web.wicket.GeoServerDataProvider.Property;
 import org.geoserver.web.wicket.GeoServerDialog;
@@ -78,7 +78,7 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
                     @Override
                     protected Component getContents(String id) {
-                        return new Label(id, confirmRemove);
+                        return new Label(id, confirmRemove).setEscapeModelStrings(false);
                     }
 
                     @Override

@@ -1,4 +1,4 @@
-package org.geogig.geoserver.web.config;
+package org.geogig.geoserver.config;
 
 public class RepositoryInfo {
 
