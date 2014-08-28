@@ -44,7 +44,7 @@ public class CatalogRepositoryProvider implements RepositoryProvider {
         this.catalog = catalog;
     }
 
-    private Catalog getCatalog(Request request) {
+    private Catalog getCatalog() {
         return catalog;
     }
 
@@ -57,10 +57,10 @@ public class CatalogRepositoryProvider implements RepositoryProvider {
         return Optional.fromNullable(repo);
     }
 
-    public List<DataStoreInfo> findGeogigStores(Request request) {
+    public List<DataStoreInfo> findGeogigStores() {
         List<DataStoreInfo> geogigStores;
 
-        Catalog catalog = getCatalog(request);
+        Catalog catalog = getCatalog();
         org.opengis.filter.Filter filter = Predicates.equal("type",
                 GeoGigDataStoreFactory.DISPLAY_NAME);
         CloseableIterator<DataStoreInfo> stores = catalog.list(DataStoreInfo.class, filter);
@@ -97,7 +97,7 @@ public class CatalogRepositoryProvider implements RepositoryProvider {
         String workspace = wsds[0];
         String datastore = wsds[1];
 
-        Catalog catalog = getCatalog(request);
+        Catalog catalog = getCatalog();
         DataStoreInfo geogigStoreInfo = catalog.getDataStoreByName(workspace, datastore);
         if (null == geogigStoreInfo) {
             throw new RestletException("No such repository: " + repositoryName,
