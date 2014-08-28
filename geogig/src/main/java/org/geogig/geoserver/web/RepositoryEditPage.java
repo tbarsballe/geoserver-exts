@@ -4,16 +4,29 @@
  */
 package org.geogig.geoserver.web;
 
+import org.apache.wicket.markup.html.form.Form;
+import org.apache.wicket.model.IModel;
+import org.apache.wicket.model.Model;
+import org.geogig.geoserver.config.RepositoryInfo;
+import org.geogig.geoserver.web.repository.RepositoryEditPanel;
 import org.geoserver.web.GeoServerSecuredPage;
-import org.geoserver.web.wicket.GeoServerDialog;
+
+import com.google.common.base.Preconditions;
 
 /**
+ * @see RepositoryEditPanel
  */
 public class RepositoryEditPage extends GeoServerSecuredPage {
 
-    private GeoServerDialog dialog;
-
     public RepositoryEditPage() {
+        this(new Model<RepositoryInfo>(new RepositoryInfo()));
     }
 
+    public RepositoryEditPage(IModel<RepositoryInfo> repoInfo) {
+        super();
+        Preconditions.checkNotNull(repoInfo);
+        Form<RepositoryInfo> form = new Form<RepositoryInfo>("repoForm", repoInfo);
+        form.add(new RepositoryEditPanel("repo", repoInfo));
+        add(form);
+    }
 }
