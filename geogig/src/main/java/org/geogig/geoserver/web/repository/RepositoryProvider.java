@@ -2,7 +2,7 @@
  * This code is licensed under the GPL 2.0 license, available at the root
  * application directory.
  */
-package org.geogig.geoserver.web;
+package org.geogig.geoserver.web.repository;
 
 import java.util.Arrays;
 import java.util.Comparator;
