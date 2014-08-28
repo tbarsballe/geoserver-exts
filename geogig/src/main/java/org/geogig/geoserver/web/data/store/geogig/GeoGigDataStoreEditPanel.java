@@ -46,8 +46,6 @@ public final class GeoGigDataStoreEditPanel extends StoreEditPanel {
         }
         final IModel paramsModel = new PropertyModel(model, "connectionParameters");
 
-        addConnectionPrototypePanel(storeInfo);
-
         repository = addTextPanel(paramsModel, REPOSITORY);
         branch = addBranchNameComponent(paramsModel);
         create = addCheckboxPanel(paramsModel, CREATE);
@@ -56,19 +54,13 @@ public final class GeoGigDataStoreEditPanel extends StoreEditPanel {
     private Map<String, String> parseConnectionParameters(final DataStoreInfo storeInfo) {
         Map<String, String> params = new HashMap<String, String>();
         Map<String, Serializable> storeParams = storeInfo.getConnectionParameters();
-        params.put(REPOSITORY.key, (String) storeParams.get(REPOSITORY.key));
-        params.put(BRANCH.key, (String) storeParams.get(BRANCH.key));
-        params.put(CREATE.key, String.valueOf(storeParams.get(CREATE.key)));
+        Object repository = storeParams.get(REPOSITORY.key);
+        Object branch = storeParams.get(BRANCH.key);
+        Object create = storeParams.get(CREATE.key);
+        params.put(REPOSITORY.key, repository == null ? null : storeParams.get(REPOSITORY.key).toString());
+        params.put(BRANCH.key, branch == null ? null : storeParams.get(BRANCH.key).toString());
+        params.put(CREATE.key, create == null ? null : storeParams.get(CREATE.key).toString());
         return params;
-    }
-
-    private void addConnectionPrototypePanel(DataStoreInfo storeInfo) {
-        final String resourceKey = RESOURCE_KEY_PREFIX + ".prototype";
-        Label label = new Label("prototypeLabel", new ResourceModel(resourceKey));
-        final String title = String.valueOf(new ResourceModel(resourceKey + ".title").getObject());
-        final SimpleAttributeModifier titleSetter = new SimpleAttributeModifier("title", title);
-        label.add(titleSetter);
-        add(label);
     }
 
     private FormComponent addTextPanel(final IModel paramsModel, final Param param) {

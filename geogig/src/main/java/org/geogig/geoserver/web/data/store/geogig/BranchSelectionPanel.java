@@ -35,7 +35,7 @@ public class BranchSelectionPanel extends Panel {
         choice = new DropDownChoice("branchDropDown", branchNameModel, choices);
         choice.setOutputMarkupId(true);
         choice.setNullValid(true);
-        choice.setRequired(true);
+        choice.setRequired(false);
         add(choice);
 
         final AjaxSubmitLink refreshLink = new AjaxSubmitLink("refresh", storeEditForm) {
