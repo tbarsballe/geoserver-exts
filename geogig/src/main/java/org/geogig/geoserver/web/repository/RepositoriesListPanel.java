@@ -1,4 +1,4 @@
-package org.geogig.geoserver.web;
+package org.geogig.geoserver.web.repository;
 
 import org.apache.wicket.Component;
 import org.apache.wicket.ResourceReference;
@@ -7,6 +7,7 @@ import org.apache.wicket.extensions.ajax.markup.html.modal.ModalWindow;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.model.IModel;
 import org.geogig.geoserver.config.RepositoryInfo;
+import org.geogig.geoserver.web.RepositoryEditPage;
 import org.geoserver.web.GeoServerBasePage;
 import org.geoserver.web.wicket.GeoServerDataProvider.Property;
 import org.geoserver.web.wicket.GeoServerDialog;
@@ -33,6 +34,7 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
         add(dialog = new GeoServerDialog("dialog"));
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     protected Component getComponentForProperty(String id, IModel itemModel,
             Property<RepositoryInfo> property) {
@@ -55,12 +57,8 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
                 (String) nameModel.getObject());
     }
 
-    @SuppressWarnings("rawtypes")
-    protected Component removeLink(final String id, final IModel itemModel) {
-        RepositoryInfo info = (RepositoryInfo) itemModel.getObject();
-
-        final ParamResourceModel confirmRemove = new ParamResourceModel(
-                "RepositoriesListPanel.confirmRemoval", this, info.getName());
+    protected Component removeLink(final String id, final IModel<RepositoryInfo> itemModel) {
+        final RepositoryInfo info = itemModel.getObject();
 
         ResourceReference removeIcon = new ResourceReference(GeoServerBasePage.class,
                 "img/icons/silk/delete.png");
@@ -74,11 +72,13 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
                 GeoServerDialog dialog = RepositoriesListPanel.this.dialog;
                 dialog.setTitle(new ParamResourceModel(
                         "RepositoriesListPanel.confirmRemoval.title", this));
+
                 dialog.showOkCancel(target, new GeoServerDialog.DialogDelegate() {
+                    private static final long serialVersionUID = -450822090965263894L;
 
                     @Override
                     protected Component getContents(String id) {
-                        return new Label(id, confirmRemove).setEscapeModelStrings(false);
+                        return new ConfirmRepoRemovePanel(id, itemModel);
                     }
 
                     @Override

@@ -1,6 +1,10 @@
 package org.geogig.geoserver.config;
 
-public class RepositoryInfo {
+import java.io.Serializable;
+
+public class RepositoryInfo implements Serializable {
+
+    private static final long serialVersionUID = -5946705936987075713L;
 
     private String location;
 

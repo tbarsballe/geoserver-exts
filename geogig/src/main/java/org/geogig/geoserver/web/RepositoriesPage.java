@@ -7,13 +7,15 @@ package org.geogig.geoserver.web;
 import org.apache.wicket.Component;
 import org.apache.wicket.markup.html.link.BookmarkablePageLink;
 import org.apache.wicket.markup.html.panel.Fragment;
+import org.geogig.geoserver.web.repository.RepositoriesListPanel;
+import org.geogig.geoserver.web.repository.RepositoryProvider;
 import org.geoserver.web.GeoServerSecuredPage;
 import org.geoserver.web.wicket.GeoServerDialog;
 
 /**
  * Add/edit/remove repositories
  */
-public class GeoGigRepositoriesPage extends GeoServerSecuredPage {
+public class RepositoriesPage extends GeoServerSecuredPage {
 
     private GeoServerDialog dialog;
 
@@ -21,9 +23,9 @@ public class GeoGigRepositoriesPage extends GeoServerSecuredPage {
 
     private RepositoryProvider provider = new RepositoryProvider();
 
-    public GeoGigRepositoriesPage() {
+    public RepositoriesPage() {
 
-        table = new RepositoriesListPanel("table", provider, true);
+        table = new RepositoriesListPanel("table", provider, false);
         table.setOutputMarkupId(true);
         add(table);
         // the confirm dialog

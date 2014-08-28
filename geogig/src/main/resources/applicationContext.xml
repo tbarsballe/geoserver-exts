@@ -41,9 +41,9 @@
   
   <bean id="geogigRepositoriesPage" class="org.geoserver.web.MenuPageInfo">
     <property name="id" value="geogigRepoConfig"/>
-    <property name="titleKey" value="GeoGigRepositoriesPage.title"/>
-    <property name="descriptionKey" value="GeoGigRepositoriesPage.description"/>
-    <property name="componentClass" value="org.geogig.geoserver.web.GeoGigRepositoriesPage"/>
+    <property name="titleKey" value="RepositoriesPage.title"/>
+    <property name="descriptionKey" value="RepositoriesPage.description"/>
+    <property name="componentClass" value="org.geogig.geoserver.web.RepositoriesPage"/>
     <property name="category" ref="geogigCategory"/>
     <property name="icon" value="geogig_16x16_darkblue.png"/>
     <property name="order" value="10"/>
@@ -51,9 +51,9 @@
 
   <bean id="geogigRemotesPage" class="org.geoserver.web.MenuPageInfo">
     <property name="id" value="geogigRemotesSecurityConfig"/>
-    <property name="titleKey" value="GeoGigRemotesPage.title"/>
-    <property name="descriptionKey" value="GeoGigRemotesPage.description"/>
-    <property name="componentClass" value="org.geogig.geoserver.web.GeoGigRemotesPage"/>
+    <property name="titleKey" value="RemotesPage.title"/>
+    <property name="descriptionKey" value="RemotesPage.description"/>
+    <property name="componentClass" value="org.geogig.geoserver.web.RemotesPage"/>
     <property name="category" ref="geogigCategory"/>
     <property name="icon" value="geogig_16x16_darkblue.png"/>
     <property name="order" value="11"/>
