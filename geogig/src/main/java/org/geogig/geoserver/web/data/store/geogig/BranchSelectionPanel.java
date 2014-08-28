@@ -48,7 +48,7 @@ public class BranchSelectionPanel extends Panel {
 
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form form) {
-                final String repository = BranchSelectionPanel.this.repositoryComponent.getValue();
+                final Serializable repository = (Serializable) BranchSelectionPanel.this.repositoryComponent.getModelObject();
                 List<String> branchNames;
                 try {
                     branchNames = getBranchNames(repository);
@@ -64,11 +64,11 @@ public class BranchSelectionPanel extends Panel {
         add(refreshLink);
     }
 
-    private List<String> getBranchNames(String repository) throws IOException {
+    private List<String> getBranchNames(Serializable repository) throws IOException {
         GeoGigDataStoreFactory factory = new GeoGigDataStoreFactory();
         Map<String, Serializable> parameters = new HashMap<String, Serializable>();
         parameters.put(GeoGigDataStoreFactory.REPOSITORY.key, repository);
-        GeoGigDataStore store = factory.createNewDataStore(parameters);
+        GeoGigDataStore store = factory.createDataStore(parameters);
         List<Ref> refs = store.getGeogig().command(BranchListOp.class).call();
         List<String> names = new ArrayList<String>();
         for (Ref r : refs) {
