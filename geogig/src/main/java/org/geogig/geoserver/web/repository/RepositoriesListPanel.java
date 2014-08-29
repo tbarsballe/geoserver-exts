@@ -3,6 +3,7 @@ package org.geogig.geoserver.web.repository;
 import static org.geoserver.catalog.CascadeRemovalReporter.ModificationType.DELETE;
 import static org.geoserver.catalog.CascadeRemovalReporter.ModificationType.GROUP_CHANGED;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -37,6 +38,8 @@ import org.geoserver.web.wicket.GeoServerTablePanel;
 import org.geoserver.web.wicket.ImageAjaxLink;
 import org.geoserver.web.wicket.ParamResourceModel;
 import org.geoserver.web.wicket.SimpleAjaxLink;
+
+import com.google.common.base.Throwables;
 
 public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
@@ -247,7 +250,7 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
         @Override
         protected List<RepositoryInfo> getItems() {
-            return findRepositories();
+            return RepositoryManager.get().getAll();
         }
 
         @Override
@@ -282,19 +285,12 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
             @Override
             protected RepositoryInfo load() {
-                List<RepositoryInfo> mockItems = findRepositories();
-                for (RepositoryInfo i : mockItems) {
-                    if (this.id.equals(i.getLocation())) {
-                        return i;
-                    }
+                try {
+                    return RepositoryManager.get().get(id);
+                } catch (IOException e) {
+                    throw Throwables.propagate(e);
                 }
-                return null;
             }
-        }
-
-        private static List<RepositoryInfo> findRepositories() {
-            List<RepositoryInfo> repos = RepositoryManager.get().getAll();
-            return repos;
         }
 
     }

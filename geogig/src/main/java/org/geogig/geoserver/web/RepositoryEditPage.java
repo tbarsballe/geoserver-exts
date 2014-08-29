@@ -14,6 +14,7 @@ import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.geogig.geoserver.config.RepositoryInfo;
+import org.geogig.geoserver.config.RepositoryManager;
 import org.geogig.geoserver.web.repository.RepositoryEditPanel;
 import org.geoserver.web.GeoServerSecuredPage;
 
@@ -63,7 +64,8 @@ public class RepositoryEditPage extends GeoServerSecuredPage {
     }
 
     private void onSave(RepositoryInfo repoInfo, AjaxRequestTarget target) {
-        System.err.println("Createing repo " + repoInfo.getLocation());
+        RepositoryManager manager = RepositoryManager.get();
+        manager.save(repoInfo);
         setResponsePage(RepositoriesPage.class);
     }
 }

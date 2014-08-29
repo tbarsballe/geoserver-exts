@@ -2,8 +2,16 @@
 <!DOCTYPE beans PUBLIC "-//SPRING//DTD BEAN//EN" "http://www.springframework.org/dtd/spring-beans.dtd">
 <beans>
 
+  <bean id="geogigConfigStore" class="org.geogig.geoserver.config.ConfigStore">
+    <constructor-arg ref="resourceLoader"/>
+  </bean>
+  
+  <bean id="geogigInitializer" class="org.geogig.geoserver.config.GeoGigInitializer">
+    <constructor-arg ref="geogigConfigStore"/>
+  </bean>
+  
   <bean id="geogigRepoManager" class="org.geogig.geoserver.config.RepositoryManager">
-    <constructor-arg ref="catalog"/>
+    <constructor-arg ref="geogigConfigStore"/>
   </bean>
 
   <bean id="geogigDispatcherMapping" class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">

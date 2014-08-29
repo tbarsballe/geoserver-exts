@@ -17,6 +17,7 @@ import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
 import org.geogig.geoserver.config.RepositoryInfo;
+import org.geogig.geoserver.config.RepositoryManager;
 import org.geogig.geoserver.web.repository.DirectoryChooser;
 import org.geogig.geoserver.web.repository.RepositoriesListPanel;
 import org.geoserver.web.GeoServerSecuredPage;
@@ -78,8 +79,12 @@ public class RepositoriesPage extends GeoServerSecuredPage {
                     @Override
                     protected void geogigDirectoryClicked(final File file, AjaxRequestTarget target) {
                         // clear the raw input of the field won't show the new model value
-                        System.err.println("Stub method to add an existing repository");
+                        RepositoryManager manager = RepositoryManager.get();
+                        RepositoryInfo info = new RepositoryInfo();
+                        info.setLocation(file.getAbsolutePath());
+                        manager.save(info);
                         repoChooserWindow.close(target);
+                        target.addComponent(table);
                     };
 
                     @Override
@@ -90,7 +95,8 @@ public class RepositoriesPage extends GeoServerSecuredPage {
                 };
                 chooser.setFileTableHeight(null);
                 repoChooserWindow.setContent(chooser);
-                repoChooserWindow.setTitle(new ResourceModel("GeoGigDirectory.chooser.browseTitle"));
+                repoChooserWindow.setTitle(new ResourceModel(
+                        "GeoGigDirectoryFormComponent.chooser.browseTitle"));
                 repoChooserWindow.show(target);
             }
 
