@@ -1,14 +1,36 @@
 package org.geogig.geoserver.web.repository;
 
+import static org.geoserver.catalog.CascadeRemovalReporter.ModificationType.DELETE;
+import static org.geoserver.catalog.CascadeRemovalReporter.ModificationType.GROUP_CHANGED;
+
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+
+import org.apache.commons.beanutils.BeanUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.ResourceReference;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.extensions.ajax.markup.html.modal.ModalWindow;
+import org.apache.wicket.extensions.markup.html.repeater.util.SortParam;
+import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
+import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.model.IModel;
+import org.apache.wicket.model.LoadableDetachableModel;
 import org.geogig.geoserver.config.RepositoryInfo;
+import org.geogig.geoserver.config.RepositoryManager;
 import org.geogig.geoserver.web.RepositoryEditPage;
+import org.geoserver.catalog.CascadeRemovalReporter;
+import org.geoserver.catalog.Catalog;
+import org.geoserver.catalog.CatalogInfo;
+import org.geoserver.catalog.LayerGroupInfo;
+import org.geoserver.catalog.LayerInfo;
+import org.geoserver.catalog.ResourceInfo;
+import org.geoserver.web.GeoServerApplication;
 import org.geoserver.web.GeoServerBasePage;
+import org.geoserver.web.wicket.GeoServerDataProvider;
 import org.geoserver.web.wicket.GeoServerDataProvider.Property;
 import org.geoserver.web.wicket.GeoServerDialog;
 import org.geoserver.web.wicket.GeoServerTablePanel;
@@ -87,7 +109,7 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
                     @Override
                     protected Component getContents(String id) {
-                        return new ConfirmRepoRemovePanel(id, itemModel);
+                        return new ConfirmRemovePanel(id, itemModel);
                     }
 
                     @Override
@@ -105,6 +127,176 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
                 });
             }
         };
+    }
+
+    static class ConfirmRemovePanel extends Panel {
+
+        private static final long serialVersionUID = 653769682579422516L;
+
+        public ConfirmRemovePanel(String id, IModel<RepositoryInfo> repo) {
+            super(id);
+
+            add(new Label("aboutRemoveMsg", new ParamResourceModel(
+                    "RepositoriesListPanel$ConfirmRemovePanel.aboutRemove", this, repo.getObject()
+                            .getName())));
+
+            final String repoLocation = repo.getObject().getLocation();
+            final List<? extends CatalogInfo> stores;
+            stores = RepositoryManager.get().findDataStoes(repoLocation);
+
+            // collect the objects that will be removed (besides the roots)
+            Catalog catalog = GeoServerApplication.get().getCatalog();
+
+            CascadeRemovalReporter visitor = new CascadeRemovalReporter(catalog);
+
+            for (CatalogInfo info : stores) {
+                info.accept(visitor);
+            }
+            // visitor.removeAll(stores);
+
+            // removed objects root (we show it if any removed object is on the list)
+            WebMarkupContainer removed = new WebMarkupContainer("removedObjects");
+            List<CatalogInfo> cascaded = visitor.getObjects(CatalogInfo.class, DELETE);
+            // remove the resources, they are cascaded, but won't be show in the UI
+            for (Iterator<CatalogInfo> it = cascaded.iterator(); it.hasNext();) {
+                CatalogInfo catalogInfo = it.next();
+                if (catalogInfo instanceof ResourceInfo) {
+                    it.remove();
+                }
+            }
+            removed.setVisible(!cascaded.isEmpty());
+            add(removed);
+
+            // removed stores
+            WebMarkupContainer str = new WebMarkupContainer("storesRemoved");
+            removed.add(str);
+            str.setVisible(!stores.isEmpty());
+            str.add(new Label("stores", names(stores)));
+
+            // removed layers
+            WebMarkupContainer lar = new WebMarkupContainer("layersRemoved");
+            removed.add(lar);
+            List<LayerInfo> layers = visitor.getObjects(LayerInfo.class, DELETE);
+            if (layers.size() == 0)
+                lar.setVisible(false);
+            lar.add(new Label("layers", names(layers)));
+
+            // modified objects root (we show it if any modified object is on the list)
+            WebMarkupContainer modified = new WebMarkupContainer("modifiedObjects");
+            modified.setVisible(visitor.getObjects(null, GROUP_CHANGED).size() > 0);
+            add(modified);
+
+            // groups modified
+            WebMarkupContainer grm = new WebMarkupContainer("groupsModified");
+            modified.add(grm);
+            List<LayerGroupInfo> groups = visitor.getObjects(LayerGroupInfo.class, GROUP_CHANGED);
+            grm.setVisible(!groups.isEmpty());
+            grm.add(new Label("groups", names(groups)));
+        }
+
+        String names(List<? extends CatalogInfo> objects) {
+            StringBuffer sb = new StringBuffer();
+            for (int i = 0; i < objects.size(); i++) {
+                sb.append(name(objects.get(i)));
+                if (i < (objects.size() - 1)) {
+                    sb.append(", ");
+                }
+            }
+            return sb.toString();
+        }
+
+        String name(Object object) {
+            try {
+                return (String) BeanUtils.getProperty(object, "name");
+            } catch (Exception e) {
+                throw new RuntimeException("A catalog object that does not have "
+                        + "a 'name' property has been used, this is unexpected", e);
+            }
+        }
+    }
+
+    static class RepositoryProvider extends GeoServerDataProvider<RepositoryInfo> {
+
+        private static final long serialVersionUID = 4883560661021761394L;
+
+        static final Property<RepositoryInfo> NAME = new BeanProperty<RepositoryInfo>("name",
+                "name");
+
+        static final Property<RepositoryInfo> LOCATION = new BeanProperty<RepositoryInfo>(
+                "location", "location");
+
+        static final Property<RepositoryInfo> REMOVELINK = new AbstractProperty<RepositoryInfo>(
+                "remove") {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public Boolean getPropertyValue(RepositoryInfo item) {
+                return Boolean.TRUE;
+            }
+
+            @Override
+            public boolean isSearchable() {
+                return false;
+            }
+        };
+
+        final List<Property<RepositoryInfo>> PROPERTIES = Arrays.asList(NAME, LOCATION, REMOVELINK);
+
+        public RepositoryProvider() {
+        }
+
+        @Override
+        protected List<RepositoryInfo> getItems() {
+            return findRepositories();
+        }
+
+        @Override
+        protected List<Property<RepositoryInfo>> getProperties() {
+            return PROPERTIES;
+        }
+
+        @Override
+        protected Comparator<RepositoryInfo> getComparator(SortParam sort) {
+            return super.getComparator(sort);
+        }
+
+        @Override
+        public IModel<RepositoryInfo> newModel(Object object) {
+            return new RepositoryInfoDetachableModel((RepositoryInfo) object);
+        }
+
+        /**
+         * A RepositoryInfo detachable model that holds the store id to retrieve it on demand from
+         * the catalog
+         */
+        static class RepositoryInfoDetachableModel extends LoadableDetachableModel<RepositoryInfo> {
+
+            private static final long serialVersionUID = -6829878983583733186L;
+
+            String id;
+
+            public RepositoryInfoDetachableModel(RepositoryInfo repoInfo) {
+                super(repoInfo);
+                this.id = repoInfo.getLocation();
+            }
+
+            @Override
+            protected RepositoryInfo load() {
+                List<RepositoryInfo> mockItems = findRepositories();
+                for (RepositoryInfo i : mockItems) {
+                    if (this.id.equals(i.getLocation())) {
+                        return i;
+                    }
+                }
+                return null;
+            }
+        }
+
+        private static List<RepositoryInfo> findRepositories() {
+            List<RepositoryInfo> repos = RepositoryManager.get().getAll();
+            return repos;
+        }
 
     }
+
 }

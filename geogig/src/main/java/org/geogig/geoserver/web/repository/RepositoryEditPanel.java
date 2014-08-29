@@ -20,7 +20,7 @@ public class RepositoryEditPanel extends FormComponentPanel<RepositoryInfo> {
 
     private static final long serialVersionUID = -870873448379832051L;
 
-    private GeoGigDirectory parent;
+    private GeoGigDirectoryFormComponent parent;
 
     private TextField<String> name;
 
@@ -29,7 +29,7 @@ public class RepositoryEditPanel extends FormComponentPanel<RepositoryInfo> {
         super(wicketId, model);
 
         IModel<String> parentModel = new PropertyModel<String>(model, "parentDirectory");
-        parent = new GeoGigDirectory("parentDirectory", parentModel);
+        parent = new GeoGigDirectoryFormComponent("parentDirectory", parentModel);
         parent.setEnabled(isNew);
         add(parent);
 

@@ -24,7 +24,7 @@ import org.geoserver.web.data.store.panel.FileParamPanel;
  * <p>
  * Adapted from {@link FileParamPanel}
  */
-class GeoGigDirectory extends FormComponentPanel<String> {
+class GeoGigDirectoryFormComponent extends FormComponentPanel<String> {
 
     private static final long serialVersionUID = -7456670856888745195L;
 
@@ -37,7 +37,7 @@ class GeoGigDirectory extends FormComponentPanel<String> {
      * @param validators any extra validator that should be added to the input field, or
      *        {@code null}
      */
-    public GeoGigDirectory(final String id, final IModel<String> valueModel) {
+    public GeoGigDirectoryFormComponent(final String id, final IModel<String> valueModel) {
         // make the value of the text field the model of this panel, for easy value retrieval
         super(id, valueModel);
 
@@ -107,7 +107,7 @@ class GeoGigDirectory extends FormComponentPanel<String> {
                 };
                 chooser.setFileTableHeight(null);
                 dialog.setContent(chooser);
-                dialog.setTitle(new ResourceModel("GeoGigDirectory.chooser.chooseParentTile"));
+                dialog.setTitle(new ResourceModel("GeoGigDirectoryFormComponent.chooser.chooseParentTile"));
                 dialog.show(target);
             }
 
