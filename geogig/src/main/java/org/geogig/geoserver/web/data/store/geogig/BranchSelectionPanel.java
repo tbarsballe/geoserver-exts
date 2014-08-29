@@ -8,9 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.ajax.markup.html.form.AjaxSubmitLink;                                                                                                                       
-import org.apache.wicket.markup.html.form.DropDownChoice;                                                                                                                            
-import org.apache.wicket.markup.html.form.Form;                                                                                                                            
+import org.apache.wicket.ajax.markup.html.form.AjaxSubmitLink;
+import org.apache.wicket.markup.html.form.DropDownChoice;
+import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.FormComponent;
 import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.model.IModel;
@@ -22,27 +22,35 @@ import org.locationtech.geogig.geotools.data.GeoGigDataStore;
 import static org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory.BRANCH;
 
 public class BranchSelectionPanel extends Panel {
-    private static final long serialVersionUID = 1L; 
+    private static final long serialVersionUID = 1L;
 
     private final DropDownChoice choice;
+
     private final Form storeEditForm;
+
     private final FormComponent repositoryComponent;
+
     private GeoGigConnector connector = new GeoGigConnector() {
         public List<String> listBranches(Serializable repository) throws IOException {
             GeoGigDataStoreFactory factory = new GeoGigDataStoreFactory();
             Map<String, Serializable> parameters = new HashMap<String, Serializable>();
             parameters.put(GeoGigDataStoreFactory.REPOSITORY.key, repository);
             GeoGigDataStore store = factory.createDataStore(parameters);
-            List<Ref> refs = store.getGeogig().command(BranchListOp.class).call();
-            List<String> names = new ArrayList<String>();
-            for (Ref r : refs) {
-                names.add(r.localName());
+            try {
+                List<Ref> refs = store.getGeogig().command(BranchListOp.class).call();
+                List<String> names = new ArrayList<String>();
+                for (Ref r : refs) {
+                    names.add(r.localName());
+                }
+                return names;
+            } finally {
+                store.dispose();
             }
-            return names;
         }
     };
 
-    public BranchSelectionPanel(String id, IModel paramsModel, Form storeEditForm, FormComponent repositoryComponent) {
+    public BranchSelectionPanel(String id, IModel paramsModel, Form storeEditForm,
+            FormComponent repositoryComponent) {
         super(id);
         final MapModel branchNameModel = new MapModel(paramsModel, BRANCH.key);
         final List<String> choices = new ArrayList<String>();
@@ -83,10 +91,12 @@ public class BranchSelectionPanel extends Panel {
         try {
             branchNames = connector.listBranches(repository);
         } catch (IOException e) {
-            if (reportError) storeEditForm.error(e.getMessage());
+            if (reportError)
+                storeEditForm.error(e.getMessage());
             branchNames = new ArrayList<String>();
         } catch (RuntimeException e) {
-            if (reportError) storeEditForm.error(e.getMessage());
+            if (reportError)
+                storeEditForm.error(e.getMessage());
             branchNames = new ArrayList<String>();
         }
         String current = (String) choice.getModelObject();
