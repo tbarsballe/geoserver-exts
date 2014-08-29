@@ -1,5 +1,6 @@
 package org.geogig.geoserver.web.data.store.geogig;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -68,7 +69,9 @@ public final class GeoGigDataStoreEditPanel extends StoreEditPanel {
         final String resourceKey = getClass().getSimpleName() + "." + paramName;
         final boolean required = param.required;
         final TextParamPanel textParamPanel = new TextParamPanel(paramName, new MapModel(paramsModel, paramName), new ResourceModel(resourceKey, paramName), required);
-        textParamPanel.getFormComponent().setType(param.type);
+        if (!param.type.equals(File.class)) {
+            textParamPanel.getFormComponent().setType(param.type);
+        }
         String defaultTitle = String.valueOf(param.title);
         ResourceModel titleModel = new ResourceModel(resourceKey + ".title", defaultTitle);
         String title = String.valueOf(titleModel.getObject());

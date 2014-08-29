@@ -122,7 +122,7 @@ public class GeoGigDataStoreEditPanelTest extends GeoServerWicketTestSupport {
         assertNotNull(feedbackMessage);
         Serializable message = feedbackMessage.getMessage();
         assertNotNull(message);
-        String expectedMessage = "Could not connect";
+        String expectedMessage = "Could not list branches: Could not connect";
         assertEquals(expectedMessage, message.toString());
     }
 

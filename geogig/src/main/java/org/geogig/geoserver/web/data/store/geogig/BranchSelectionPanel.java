@@ -74,7 +74,6 @@ public class BranchSelectionPanel extends Panel {
             @Override
             protected void onSubmit(AjaxRequestTarget target, Form form) {
                 updateChoices(true);
-                target.addComponent(choice);
                 target.addComponent(BranchSelectionPanel.this.storeEditForm);
             }
         };
@@ -92,11 +91,11 @@ public class BranchSelectionPanel extends Panel {
             branchNames = connector.listBranches(repository);
         } catch (IOException e) {
             if (reportError)
-                storeEditForm.error(e.getMessage());
+                storeEditForm.error("Could not list branches: " + e.getMessage());
             branchNames = new ArrayList<String>();
         } catch (RuntimeException e) {
             if (reportError)
-                storeEditForm.error(e.getMessage());
+                storeEditForm.error("Could not list branches: " + e.getMessage());
             branchNames = new ArrayList<String>();
         }
         String current = (String) choice.getModelObject();
