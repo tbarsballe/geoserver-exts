@@ -8,12 +8,17 @@
     
     <wicket:fragment wicket:id="header">
       <ul>
+        <li>
+        	<form wicket:id="chooseRepoForm">
+        		<a class="add-link" href="#" wicket:id="importExisting"><wicket:message key="importExisting"/></a>
+        	</form>
+        </li>
         <li><a class="add-link" href="#" wicket:id="addNew"><wicket:message key="addNew" /></a></li>
       </ul>
     </wicket:fragment>
     
-    <!-- the cascade delete confirmation dialog -->
-    <div wicket:id="dialog"></div>
+    <div wicket:id="modalWindow"></div>
+    
 </wicket:extend>
 </body>
 </html>

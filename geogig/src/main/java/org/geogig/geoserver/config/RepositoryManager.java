@@ -48,7 +48,6 @@ public class RepositoryManager {
                     GeoGigDataStoreFactory.REPOSITORY.key);
             String locationStr = String.valueOf(location);
             ri.setLocation(locationStr);
-            ri.setName(new File(locationStr).getName());
             infos.put(ri.getLocation(), ri);
         }
 
@@ -110,5 +109,14 @@ public class RepositoryManager {
         try (CloseableIterator<FeatureTypeInfo> it = catalog.list(FeatureTypeInfo.class, filter)) {
             return Lists.newArrayList(it);
         }
+    }
+
+    public static boolean isGeogigDirectory(final File file) {
+        if (file == null) {
+            return false;
+        }
+        final File geogigDir = new File(file, ".geogig");
+        final boolean isGeogigDirectory = geogigDir.exists() && geogigDir.isDirectory();
+        return isGeogigDirectory;
     }
 }

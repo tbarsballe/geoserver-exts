@@ -5,8 +5,6 @@
 package org.geogig.geoserver.web.repository;
 
 import java.io.File;
-import java.io.FileFilter;
-import java.io.Serializable;
 
 import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AjaxRequestTarget;
@@ -23,7 +21,6 @@ import org.apache.wicket.validation.IValidatable;
 import org.apache.wicket.validation.IValidator;
 import org.apache.wicket.validation.ValidationError;
 import org.geoserver.web.data.store.panel.FileParamPanel;
-import org.geoserver.web.wicket.browser.GeoServerFileChooser;
 
 import com.google.common.base.Strings;
 
@@ -32,16 +29,13 @@ import com.google.common.base.Strings;
  * <p>
  * Adapted from {@link FileParamPanel}
  */
-public class GeoGigDirectory extends FormComponentPanel<String> {
+class GeoGigDirectory extends FormComponentPanel<String> {
 
     private static final long serialVersionUID = -7456670856888745195L;
 
-    private final TextField<String> value;
+    private final TextField<String> directory;
 
     private final ModalWindow dialog;
-
-    private final IModel<DirectoryFilter> fileFilter = new Model<DirectoryFilter>(
-            new DirectoryFilter());
 
     /**
      * 
@@ -56,20 +50,20 @@ public class GeoGigDirectory extends FormComponentPanel<String> {
         add(dialog = new ModalWindow("dialog"));
 
         // the text field, with a decorator for validations
-        value = new TextField<String>("value", new GeoGigDirectoryModel(valueModel));
-        value.setRequired(true);
-        value.setOutputMarkupId(true);
-        value.add(GEOGIG_DIR_VALIDATOR);
+        directory = new TextField<String>("value", new GeoGigDirectoryModel(valueModel));
+        directory.setRequired(true);
+        directory.setOutputMarkupId(true);
+        directory.add(GEOGIG_DIR_VALIDATOR);
 
         FormComponentFeedbackBorder feedback = new FormComponentFeedbackBorder("wrapper");
-        feedback.add(value);
+        feedback.add(directory);
         feedback.add(chooserButton());
         add(feedback);
     }
-    
+
     @Override
-    protected void convertInput(){
-        String uri = value.getConvertedInput();
+    protected void convertInput() {
+        String uri = directory.getConvertedInput();
         setConvertedInput(uri);
     }
 
@@ -86,28 +80,36 @@ public class GeoGigDirectory extends FormComponentPanel<String> {
             @Override
             public void onSubmit(AjaxRequestTarget target, Form<?> form) {
                 File file = null;
-                value.processInput();
-                String input = value.getConvertedInput();
+                directory.processInput();
+                String input = directory.getConvertedInput();
                 if (input != null && !input.equals("")) {
                     file = new File(input);
                 }
 
-                GeoServerFileChooser chooser = new GeoServerFileChooser(dialog.getContentId(),
-                        new Model<File>(file)) {
+                final boolean makeRepositoriesSelectable = false;
+                DirectoryChooser chooser = new DirectoryChooser(dialog.getContentId(),
+                        new Model<File>(file), makeRepositoriesSelectable) {
 
                     private static final long serialVersionUID = 1L;
 
-                    protected void fileClicked(File file, AjaxRequestTarget target) {
+                    @Override
+                    protected void geogigDirectoryClicked(final File file, AjaxRequestTarget target) {
                         // clear the raw input of the field won't show the new model value
-                        value.clearInput();
-                        value.setModelObject(file.getAbsolutePath());
+                        directory.clearInput();
+                        directory.setModelObject(file.getAbsolutePath());
 
-                        target.addComponent(value);
+                        target.addComponent(directory);
                         dialog.close(target);
                     };
+                    
+                    @Override
+                    protected void directorySelected(File file, AjaxRequestTarget target) {
+                       directory.setModelObject(file.getAbsolutePath());
+                       target.addComponent(directory);
+                       dialog.close(target);
+                   }
                 };
                 chooser.setFileTableHeight(null);
-                chooser.setFilter(fileFilter);
                 dialog.setContent(chooser);
                 dialog.setTitle(new ResourceModel("GeoGigDirectoryPanel.chooser.title"));
                 dialog.show(target);
@@ -141,12 +143,4 @@ public class GeoGigDirectory extends FormComponentPanel<String> {
         }
     };
 
-    private static final class DirectoryFilter implements FileFilter, Serializable {
-        private static final long serialVersionUID = -2280505390702552L;
-
-        @Override
-        public boolean accept(File file) {
-            return file.isDirectory();
-        }
-    }
 }

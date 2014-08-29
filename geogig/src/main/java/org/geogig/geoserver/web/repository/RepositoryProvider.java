@@ -15,7 +15,7 @@ import org.geogig.geoserver.config.RepositoryInfo;
 import org.geogig.geoserver.config.RepositoryManager;
 import org.geoserver.web.wicket.GeoServerDataProvider;
 
-public class RepositoryProvider extends GeoServerDataProvider<RepositoryInfo> {
+class RepositoryProvider extends GeoServerDataProvider<RepositoryInfo> {
 
     private static final long serialVersionUID = 4883560661021761394L;
 
@@ -46,7 +46,7 @@ public class RepositoryProvider extends GeoServerDataProvider<RepositoryInfo> {
 
     @Override
     protected List<RepositoryInfo> getItems() {
-        return mockItems();
+        return findRepositories();
     }
 
     @Override
@@ -81,7 +81,7 @@ public class RepositoryProvider extends GeoServerDataProvider<RepositoryInfo> {
 
         @Override
         protected RepositoryInfo load() {
-            List<RepositoryInfo> mockItems = mockItems();
+            List<RepositoryInfo> mockItems = findRepositories();
             for (RepositoryInfo i : mockItems) {
                 if (this.id.equals(i.getLocation())) {
                     return i;
@@ -91,7 +91,7 @@ public class RepositoryProvider extends GeoServerDataProvider<RepositoryInfo> {
         }
     }
 
-    private static List<RepositoryInfo> mockItems() {
+    private static List<RepositoryInfo> findRepositories() {
         List<RepositoryInfo> repos = RepositoryManager.get().getAll();
         return repos;
     }

@@ -26,8 +26,9 @@ import org.geoserver.catalog.ResourceInfo;
 import org.geoserver.web.GeoServerApplication;
 import org.geoserver.web.wicket.ParamResourceModel;
 
-@SuppressWarnings("serial")
-public class ConfirmRepoRemovePanel extends Panel {
+class ConfirmRepoRemovePanel extends Panel {
+
+    private static final long serialVersionUID = 653769682579422516L;
 
     public ConfirmRepoRemovePanel(String id, IModel<RepositoryInfo> repo) {
         super(id);

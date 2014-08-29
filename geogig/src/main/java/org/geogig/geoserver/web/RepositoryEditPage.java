@@ -4,6 +4,8 @@
  */
 package org.geogig.geoserver.web;
 
+import javax.annotation.Nullable;
+
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
@@ -11,22 +13,23 @@ import org.geogig.geoserver.config.RepositoryInfo;
 import org.geogig.geoserver.web.repository.RepositoryEditPanel;
 import org.geoserver.web.GeoServerSecuredPage;
 
-import com.google.common.base.Preconditions;
-
 /**
  * @see RepositoryEditPanel
  */
 public class RepositoryEditPage extends GeoServerSecuredPage {
 
     public RepositoryEditPage() {
-        this(new Model<RepositoryInfo>(new RepositoryInfo()));
+        this(null);
     }
 
-    public RepositoryEditPage(IModel<RepositoryInfo> repoInfo) {
+    public RepositoryEditPage(@Nullable IModel<RepositoryInfo> repoInfo) {
         super();
-        Preconditions.checkNotNull(repoInfo);
+        final boolean isNew = repoInfo == null;
+        if (isNew) {
+            repoInfo = new Model<RepositoryInfo>(new RepositoryInfo());
+        }
         Form<RepositoryInfo> form = new Form<RepositoryInfo>("repoForm", repoInfo);
-        form.add(new RepositoryEditPanel("repo", repoInfo));
+        form.add(new RepositoryEditPanel("repo", repoInfo, isNew));
         add(form);
     }
 }

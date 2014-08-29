@@ -14,7 +14,7 @@ import org.geoserver.web.wicket.GeoServerDialog;
 import org.geoserver.web.wicket.GeoServerTablePanel;
 import org.geoserver.web.wicket.ImageAjaxLink;
 import org.geoserver.web.wicket.ParamResourceModel;
-import org.geoserver.web.wicket.SimpleBookmarkableLink;
+import org.geoserver.web.wicket.SimpleAjaxLink;
 
 public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
@@ -24,8 +24,8 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
     private GeoServerDialog dialog;
 
-    public RepositoriesListPanel(final String id, RepositoryProvider provider, boolean selectable) {
-        super(id, provider, selectable);
+    public RepositoriesListPanel(final String id) {
+        super(id, new RepositoryProvider(), false);
 
         // the popup window for messages
         popupWindow = new ModalWindow("popupWindow");
@@ -34,7 +34,7 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
         add(dialog = new GeoServerDialog("dialog"));
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     protected Component getComponentForProperty(String id, IModel itemModel,
             Property<RepositoryInfo> property) {
@@ -50,15 +50,24 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
         return null;
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private Component nameLink(String id, IModel itemModel) {
+    private Component nameLink(String id, IModel<RepositoryInfo> itemModel) {
+        @SuppressWarnings("unchecked")
         IModel<String> nameModel = RepositoryProvider.NAME.getModel(itemModel);
-        return new SimpleBookmarkableLink(id, RepositoryEditPage.class, nameModel, "name",
-                (String) nameModel.getObject());
+
+        SimpleAjaxLink<RepositoryInfo> link = new SimpleAjaxLink<RepositoryInfo>(id, itemModel,
+                nameModel) {
+            private static final long serialVersionUID = -18292070541084372L;
+
+            @Override
+            public void onClick(AjaxRequestTarget target) {
+                IModel<RepositoryInfo> model = getModel();
+                RepositoriesListPanel.this.setResponsePage(new RepositoryEditPage(model));
+            }
+        };
+        return link;
     }
 
     protected Component removeLink(final String id, final IModel<RepositoryInfo> itemModel) {
-        final RepositoryInfo info = itemModel.getObject();
 
         ResourceReference removeIcon = new ResourceReference(GeoServerBasePage.class,
                 "img/icons/silk/delete.png");

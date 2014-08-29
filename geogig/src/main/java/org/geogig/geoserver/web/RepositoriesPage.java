@@ -4,43 +4,97 @@
  */
 package org.geogig.geoserver.web;
 
+import java.io.File;
+
 import org.apache.wicket.Component;
+import org.apache.wicket.ajax.AjaxRequestTarget;
+import org.apache.wicket.ajax.markup.html.form.AjaxSubmitLink;
+import org.apache.wicket.extensions.ajax.markup.html.modal.ModalWindow;
+import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.link.BookmarkablePageLink;
 import org.apache.wicket.markup.html.panel.Fragment;
+import org.apache.wicket.model.IModel;
+import org.apache.wicket.model.Model;
+import org.apache.wicket.model.ResourceModel;
+import org.geogig.geoserver.config.RepositoryInfo;
+import org.geogig.geoserver.web.repository.DirectoryChooser;
 import org.geogig.geoserver.web.repository.RepositoriesListPanel;
-import org.geogig.geoserver.web.repository.RepositoryProvider;
 import org.geoserver.web.GeoServerSecuredPage;
-import org.geoserver.web.wicket.GeoServerDialog;
 
 /**
  * Add/edit/remove repositories
  */
 public class RepositoriesPage extends GeoServerSecuredPage {
 
-    private GeoServerDialog dialog;
+    private final ModalWindow repoChooserWindow;
 
-    private RepositoriesListPanel table;
+    private final RepositoriesListPanel table;
 
-    private RepositoryProvider provider = new RepositoryProvider();
+    private File lastSelectedDirectory;
 
     public RepositoriesPage() {
 
-        table = new RepositoriesListPanel("table", provider, false);
+        table = new RepositoriesListPanel("table");
         table.setOutputMarkupId(true);
         add(table);
-        // the confirm dialog
-        dialog = new GeoServerDialog("dialog");
-        add(dialog);
+
+        // add the dialog for the repository chooser
+        add(repoChooserWindow = new ModalWindow("modalWindow"));
+
         setHeaderPanel(headerPanel());
     }
 
     protected Component headerPanel() {
         Fragment header = new Fragment(HEADER_PANEL, "header", this);
 
-        // the add button
+        IModel<RepositoryInfo> newInfo = new Model<RepositoryInfo>(new RepositoryInfo());
+        Form<RepositoryInfo> chooseRepoForm = new Form<RepositoryInfo>("chooseRepoForm", newInfo);
+        chooseRepoForm.add(chooserButton(chooseRepoForm));
+        header.add(chooseRepoForm);
+
         header.add(new BookmarkablePageLink<String>("addNew", RepositoryEditPage.class));
 
         return header;
     }
 
+    protected Component chooserButton(Form<RepositoryInfo> form) {
+        AjaxSubmitLink link = new AjaxSubmitLink("importExisting", form) {
+
+            private static final long serialVersionUID = 1242472443848716943L;
+
+            @Override
+            public boolean getDefaultFormProcessing() {
+                return false;
+            }
+
+            @Override
+            public void onSubmit(AjaxRequestTarget target, Form<?> form) {
+                IModel<File> model = new Model<File>(lastSelectedDirectory);
+                DirectoryChooser chooser;
+                chooser = new DirectoryChooser(repoChooserWindow.getContentId(), model) {
+
+                    private static final long serialVersionUID = 1L;
+
+                    @Override
+                    protected void geogigDirectoryClicked(final File file, AjaxRequestTarget target) {
+                        // clear the raw input of the field won't show the new model value
+                        System.err.println("Stub method to add an existing repository");
+                        repoChooserWindow.close(target);
+                    };
+
+                    @Override
+                    protected void directoryClicked(File file, AjaxRequestTarget target) {
+                        lastSelectedDirectory = file;
+                        super.directoryClicked(file, target);
+                    }
+                };
+                chooser.setFileTableHeight(null);
+                repoChooserWindow.setContent(chooser);
+                repoChooserWindow.setTitle(new ResourceModel("GeoGigDirectoryPanel.chooser.title"));
+                repoChooserWindow.show(target);
+            }
+
+        };
+        return link;
+    }
 }

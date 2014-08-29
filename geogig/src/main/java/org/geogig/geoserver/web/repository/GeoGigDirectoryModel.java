@@ -24,7 +24,7 @@ import org.geotools.util.logging.Logging;
  * Adapted from {@link FileModel}
  *
  */
-public class GeoGigDirectoryModel implements IModel<String> {
+class GeoGigDirectoryModel implements IModel<String> {
 
     private static final long serialVersionUID = -3471257853993308269L;
 
