@@ -17,12 +17,7 @@ import org.apache.wicket.markup.html.form.validation.FormComponentFeedbackBorder
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.model.ResourceModel;
-import org.apache.wicket.validation.IValidatable;
-import org.apache.wicket.validation.IValidator;
-import org.apache.wicket.validation.ValidationError;
 import org.geoserver.web.data.store.panel.FileParamPanel;
-
-import com.google.common.base.Strings;
 
 /**
  * A panel to browse the filesystem for geogig repositories.
@@ -50,10 +45,11 @@ class GeoGigDirectory extends FormComponentPanel<String> {
         add(dialog = new ModalWindow("dialog"));
 
         // the text field, with a decorator for validations
-        directory = new TextField<String>("value", new GeoGigDirectoryModel(valueModel));
+        directory = new TextField<String>("value", valueModel);
         directory.setRequired(true);
         directory.setOutputMarkupId(true);
-        directory.add(GEOGIG_DIR_VALIDATOR);
+        directory.setLabel(new ResourceModel("directory", "Parent directory"));
+        // directory.add(GEOGIG_DIR_VALIDATOR);
 
         FormComponentFeedbackBorder feedback = new FormComponentFeedbackBorder("wrapper");
         feedback.add(directory);
@@ -101,46 +97,22 @@ class GeoGigDirectory extends FormComponentPanel<String> {
                         target.addComponent(directory);
                         dialog.close(target);
                     };
-                    
+
                     @Override
                     protected void directorySelected(File file, AjaxRequestTarget target) {
-                       directory.setModelObject(file.getAbsolutePath());
-                       target.addComponent(directory);
-                       dialog.close(target);
-                   }
+                        directory.setModelObject(file.getAbsolutePath());
+                        target.addComponent(directory);
+                        dialog.close(target);
+                    }
                 };
                 chooser.setFileTableHeight(null);
                 dialog.setContent(chooser);
-                dialog.setTitle(new ResourceModel("GeoGigDirectoryPanel.chooser.title"));
+                dialog.setTitle(new ResourceModel("GeoGigDirectory.chooser.chooseParentTile"));
                 dialog.show(target);
             }
 
         };
         return link;
     }
-
-    private static final IValidator<String> GEOGIG_DIR_VALIDATOR = new IValidator<String>() {
-
-        private static final long serialVersionUID = -3359171335804837536L;
-
-        @Override
-        public void validate(IValidatable<String> validatable) {
-            final String uri = validatable.getValue();
-            ValidationError error = new ValidationError();
-            if (Strings.isNullOrEmpty(uri)) {
-                error.addMessageKey("GeoGigDirectoryPanel.error.empty");
-            } else {
-                File repo = new File(uri, ".geogig");
-                if (!(repo.exists() && repo.isDirectory())) {
-                    error.addMessageKey("GeoGigDirectoryPanel.error.notAGeogigDir");
-                } else if (!repo.canRead()) {
-                    error.addMessageKey("GeoGigDirectoryPanel.error.cantRead");
-                }
-            }
-            if (!error.getKeys().isEmpty()) {
-                validatable.error(error);
-            }
-        }
-    };
 
 }
