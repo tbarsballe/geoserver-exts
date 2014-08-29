@@ -90,7 +90,7 @@ public class RepositoriesPage extends GeoServerSecuredPage {
                 };
                 chooser.setFileTableHeight(null);
                 repoChooserWindow.setContent(chooser);
-                repoChooserWindow.setTitle(new ResourceModel("GeoGigDirectoryPanel.chooser.title"));
+                repoChooserWindow.setTitle(new ResourceModel("GeoGigDirectory.chooser.browseTitle"));
                 repoChooserWindow.show(target);
             }
 

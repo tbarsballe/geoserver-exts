@@ -4,9 +4,16 @@
 </head>
 <body>
 <wicket:extend>
-	<form wicket:id="repoForm">
-		<div wicket:id="repo"></div>
-	</form>
+		<form wicket:id="repoForm">
+			
+			<div wicket:id="repo"></div>
+	    
+	    <div class="button-group selfclear">
+	      <a href="#" wicket:id="save"><wicket:message key="save">Save</wicket:message></a>
+	      <a href="#" wicket:id="cancel"><wicket:message key="cancel">Cancel</wicket:message></a>
+	    </div>			
+		  <div wicket:id="feedback"/>
+		</form>
 </wicket:extend>
 </body>
 </html>
