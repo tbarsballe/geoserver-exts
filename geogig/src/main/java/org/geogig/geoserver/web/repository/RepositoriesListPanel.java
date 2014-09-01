@@ -280,7 +280,7 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
             public RepositoryInfoDetachableModel(RepositoryInfo repoInfo) {
                 super(repoInfo);
-                this.id = repoInfo.getLocation();
+                this.id = repoInfo.getId();
             }
 
             @Override

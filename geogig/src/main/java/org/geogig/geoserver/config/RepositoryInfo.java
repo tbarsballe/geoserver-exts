@@ -25,7 +25,7 @@ public class RepositoryInfo implements Serializable {
         this.id = id;
     }
 
-    String getId() {
+    public String getId() {
         return id;
     }
 

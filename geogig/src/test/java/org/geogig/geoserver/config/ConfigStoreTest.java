@@ -1,11 +1,14 @@
 package org.geogig.geoserver.config;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashSet;
@@ -26,6 +29,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 
@@ -69,7 +73,8 @@ public class ConfigStoreTest {
 
     @Test
     public void save() throws Exception {
-        RepositoryInfo info = new RepositoryInfo("uuid");
+        final String dummyId = "94bcb762-9ee9-4b43-a912-063509966988";
+        RepositoryInfo info = new RepositoryInfo(dummyId);
         info.setName("repo");
         info.setParentDirectory("/home/test");
         store.save(info);
@@ -79,7 +84,7 @@ public class ConfigStoreTest {
         assertTrue(resource.file().exists());
         // Files.copy(resource.file(), System.err);
         String expected = "<RepositoryInfo>"//
-                + "<id>uuid</id>"//
+                + "<id>" + dummyId + "</id>"//
                 + "<parentDirectory>/home/test</parentDirectory>"//
                 + "<name>repo</name>"//
                 + "</RepositoryInfo>";
@@ -89,10 +94,34 @@ public class ConfigStoreTest {
     }
 
     @Test
+    public void checkIdFormatOnSave() {
+        final String dummyId = "94bcb762-9ee9-4b43-a912-063509966988";
+        RepositoryInfo info = new RepositoryInfo(dummyId + "a");
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage("Id doesn't match UUID format");
+        store.save(info);
+    }
+
+    @Test
     public void loadNull() throws Exception {
         thrown.expect(NullPointerException.class);
         thrown.expectMessage("null id");
         store.load(null);
+    }
+
+    @Test
+    public void loadNonExistent() throws Exception {
+        final String dummyId = "94bcb762-9ee9-4b43-a912-063509966989";
+        try {
+            store.load(dummyId);
+            fail("Expected FileNotFoundException");
+        } catch (FileNotFoundException e) {
+            assertTrue(e.getMessage().startsWith("File not found: "));
+        }
+
+        String path = ConfigStore.path(dummyId);
+        Resource resource = dataDir.get(path);
+        assertFalse(new File(resource.parent().dir(), resource.name()).exists());
     }
 
     @Test
@@ -172,8 +201,11 @@ public class ConfigStoreTest {
     }
 
     private RepositoryInfo dummy(int i) {
+        Preconditions.checkArgument(i > -1 && i < 10);
+        final String dummyId = "94bcb762-9ee9-4b43-a912-063509966988";
+        final String id = dummyId.substring(0, dummyId.length() - 1) + String.valueOf(i);
         RepositoryInfo info = new RepositoryInfo();
-        info.setId(String.valueOf(i));
+        info.setId(id);
         info.setName("name-" + i);
         info.setParentDirectory("parent/directory/" + i);
         return info;
