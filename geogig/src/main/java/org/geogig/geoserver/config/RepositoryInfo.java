@@ -76,4 +76,10 @@ public class RepositoryInfo implements Serializable {
     public int hashCode() {
         return Objects.hashCode(getId(), getName(), getParentDirectory());
     }
+
+    @Override
+    public String toString() {
+        return new StringBuilder("[name:").append(getName()).append(", parent:")
+                .append(getParentDirectory()).append("]").toString();
+    }
 }

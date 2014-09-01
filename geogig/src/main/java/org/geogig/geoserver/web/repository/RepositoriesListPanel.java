@@ -3,7 +3,6 @@ package org.geogig.geoserver.web.repository;
 import static org.geoserver.catalog.CascadeRemovalReporter.ModificationType.DELETE;
 import static org.geoserver.catalog.CascadeRemovalReporter.ModificationType.GROUP_CHANGED;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -19,7 +18,6 @@ import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.model.IModel;
-import org.apache.wicket.model.LoadableDetachableModel;
 import org.geogig.geoserver.config.RepositoryInfo;
 import org.geogig.geoserver.config.RepositoryManager;
 import org.geogig.geoserver.web.RepositoryEditPage;
@@ -39,11 +37,12 @@ import org.geoserver.web.wicket.ImageAjaxLink;
 import org.geoserver.web.wicket.ParamResourceModel;
 import org.geoserver.web.wicket.SimpleAjaxLink;
 
-import com.google.common.base.Throwables;
-
 public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
     private static final long serialVersionUID = 5957961031378924960L;
+
+    private static final ResourceReference removeIcon = new ResourceReference(
+            GeoServerBasePage.class, "img/icons/silk/delete.png");
 
     private ModalWindow popupWindow;
 
@@ -94,12 +93,11 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
     protected Component removeLink(final String id, final IModel<RepositoryInfo> itemModel) {
 
-        ResourceReference removeIcon = new ResourceReference(GeoServerBasePage.class,
-                "img/icons/silk/delete.png");
-
         return new ImageAjaxLink(id, removeIcon) {
 
             private static final long serialVersionUID = -3061812114487970427L;
+
+            private IModel<RepositoryInfo> model = itemModel;
 
             @Override
             public void onClick(AjaxRequestTarget target) {
@@ -112,14 +110,17 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
                     @Override
                     protected Component getContents(String id) {
-                        return new ConfirmRemovePanel(id, itemModel);
+                        return new ConfirmRemovePanel(id, model);
                     }
 
                     @Override
                     protected boolean onSubmit(AjaxRequestTarget target, Component contents) {
-                        boolean proceed = true;
-                        System.err.println("Stub method. Implement repo remove here!");
-                        return proceed;
+                        boolean closeConfirmDialog = true;
+
+                        final String repoId = model.getObject().getId();
+                        RepositoryManager.get().delete(repoId);
+
+                        return closeConfirmDialog;
                     }
 
                     @Override
@@ -143,9 +144,9 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
                     "RepositoriesListPanel$ConfirmRemovePanel.aboutRemove", this, repo.getObject()
                             .getName())));
 
-            final String repoLocation = repo.getObject().getLocation();
+            final String repoId = repo.getObject().getId();
             final List<? extends CatalogInfo> stores;
-            stores = RepositoryManager.get().findDataStoes(repoLocation);
+            stores = RepositoryManager.get().findDataStoes(repoId);
 
             // collect the objects that will be removed (besides the roots)
             Catalog catalog = GeoServerApplication.get().getCatalog();
@@ -267,32 +268,5 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
         public IModel<RepositoryInfo> newModel(Object object) {
             return new RepositoryInfoDetachableModel((RepositoryInfo) object);
         }
-
-        /**
-         * A RepositoryInfo detachable model that holds the store id to retrieve it on demand from
-         * the catalog
-         */
-        static class RepositoryInfoDetachableModel extends LoadableDetachableModel<RepositoryInfo> {
-
-            private static final long serialVersionUID = -6829878983583733186L;
-
-            String id;
-
-            public RepositoryInfoDetachableModel(RepositoryInfo repoInfo) {
-                super(repoInfo);
-                this.id = repoInfo.getId();
-            }
-
-            @Override
-            protected RepositoryInfo load() {
-                try {
-                    return RepositoryManager.get().get(id);
-                } catch (IOException e) {
-                    throw Throwables.propagate(e);
-                }
-            }
-        }
-
     }
-
 }

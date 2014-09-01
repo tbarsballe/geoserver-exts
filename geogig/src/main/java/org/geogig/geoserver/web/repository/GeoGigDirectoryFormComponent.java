@@ -100,6 +100,7 @@ class GeoGigDirectoryFormComponent extends FormComponentPanel<String> {
 
                     @Override
                     protected void directorySelected(File file, AjaxRequestTarget target) {
+                        directory.clearInput();
                         directory.setModelObject(file.getAbsolutePath());
                         target.addComponent(directory);
                         dialog.close(target);

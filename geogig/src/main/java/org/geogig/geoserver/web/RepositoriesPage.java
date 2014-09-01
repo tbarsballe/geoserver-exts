@@ -31,8 +31,6 @@ public class RepositoriesPage extends GeoServerSecuredPage {
 
     private final RepositoriesListPanel table;
 
-    private File lastSelectedDirectory;
-
     public RepositoriesPage() {
 
         table = new RepositoriesListPanel("table");
@@ -70,9 +68,8 @@ public class RepositoriesPage extends GeoServerSecuredPage {
 
             @Override
             public void onSubmit(AjaxRequestTarget target, Form<?> form) {
-                IModel<File> model = new Model<File>(lastSelectedDirectory);
                 DirectoryChooser chooser;
-                chooser = new DirectoryChooser(repoChooserWindow.getContentId(), model) {
+                chooser = new DirectoryChooser(repoChooserWindow.getContentId(), new Model<File>()) {
 
                     private static final long serialVersionUID = 1L;
 
@@ -89,7 +86,6 @@ public class RepositoriesPage extends GeoServerSecuredPage {
 
                     @Override
                     protected void directoryClicked(File file, AjaxRequestTarget target) {
-                        lastSelectedDirectory = file;
                         super.directoryClicked(file, target);
                     }
                 };

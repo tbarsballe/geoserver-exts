@@ -85,6 +85,10 @@ public class ConfigStore {
     public RepositoryInfo save(RepositoryInfo info) {
         checkNotNull(info, "null RepositoryInfo");
         checkId(info);
+
+        checkNotNull(info.getName(), "null name: %s", info);
+        checkNotNull(info.getParentDirectory(), "null parent directory: %s", info);
+
         Resource resource = resource(info.getId());
         try (OutputStream out = resource.out()) {
             getConfigredXstream().toXML(info, new OutputStreamWriter(out, Charsets.UTF_8));
@@ -94,12 +98,19 @@ public class ConfigStore {
         return info;
     }
 
+    public void delete(final String id) {
+        checkArgument(UUID_PATTERN.matcher(id).matches(), "Id doesn't match UUID format: '%s'", id);
+        resource(id).delete();
+    }
+
     private void checkId(RepositoryInfo info) {
-        if (info.getId() == null) {
-            info.setId(UUID.randomUUID().toString());
+        String id = info.getId();
+        if (id == null) {
+            id = UUID.randomUUID().toString();
+            info.setId(id);
         } else {
-            checkArgument(UUID_PATTERN.matcher(info.getId()).matches(),
-                    "Id doesn't match UUID format: '%s'", info.getId());
+            checkArgument(UUID_PATTERN.matcher(id).matches(), "Id doesn't match UUID format: '%s'",
+                    id);
         }
     }
 
@@ -143,14 +154,18 @@ public class ConfigStore {
         if (!(parent.exists() && f.exists())) {
             throw new FileNotFoundException("File not found: " + f.getAbsolutePath());
         }
+        RepositoryInfo info;
         try (Reader reader = new InputStreamReader(input.in(), Charsets.UTF_8)) {
-            RepositoryInfo info = (RepositoryInfo) getConfigredXstream().fromXML(reader);
-            return info;
+            info = (RepositoryInfo) getConfigredXstream().fromXML(reader);
         } catch (Exception e) {
             String msg = "Unable to load repo config " + input.name();
             LOGGER.log(Level.WARNING, msg, e);
             throw new IOException(msg, e);
         }
+        if (info.getName() == null || info.getParentDirectory() == null) {
+            throw new IOException("Repository info has incomplete information: " + info);
+        }
+        return info;
     }
 
     private static XStream getConfigredXstream() {
@@ -173,10 +188,10 @@ public class ConfigStore {
             try {
                 return load(input);
             } catch (IOException e) {
+                LOGGER.log(Level.WARNING, "Error loading RepositoryInfo", e);
                 return null;
             }
         }
 
     };
-
 }

@@ -4,6 +4,8 @@
  */
 package org.geogig.geoserver.web.repository;
 
+import static org.geogig.geoserver.config.RepositoryManager.isGeogigDirectory;
+
 import java.io.File;
 
 import org.apache.wicket.markup.html.form.FormComponentPanel;
@@ -24,9 +26,12 @@ public class RepositoryEditPanel extends FormComponentPanel<RepositoryInfo> {
 
     private TextField<String> name;
 
+    private final boolean isNew;
+
     public RepositoryEditPanel(final String wicketId, IModel<RepositoryInfo> model,
             final boolean isNew) {
         super(wicketId, model);
+        this.isNew = isNew;
 
         IModel<String> parentModel = new PropertyModel<String>(model, "parentDirectory");
         parent = new GeoGigDirectoryFormComponent("parentDirectory", parentModel);
@@ -41,19 +46,32 @@ public class RepositoryEditPanel extends FormComponentPanel<RepositoryInfo> {
         add(name);
 
         add(new IValidator<RepositoryInfo>() {
+
+            private static final long serialVersionUID = 224160688160723504L;
+
             @Override
             public void validate(IValidatable<RepositoryInfo> validatable) {
-                parent.processInput();
-                name.processInput();
+                if (isNew) {
+                    parent.processInput();
+                    name.processInput();
+                }
+                ValidationError error = new ValidationError();
                 RepositoryInfo repo = validatable.getValue();
+                final File parent = new File(repo.getParentDirectory());
+                if (!parent.exists() || !parent.isDirectory()) {
+                    error.addMessageKey("errParentDoesntExist");
+                }
+                if (!parent.canWrite()) {
+                    error.addMessageKey("errParentReadOnly");
+                }
                 String uri = repo.getLocation();
                 File repoDir = new File(uri);
-                ValidationError error = new ValidationError();
-                if (repoDir.exists()) {
-                    error.addMessageKey("errDirectoryExists");
-                }
-                if (!repoDir.getParentFile().canWrite()) {
-                    error.addMessageKey("errParentReadOnly");
+                if (isNew) {
+                    if (repoDir.exists()) {
+                        error.addMessageKey("errDirectoryExists");
+                    }
+                } else if (!isGeogigDirectory(repoDir)) {
+                    error.addMessageKey("notAGeogigRepository");
                 }
                 if (!error.getKeys().isEmpty()) {
                     validatable.error(error);

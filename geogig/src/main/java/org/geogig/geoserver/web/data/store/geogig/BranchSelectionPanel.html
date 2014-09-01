@@ -1,11 +1,11 @@
 <html xmlns:wicket="http://wicket.apache.org/">
 <body>                                                                                                                                                                               
 <wicket:panel>
-    <label for="branchDropDown"><wicket:message key="branch"></wicket:message></label>
     <table>
       <tr>
        <td>
-         <select wicket:id="branchDropDown" id="branchDropDown" class="text" style="width: 100%"/>
+         <label for="branchDropDown"><wicket:message key="branch"></wicket:message></label>
+         <select wicket:id="branchDropDown" id="branchDropDown" class="text"/>
        </td>
        <td>
          <div class="button-group selfclear">

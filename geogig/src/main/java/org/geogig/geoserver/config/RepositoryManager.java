@@ -6,9 +6,11 @@ import static org.geoserver.catalog.Predicates.equal;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.geoserver.catalog.CascadeDeleteVisitor;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.CatalogInfo;
 import org.geoserver.catalog.DataStoreInfo;
@@ -20,6 +22,8 @@ import org.geoserver.web.GeoServerApplication;
 import org.locationtech.geogig.api.ContextBuilder;
 import org.locationtech.geogig.api.GeoGIG;
 import org.locationtech.geogig.api.GlobalContextBuilder;
+import org.locationtech.geogig.api.Ref;
+import org.locationtech.geogig.api.porcelain.BranchListOp;
 import org.locationtech.geogig.api.porcelain.InitOp;
 import org.locationtech.geogig.cli.CLIContextBuilder;
 import org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory;
@@ -27,6 +31,7 @@ import org.locationtech.geogig.repository.Repository;
 import org.opengis.filter.Filter;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
 
 public class RepositoryManager {
@@ -37,12 +42,25 @@ public class RepositoryManager {
         }
     }
 
+    private static class StaticSupplier implements Supplier<RepositoryManager>, Serializable {
+        private static final long serialVersionUID = 3706728433275296134L;
+
+        @Override
+        public RepositoryManager get() {
+            return RepositoryManager.get();
+        }
+    }
+
     private ConfigStore store;
 
     public static RepositoryManager get() {
         RepositoryManager repoManager = GeoServerExtensions.bean(RepositoryManager.class);
         Preconditions.checkState(repoManager != null);
         return repoManager;
+    }
+
+    public static Supplier<RepositoryManager> supplier() {
+        return new StaticSupplier();
     }
 
     public RepositoryManager(ConfigStore store) {
@@ -79,11 +97,11 @@ public class RepositoryManager {
         return geogigStores;
     }
 
-    public List<DataStoreInfo> findDataStoes(final String repoLocation) {
+    public List<DataStoreInfo> findDataStoes(final String repoId) {
         Filter filter = equal("type", GeoGigDataStoreFactory.DISPLAY_NAME);
 
         String locationKey = "connectionParameters." + GeoGigDataStoreFactory.REPOSITORY.key;
-        filter = and(filter, equal(locationKey, repoLocation));
+        filter = and(filter, equal(locationKey, repoId));
         List<DataStoreInfo> dependent;
         try (CloseableIterator<DataStoreInfo> stores = catalog().list(DataStoreInfo.class, filter)) {
             dependent = Lists.newArrayList(stores);
@@ -91,12 +109,12 @@ public class RepositoryManager {
         return dependent;
     }
 
-    public List<? extends CatalogInfo> findDependentCatalogObjects(final String repoLocation) {
+    public List<? extends CatalogInfo> findDependentCatalogObjects(final String repoId) {
         Filter filter = equal("type", GeoGigDataStoreFactory.DISPLAY_NAME);
 
         String locationKey = "connectionParameters." + GeoGigDataStoreFactory.REPOSITORY.key;
-        filter = and(filter, equal(locationKey, repoLocation));
-        List<DataStoreInfo> stores = findDataStoes(repoLocation);
+        filter = and(filter, equal(locationKey, repoId));
+        List<DataStoreInfo> stores = findDataStoes(repoId);
         List<CatalogInfo> dependent = new ArrayList<CatalogInfo>(stores);
         Catalog catalog = catalog();
         for (DataStoreInfo store : stores) {
@@ -155,4 +173,32 @@ public class RepositoryManager {
             geogig.close();
         }
     }
+
+    public List<Ref> listBranches(final String repositoryId) throws IOException {
+        GeoGIG geogig = getRepository(repositoryId);
+        try {
+            List<Ref> refs = geogig.command(BranchListOp.class).call();
+            return refs;
+        } finally {
+            geogig.close();
+        }
+    }
+
+    public GeoGIG getRepository(String repositoryId) throws IOException {
+        RepositoryInfo repositoryInfo = get(repositoryId);
+        File repoDir = new File(repositoryInfo.getLocation());
+        GeoGIG geogig = new GeoGIG(repoDir);
+        geogig.getRepository();
+        return geogig;
+    }
+
+    public void delete(final String repoId) {
+        List<DataStoreInfo> repoStores = findDataStoes(repoId);
+        CascadeDeleteVisitor deleteVisitor = new CascadeDeleteVisitor(catalog());
+        for (DataStoreInfo storeInfo : repoStores) {
+            storeInfo.accept(deleteVisitor);
+        }
+        this.store.delete(repoId);
+    }
+
 }

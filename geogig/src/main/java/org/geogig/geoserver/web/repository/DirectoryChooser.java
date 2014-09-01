@@ -6,23 +6,27 @@ package org.geogig.geoserver.web.repository;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.io.Serializable;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import javax.swing.filechooser.FileSystemView;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.wicket.MetaDataKey;
 import org.apache.wicket.ResourceReference;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.form.AjaxFormComponentUpdatingBehavior;
 import org.apache.wicket.ajax.markup.html.AjaxFallbackLink;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.behavior.SimpleAttributeModifier;
-import org.apache.wicket.extensions.ajax.markup.html.IndicatingAjaxFallbackLink;
 import org.apache.wicket.extensions.markup.html.repeater.util.SortableDataProvider;
 import org.apache.wicket.markup.ComponentTag;
 import org.apache.wicket.markup.html.WebMarkupContainer;
@@ -36,6 +40,7 @@ import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.util.convert.IConverter;
+import org.geogig.geoserver.config.RepositoryInfo;
 import org.geogig.geoserver.config.RepositoryManager;
 import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.platform.GeoServerResourceLoader;
@@ -76,15 +81,20 @@ public class DirectoryChooser extends Panel {
         }
     }
 
+    private static final MetaDataKey<File> LAST_VISITED_DIRECTORY = new MetaDataKey<File>() {
+
+        private static final long serialVersionUID = 1L;
+    };
+
     private FileBreadcrumbs breadcrumbs;
 
     private DirectoryDataView directoryListingTable;
 
-    private IModel<File> directory;
+    private final IModel<File> directory;
 
     private final boolean makeRepositoriesSelectable;
 
-    private AjaxLink accepdDirectoryLink;
+    private AjaxLink<?> accepdDirectoryLink;
 
     public DirectoryChooser(String contentId, IModel<File> directory) {
         this(contentId, directory, true);
@@ -93,9 +103,13 @@ public class DirectoryChooser extends Panel {
     public DirectoryChooser(final String contentId, IModel<File> initialDirectory,
             final boolean makeRepositoriesSelectable) {
         super(contentId, initialDirectory);
-
-        this.directory = initialDirectory;
+        getSession().bind();// so we can store the last visited directory as a session object
         this.makeRepositoriesSelectable = makeRepositoriesSelectable;
+
+        if (initialDirectory.getObject() == null) {
+            File lastUsed = getSession().getMetaData(LAST_VISITED_DIRECTORY);
+            initialDirectory.setObject(lastUsed);
+        }
 
         // build the roots
         ArrayList<File> roots = Lists.newArrayList(File.listRoots());
@@ -199,13 +213,14 @@ public class DirectoryChooser extends Panel {
         directoryListingTable.setFileFilter(fileFilter);
         add(directoryListingTable);
 
-        accepdDirectoryLink = new AjaxLink<File>("ok", DirectoryChooser.this.directory) {
+        accepdDirectoryLink = new AjaxLink<File>("ok", this.directory) {
             private static final long serialVersionUID = 1L;
 
             @Override
             public void onClick(AjaxRequestTarget target) {
                 // must of been set by #directoryClicked()
                 File dir = getModelObject();
+                getSession().setMetaData(LAST_VISITED_DIRECTORY, dir);
                 directorySelected(dir, target);
             }
         };
@@ -217,6 +232,7 @@ public class DirectoryChooser extends Panel {
         if (RepositoryManager.isGeogigDirectory(file)) {
             geogigDirectoryClicked(file, target);
         } else {
+            getSession().setMetaData(LAST_VISITED_DIRECTORY, file);
             directoryClicked(file, target);
         }
     }
@@ -378,6 +394,21 @@ public class DirectoryChooser extends Panel {
             table.setOutputMarkupId(true);
             add(table);
 
+            List<RepositoryInfo> all = RepositoryManager.get().getAll();
+
+            // maps canonical files to configured file to identify duplicates due to symlinks
+            final Map<File, File> existingPaths = new HashMap<>();
+            for (RepositoryInfo info : all) {
+                File configured = new File(info.getLocation());
+                File canonical;
+                try {
+                    canonical = configured.getCanonicalFile();
+                } catch (IOException e) {
+                    canonical = configured;
+                }
+                existingPaths.put(canonical, configured);
+            }
+
             DataView<File> fileTable = new DataView<File>("files", fileProvider) {
                 private static final long serialVersionUID = 1345694542339080271L;
 
@@ -393,7 +424,7 @@ public class DirectoryChooser extends Panel {
                     item.add(new Image("icon", icon));
 
                     // navigation/selection links
-                    AjaxFallbackLink<File> link = new IndicatingAjaxFallbackLink<File>("nameLink") {
+                    AjaxFallbackLink<File> link = new AjaxFallbackLink<File>("nameLink") {
                         private static final long serialVersionUID = -644973941443812893L;
 
                         @Override
@@ -412,8 +443,31 @@ public class DirectoryChooser extends Panel {
                         }
                     };
                     link.add(nameLabel);
-                    link.setEnabled(isGeogigDirectory ? DirectoryDataView.this.allowSelectingRepositories
-                            : true);
+
+                    final Map<File, File> existing = existingPaths;
+                    File canonicalFile;
+                    try {
+                        canonicalFile = file.getCanonicalFile();
+                    } catch (IOException e) {
+                        canonicalFile = file;
+                    }
+
+                    final boolean alreadyImported = isGeogigDirectory
+                            && existing.containsKey(canonicalFile);
+                    if (isGeogigDirectory) {
+                        if (alreadyImported) {
+                            link.setEnabled(false);
+                            File dupicate = existing.get(canonicalFile);
+                            nameLabel.add(new SimpleAttributeModifier("title",
+                                    new ParamResourceModel(
+                                            "DirectoryChooser$DirectoryDataView.repoExists",
+                                            DirectoryDataView.this, dupicate.getAbsolutePath())
+                                            .getObject()));
+                        } else {
+                            link.setEnabled(DirectoryDataView.this.allowSelectingRepositories);
+                        }
+                    }
+
                     item.add(link);
 
                     // last modified and size labels

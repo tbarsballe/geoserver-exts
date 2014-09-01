@@ -7,14 +7,9 @@ package org.geogig.geoserver.web;
 import javax.annotation.Nullable;
 
 import org.apache.wicket.ajax.AjaxRequestTarget;
-import org.apache.wicket.ajax.markup.html.form.AjaxSubmitLink;
-import org.apache.wicket.markup.html.form.Form;
-import org.apache.wicket.markup.html.link.BookmarkablePageLink;
-import org.apache.wicket.markup.html.panel.FeedbackPanel;
 import org.apache.wicket.model.IModel;
-import org.apache.wicket.model.Model;
 import org.geogig.geoserver.config.RepositoryInfo;
-import org.geogig.geoserver.config.RepositoryManager;
+import org.geogig.geoserver.web.repository.RepositoryEditFormPanel;
 import org.geogig.geoserver.web.repository.RepositoryEditPanel;
 import org.geoserver.web.GeoServerSecuredPage;
 
@@ -29,43 +24,18 @@ public class RepositoryEditPage extends GeoServerSecuredPage {
 
     public RepositoryEditPage(@Nullable IModel<RepositoryInfo> repoInfo) {
         super();
-        final boolean isNew = repoInfo == null;
-        if (isNew) {
-            repoInfo = new Model<RepositoryInfo>(new RepositoryInfo());
-        }
-        Form<RepositoryInfo> form = new Form<RepositoryInfo>("repoForm", repoInfo);
-        form.add(new RepositoryEditPanel("repo", repoInfo, isNew));
-        add(form);
-        FeedbackPanel feedback = new FeedbackPanel("feedback");
-        form.add(feedback);
-
-        form.add(new BookmarkablePageLink<Void>("cancel", RepositoriesPage.class));
-
-        form.add(new AjaxSubmitLink("save", form) {
-            private static final long serialVersionUID = 1L;
+        add(new RepositoryEditFormPanel("panel", repoInfo) {
+            private static final long serialVersionUID = -2629733074852452891L;
 
             @Override
-            protected void onError(AjaxRequestTarget target, Form<?> form) {
-                super.onError(target, form);
-                target.addComponent(form);
+            protected void saved(RepositoryInfo info, AjaxRequestTarget target) {
+                setResponsePage(RepositoriesPage.class);
             }
 
             @Override
-            protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
-                try {
-                    RepositoryInfo repoInfo = (RepositoryInfo) form.getModelObject();
-                    onSave(repoInfo, target);
-                } catch (IllegalArgumentException e) {
-                    form.error(e.getMessage());
-                    target.addComponent(form);
-                }
+            protected void cancelled(AjaxRequestTarget target) {
+                setResponsePage(RepositoriesPage.class);
             }
         });
-    }
-
-    private void onSave(RepositoryInfo repoInfo, AjaxRequestTarget target) {
-        RepositoryManager manager = RepositoryManager.get();
-        manager.save(repoInfo);
-        setResponsePage(RepositoriesPage.class);
     }
 }
