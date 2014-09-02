@@ -126,19 +126,20 @@ public class ConfigStoreTest {
 
     @Test
     public void load() throws Exception {
+        final String dummyId = "94bcb762-9ee9-4b43-a912-063509966988";
         String expected = "<RepositoryInfo>"//
-                + "<id>uuid</id>"//
+                + "<id>" + dummyId + "</id>"//
                 + "<parentDirectory>/home/test</parentDirectory>"//
                 + "<name>repo</name>"//
                 + "</RepositoryInfo>";
 
-        String path = ConfigStore.path("uuid");
+        String path = ConfigStore.path(dummyId);
         Resource resource = dataDir.get(path);
         Files.write(expected, resource.file(), Charsets.UTF_8);
 
-        RepositoryInfo info = store.load("uuid");
+        RepositoryInfo info = store.load(dummyId);
         assertNotNull(info);
-        assertEquals("uuid", info.getId());
+        assertEquals(dummyId, info.getId());
         assertEquals("repo", info.getName());
         assertEquals("/home/test", info.getParentDirectory());
     }
@@ -146,18 +147,19 @@ public class ConfigStoreTest {
     @Test
     public void loadMalformed() throws Exception {
         // this xml has a missing > character at the end
+        final String dummyId = "94bcb762-9ee9-4b43-a912-063509966988";
         String expected = "<RepositoryInfo>"//
-                + "<id>uuid</id>"//
+                + "<id>" + dummyId + "</id>"//
                 + "<parentDirectory>/home/test</parentDirectory>"//
                 + "<name>repo</name>"//
                 + "</RepositoryInfo";
 
-        String path = ConfigStore.path("uuid");
+        String path = ConfigStore.path(dummyId);
         Resource resource = dataDir.get(path);
         Files.write(expected, resource.file(), Charsets.UTF_8);
         thrown.expect(IOException.class);
         thrown.expectMessage("Unable to load");
-        store.load("uuid");
+        store.load(dummyId);
     }
 
     @Test
@@ -198,6 +200,39 @@ public class ConfigStoreTest {
         assertEquals(3, all.size());
         Set<RepositoryInfo> expected = Sets.newHashSet(dummy(1), dummy(2), dummy(3));
         assertEquals(expected, new HashSet<RepositoryInfo>(all));
+    }
+
+    @Test
+    public void delete() throws Exception {
+        final String dummyId = "94bcb762-9ee9-4b43-a912-063509966988";
+        String expected = "<RepositoryInfo>"//
+                + "<id>" + dummyId + "</id>"//
+                + "<parentDirectory>/home/test</parentDirectory>"//
+                + "<name>repo</name>"//
+                + "</RepositoryInfo>";
+
+        String path = ConfigStore.path(dummyId);
+        Resource resource = dataDir.get(path);
+        Files.write(expected, resource.file(), Charsets.UTF_8);
+
+        assertNotNull(store.load(dummyId));
+        store.delete(dummyId);
+        thrown.expect(FileNotFoundException.class);
+        assertNull(store.load(dummyId));
+    }
+
+    @Test
+    public void deleteNull() throws Exception {
+        thrown.expect(NullPointerException.class);
+        thrown.expectMessage("null id");
+        store.delete(null);
+    }
+
+    @Test
+    public void deleteMalformedId() throws Exception {
+        thrown.expect(IllegalArgumentException.class);
+        thrown.expectMessage("Id doesn't match UUID format");
+        store.delete("not-a-uuid");
     }
 
     private RepositoryInfo dummy(int i) {

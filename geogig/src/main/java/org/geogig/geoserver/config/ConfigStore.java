@@ -17,6 +17,8 @@ import java.io.Reader;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -65,12 +67,15 @@ public class ConfigStore {
 
     private ResourceStore resourceLoader;
 
+    private final ReadWriteLock lock;
+
     public ConfigStore(ResourceStore resourceLoader) {
         checkNotNull(resourceLoader, "resourceLoader");
         this.resourceLoader = resourceLoader;
         if (null == Resources.directory(resourceLoader.get(CONFIG_DIR_NAME), true)) {
             throw new IllegalStateException("Unable to create config directory " + CONFIG_DIR_NAME);
         }
+        this.lock = new ReentrantReadWriteLock();
     }
 
     /**
@@ -84,33 +89,44 @@ public class ConfigStore {
      */
     public RepositoryInfo save(RepositoryInfo info) {
         checkNotNull(info, "null RepositoryInfo");
-        checkId(info);
+        ensureIdPresent(info);
 
         checkNotNull(info.getName(), "null name: %s", info);
         checkNotNull(info.getParentDirectory(), "null parent directory: %s", info);
 
-        Resource resource = resource(info.getId());
-        try (OutputStream out = resource.out()) {
+        lock.writeLock().lock();
+        try (OutputStream out = resource(info.getId()).out()) {
             getConfigredXstream().toXML(info, new OutputStreamWriter(out, Charsets.UTF_8));
         } catch (IOException e) {
             throw Throwables.propagate(e);
+        } finally {
+            lock.writeLock().unlock();
         }
         return info;
     }
 
     public void delete(final String id) {
-        checkArgument(UUID_PATTERN.matcher(id).matches(), "Id doesn't match UUID format: '%s'", id);
-        resource(id).delete();
+        checkNotNull(id, "provided a null id");
+        checkIdFormat(id);
+        lock.writeLock().lock();
+        try {
+            resource(id).delete();
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
-    private void checkId(RepositoryInfo info) {
+    private void checkIdFormat(final String id) {
+        checkArgument(UUID_PATTERN.matcher(id).matches(), "Id doesn't match UUID format: '%s'", id);
+    }
+
+    private void ensureIdPresent(RepositoryInfo info) {
         String id = info.getId();
         if (id == null) {
             id = UUID.randomUUID().toString();
             info.setId(id);
         } else {
-            checkArgument(UUID_PATTERN.matcher(id).matches(), "Id doesn't match UUID format: '%s'",
-                    id);
+            checkIdFormat(id);
         }
     }
 
@@ -132,9 +148,14 @@ public class ConfigStore {
      * {@code <data-dir>/geogigconfig/}; any xml file that can't be parsed is ignored.
      */
     public List<RepositoryInfo> getRepositories() {
-        List<Resource> list = getConfigRoot().list();
-        Iterator<Resource> xmlfiles = filter(list.iterator(), FILENAMEFILTER);
-        return newArrayList(filter(transform(xmlfiles, LOADER), notNull()));
+        lock.writeLock().lock();
+        try {
+            List<Resource> list = getConfigRoot().list();
+            Iterator<Resource> xmlfiles = filter(list.iterator(), FILENAMEFILTER);
+            return newArrayList(filter(transform(xmlfiles, LOADER), notNull()));
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -143,8 +164,14 @@ public class ConfigStore {
      */
     public RepositoryInfo load(final String id) throws IOException {
         checkNotNull(id, "provided a null id");
-        Resource resource = resource(id);
-        return load(resource);
+        checkIdFormat(id);
+        lock.readLock().lock();
+        try {
+            Resource resource = resource(id);
+            return load(resource);
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     private static RepositoryInfo load(Resource input) throws IOException {
