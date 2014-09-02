@@ -1,7 +1,7 @@
 package org.geogig.geoserver.config;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.geoserver.catalog.Predicates.and;
+import static org.geoserver.catalog.Predicates.*;
 import static org.geoserver.catalog.Predicates.equal;
 
 import java.io.File;
@@ -85,8 +85,19 @@ public class RepositoryManager {
     }
 
     static List<DataStoreInfo> findGeogigStores(Catalog catalog) {
-        List<DataStoreInfo> geogigStores;
         org.opengis.filter.Filter filter = equal("type", GeoGigDataStoreFactory.DISPLAY_NAME);
+        return findGeoGigStores(catalog, filter);
+    }
+
+    static List<DataStoreInfo> findGeogigStoresWithOldConfiguration(Catalog catalog) {
+        org.opengis.filter.Filter filter = and(equal("type", GeoGigDataStoreFactory.DISPLAY_NAME),
+                isNull("connectionParameters." + GeoGigDataStoreFactory.RESOLVER_CLASS_NAME.key));
+        return findGeoGigStores(catalog, filter);
+    }
+
+    private static List<DataStoreInfo> findGeoGigStores(Catalog catalog,
+            org.opengis.filter.Filter filter) {
+        List<DataStoreInfo> geogigStores;
         CloseableIterator<DataStoreInfo> stores = catalog.list(DataStoreInfo.class, filter);
         try {
             geogigStores = Lists.newArrayList(stores);
@@ -97,7 +108,7 @@ public class RepositoryManager {
         return geogigStores;
     }
 
-    public List<DataStoreInfo> findDataStoes(final String repoId) {
+    public List<DataStoreInfo> findDataStores(final String repoId) {
         Filter filter = equal("type", GeoGigDataStoreFactory.DISPLAY_NAME);
 
         String locationKey = "connectionParameters." + GeoGigDataStoreFactory.REPOSITORY.key;
@@ -114,7 +125,7 @@ public class RepositoryManager {
 
         String locationKey = "connectionParameters." + GeoGigDataStoreFactory.REPOSITORY.key;
         filter = and(filter, equal(locationKey, repoId));
-        List<DataStoreInfo> stores = findDataStoes(repoId);
+        List<DataStoreInfo> stores = findDataStores(repoId);
         List<CatalogInfo> dependent = new ArrayList<CatalogInfo>(stores);
         Catalog catalog = catalog();
         for (DataStoreInfo store : stores) {
@@ -193,7 +204,7 @@ public class RepositoryManager {
     }
 
     public void delete(final String repoId) {
-        List<DataStoreInfo> repoStores = findDataStoes(repoId);
+        List<DataStoreInfo> repoStores = findDataStores(repoId);
         CascadeDeleteVisitor deleteVisitor = new CascadeDeleteVisitor(catalog());
         for (DataStoreInfo storeInfo : repoStores) {
             storeInfo.accept(deleteVisitor);
