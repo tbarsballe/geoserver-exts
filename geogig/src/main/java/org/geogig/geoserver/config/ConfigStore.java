@@ -105,12 +105,12 @@ public class ConfigStore {
         return info;
     }
 
-    public void delete(final String id) {
+    public boolean delete(final String id) {
         checkNotNull(id, "provided a null id");
         checkIdFormat(id);
         lock.writeLock().lock();
         try {
-            resource(id).delete();
+            return resource(id).delete();
         } finally {
             lock.writeLock().unlock();
         }

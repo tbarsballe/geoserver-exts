@@ -216,7 +216,7 @@ public class ConfigStoreTest {
         Files.write(expected, resource.file(), Charsets.UTF_8);
 
         assertNotNull(store.load(dummyId));
-        store.delete(dummyId);
+        assertTrue(store.delete(dummyId));
         thrown.expect(FileNotFoundException.class);
         assertNull(store.load(dummyId));
     }
@@ -233,6 +233,12 @@ public class ConfigStoreTest {
         thrown.expect(IllegalArgumentException.class);
         thrown.expectMessage("Id doesn't match UUID format");
         store.delete("not-a-uuid");
+    }
+
+    @Test
+    public void deleteNonExistent() throws Exception {
+        final String dummyId = "94bcb762-9ee9-4b43-a912-063509966988";
+        assertFalse(store.delete(dummyId));
     }
 
     private RepositoryInfo dummy(int i) {
