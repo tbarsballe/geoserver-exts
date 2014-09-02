@@ -37,13 +37,13 @@ import com.thoughtworks.xstream.XStream;
 
 /**
  * Handles storage for {@link RepositoryInfo}s inside the GeoServer data directory's
- * {@code geogigconfig/} subdirectory.
+ * {@code geogig/config/repos/} subdirectory.
  * <p>
  * {@link RepositoryInfo} instances are created through its default constructor, which assings a
  * {@code null} id, meaning its a new instance and has not yet being saved.
  * <p>
  * Persistence is handled with {@link XStream} on a one file per {@code RepositoryInfo} bases under
- * {@code <data-dir>/geogigconfig/}, named {@code RepositoryInfo.getId()+".xml"}.
+ * {@code <data-dir>/geogig/config/repos/}, named {@code RepositoryInfo.getId()+".xml"}.
  * <p>
  * {@link #save(RepositoryInfo)} sets an id on new instances, which is the String representation of
  * a random {@link UUID}.
@@ -63,7 +63,7 @@ public class ConfigStore {
     private static final Pattern UUID_PATTERN = Pattern
             .compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
-    private static final String CONFIG_DIR_NAME = "geogigconfig";
+    private static final String CONFIG_DIR_NAME = "geogig/config/repos";
 
     private ResourceStore resourceLoader;
 
@@ -79,7 +79,7 @@ public class ConfigStore {
     }
 
     /**
-     * Saves a {@link RepositoryInfo} to its {@code <data-dir>/geogigconfig/<id>.xml} file.
+     * Saves a {@link RepositoryInfo} to its {@code <data-dir>/geogig/config/repos/<id>.xml} file.
      * <p>
      * If {@code info} has no id set, one is assigned, meaning it didn't yet exist. Otherwise its
      * xml file is replaced meaning it has been modified.
@@ -145,7 +145,7 @@ public class ConfigStore {
 
     /**
      * Loads and returns all <b>valid</b> {@link RepositoryInfo}'s from
-     * {@code <data-dir>/geogigconfig/}; any xml file that can't be parsed is ignored.
+     * {@code <data-dir>/geogig/config/repos/}; any xml file that can't be parsed is ignored.
      */
     public List<RepositoryInfo> getRepositories() {
         lock.writeLock().lock();
@@ -160,7 +160,7 @@ public class ConfigStore {
 
     /**
      * Loads a {@link RepositoryInfo} by {@link RepositoryInfo#getId() id} from its xml file under
-     * {@code <data-dir>/geogigconfig/}
+     * {@code <data-dir>/geogig/config/repos/}
      */
     public RepositoryInfo load(final String id) throws IOException {
         checkNotNull(id, "provided a null id");
