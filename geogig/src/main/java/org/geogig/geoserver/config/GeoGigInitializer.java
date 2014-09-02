@@ -28,7 +28,7 @@ public class GeoGigInitializer implements GeoServerInitializer {
 
     private ConfigStore store;
 
-    private static final String REPO_RESOLVER_CLASSNAME = GeoServerStoreRepositoryResolver.class
+    public static final String REPO_RESOLVER_CLASSNAME = GeoServerStoreRepositoryResolver.class
             .getName();
 
     public GeoGigInitializer(ConfigStore store) {
@@ -40,7 +40,6 @@ public class GeoGigInitializer implements GeoServerInitializer {
         // create RepositoryInfos for each datastore that doesn't have it to preserve backwards
         // compatibility
         Catalog catalog = geoServer.getCatalog();
-
         Map<String, RepositoryInfo> allByLocation = getAllByLocation();
 
         Multimap<String, DataStoreInfo> byRepo = storesByRepository(catalog);
@@ -62,6 +61,8 @@ public class GeoGigInitializer implements GeoServerInitializer {
                 }
             }
         }
+
+        catalog.addListener(new DeprecatedDataStoreConfigFixer());
     }
 
     private Map<String, RepositoryInfo> getAllByLocation() {

@@ -14,6 +14,8 @@
     <constructor-arg ref="geogigConfigStore"/>
   </bean>
 
+  <!--  REST  -->
+
   <bean id="geogigDispatcherMapping" class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
     <property name="alwaysUseFullPath" value="true" />
     <property name="mappings">

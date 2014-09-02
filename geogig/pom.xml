@@ -140,6 +140,12 @@
       <version>${gs.version}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>org.geoserver</groupId>
+      <artifactId>gs-restconfig</artifactId>
+      <version>${gs.version}</version>
+      <scope>provided</scope>
+    </dependency>
     
     <dependency>
       <groupId>junit</groupId>
@@ -178,6 +184,14 @@
     <dependency>
       <groupId>org.geoserver</groupId>
       <artifactId>gs-wfs</artifactId>
+      <version>${gs.version}</version>
+      <type>test-jar</type>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.geoserver</groupId>
+      <artifactId>gs-restconfig</artifactId>
       <version>${gs.version}</version>
       <type>test-jar</type>
       <classifier>tests</classifier>

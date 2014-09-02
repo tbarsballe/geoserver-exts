@@ -86,6 +86,8 @@ public class GeoGigTestData extends ExternalResource {
 
     private GeoGIG geogig;
 
+    private File repoDir;
+
     @Override
     protected void before() throws Throwable {
         tmpFolder = new TemporaryFolder();
@@ -106,17 +108,27 @@ public class GeoGigTestData extends ExternalResource {
     }
 
     protected GeoGIG createGeogig() throws IOException {
+        return createRpository("testrepo");
+    }
 
+    public GeoGIG createRpository(String name) {
         File dataDirectory = tmpFolder.getRoot();
-        File repoDir = new File(dataDirectory, "testrepo");
+        repoDir = new File(dataDirectory, name);
         Assert.assertTrue(repoDir.mkdir());
 
         TestPlatform testPlatform = new TestPlatform(dataDirectory);
         GlobalContextBuilder.builder = new CLITestContextBuilder(testPlatform);
-        Context context = GlobalContextBuilder.builder.build();
-        GeoGIG Geogig = new GeoGIG(context);
+        GeoGIG Geogig = new GeoGIG(repoDir);
 
         return Geogig;
+    }
+
+    public TemporaryFolder tmpFolder() {
+        return this.tmpFolder;
+    }
+
+    public File repoDirectory() {
+        return repoDir;
     }
 
     public GeoGIG getGeogig() {

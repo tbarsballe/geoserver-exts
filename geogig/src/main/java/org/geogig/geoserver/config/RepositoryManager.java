@@ -1,8 +1,9 @@
 package org.geogig.geoserver.config;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.geoserver.catalog.Predicates.*;
+import static org.geoserver.catalog.Predicates.and;
 import static org.geoserver.catalog.Predicates.equal;
+import static org.geoserver.catalog.Predicates.isNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,6 +31,7 @@ import org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory;
 import org.locationtech.geogig.repository.Repository;
 import org.opengis.filter.Filter;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
@@ -210,6 +212,18 @@ public class RepositoryManager {
             storeInfo.accept(deleteVisitor);
         }
         this.store.delete(repoId);
+    }
+
+    RepositoryInfo findOrCreateByLocation(final String repositoryDirectory) {
+        List<RepositoryInfo> repos = getAll();
+        for (RepositoryInfo info : repos) {
+            if (Objects.equal(info.getLocation(), repositoryDirectory)) {
+                return info;
+            }
+        }
+        RepositoryInfo info = new RepositoryInfo();
+        info.setLocation(repositoryDirectory);
+        return save(info);
     }
 
 }
