@@ -2,17 +2,24 @@ package org.geogig.geoserver.wms;
 
 import static org.geoserver.catalog.Predicates.and;
 import static org.geoserver.catalog.Predicates.equal;
+import static org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory.BRANCH;
+import static org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory.DISPLAY_NAME;
+import static org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory.HEAD;
+import static org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory.REPOSITORY;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.geogig.geoserver.config.RepositoryInfo;
+import org.geogig.geoserver.config.RepositoryManager;
 import org.geoserver.catalog.AuthorityURLInfo;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.CatalogException;
 import org.geoserver.catalog.CatalogInfo;
 import org.geoserver.catalog.DataStoreInfo;
+import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.catalog.LayerIdentifierInfo;
 import org.geoserver.catalog.LayerInfo;
 import org.geoserver.catalog.ResourceInfo;
@@ -28,6 +35,7 @@ import org.geoserver.catalog.impl.LayerIdentifier;
 import org.geoserver.catalog.util.CloseableIterator;
 import org.geoserver.config.GeoServer;
 import org.geoserver.wms.WMSInfo;
+import org.geotools.data.DataStore;
 import org.geotools.util.logging.Logging;
 import org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory;
 import org.opengis.filter.Filter;
@@ -36,14 +44,14 @@ import org.opengis.filter.Filter;
  * Ensures a global WMS {@link AuthorityURL} exists with name {@code GEOGIG_ENTRY_POINT} and URL
  * {@code http://geogig.org}, and that each {@link LayerInfo layer} from a geogig datastore gets a
  * {@link LayerIdentifierInfo} with authority {@code GEOGIG_ENTRY_POINT} and the identifier composed
- * of {@code <workspace name>:<store name>:<nativeName>[:<branch/head>]}
+ * of {@code <repositoryId>:<nativeName>[:<branch/head>]}
  * <p>
  * The identifier is made of the following parts:
  * <ul>
- * <li> {@code <workspace name>}: the name of the {@link WorkspaceInfo workspace} the layer's
- * resource belongs to
- * <li> {@code <store name>}: the name of the {@link DataStoreInfo data store} the layer's resource
- * belongs to
+ * <li> {@code <repositoryId>}: {@link RepositoryInfo#getId() RepositoryInfo ID} that identifies the
+ * repository referred by the layer's {@link DataStore}. {@link RepositoryInfo}s are managed by
+ * {@link RepositoryManager} and are the way this plugin supports configuring several datastores
+ * against the same repository without duplication of information.
  * <li> {@code <nativeName>}: the layer's resource {@link ResourceInfo#getNativeName() native name}
  * <li> {@code <branch/head>}: the geogig datastore's configured
  * {@link GeoGigDataStoreFactory#BRANCH branch} or {@link GeoGigDataStoreFactory#HEAD}, whichever is
@@ -155,7 +163,7 @@ public class GeogigLayerIntegrationListener implements CatalogListener {
     private void handlePostWorkspaceChange(WorkspaceInfo source) {
         Catalog catalog = geoserver.getCatalog();
         final String wsId = source.getId();
-        final String storeType = GeoGigDataStoreFactory.DISPLAY_NAME;
+        final String storeType = DISPLAY_NAME;
 
         Filter filter = and(equal("resource.store.workspace.id", wsId),
                 equal("resource.store.type", storeType));
@@ -257,24 +265,25 @@ public class GeogigLayerIntegrationListener implements CatalogListener {
 
     private String buildLayerIdentifier(LayerInfo geogigLayer) {
 
-        ResourceInfo resource = geogigLayer.getResource();
-        StoreInfo store = resource.getStore();
-        WorkspaceInfo workspace = store.getWorkspace();
+        FeatureTypeInfo resource = (FeatureTypeInfo) geogigLayer.getResource();
+        DataStoreInfo store = resource.getStore();
 
         Map<String, Serializable> connectionParameters = store.getConnectionParameters();
 
-        Serializable refSpec = connectionParameters.get(GeoGigDataStoreFactory.BRANCH.key);
+        final String repositoryId = (String) connectionParameters.get(REPOSITORY.key);
+
+        Serializable refSpec = connectionParameters.get(BRANCH.key);
         if (refSpec == null) {
-            refSpec = connectionParameters.get(GeoGigDataStoreFactory.HEAD.key);
+            refSpec = connectionParameters.get(HEAD.key);
         }
 
-        String identifier = workspace.getName() + ":" + store.getName() + ":"
-                + geogigLayer.getResource().getNativeName();
+        StringBuilder identifier = new StringBuilder(repositoryId).append(':').append(
+                resource.getNativeName());
         if (refSpec != null) {
-            identifier = identifier + ":" + refSpec;
+            identifier.append(':').append(refSpec);
         }
 
-        return identifier;
+        return identifier.toString();
     }
 
     private boolean isGeogigLayer(LayerInfo layer) {
@@ -288,7 +297,7 @@ public class GeogigLayerIntegrationListener implements CatalogListener {
             return false;
         }
         final String storeType = ((DataStoreInfo) store).getType();
-        boolean isGeogigLayer = GeoGigDataStoreFactory.DISPLAY_NAME.equals(storeType);
+        boolean isGeogigLayer = DISPLAY_NAME.equals(storeType);
         return isGeogigLayer;
     }
 }
