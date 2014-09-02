@@ -58,11 +58,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mockrunner.mock.web.MockHttpServletResponse;
 
-/**
- * Integration test for GeoServer cached layers using the GWC REST API
- * 
- */
-public class GeoServerRESTIntegrationTest extends GeoServerSystemTestSupport {
+public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
 
     private static final String WORKSPACE = "geogigtest";
 

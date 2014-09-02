@@ -30,6 +30,10 @@ import com.mockrunner.mock.web.MockHttpServletRequest;
 import com.mockrunner.mock.web.MockHttpServletResponse;
 import com.vividsolutions.jts.geom.Envelope;
 
+/**
+ * Integration test for GeoServer cached layers using the GWC REST API
+ * 
+ */
 @TestSetup(run = TestSetupFrequency.REPEAT)
 public class GWCIntegrationTest extends GeoServerSystemTestSupport {
 
