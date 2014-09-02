@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.geoserver.catalog.Catalog;
 import org.geoserver.ows.util.ResponseUtils;
 import org.geoserver.rest.GeoServerServletConverter;
 import org.geoserver.rest.PageInfo;
@@ -48,7 +47,7 @@ public class GeogigDispatcher extends AbstractController {
      */
     static Logger LOG = Logging.getLogger(GeogigDispatcher.class);
 
-    private CatalogRepositoryProvider repositoryProvider;
+    private GeoServerRepositoryProvider repositoryProvider;
 
     /**
      * converter for turning servlet requests into resetlet requests.
@@ -60,8 +59,8 @@ public class GeogigDispatcher extends AbstractController {
      */
     private Restlet root;
 
-    public GeogigDispatcher(final Catalog catalog) {
-        this.repositoryProvider = new CatalogRepositoryProvider(catalog);
+    public GeogigDispatcher() {
+        this.repositoryProvider = new GeoServerRepositoryProvider();
         setSupportedMethods(new String[] { METHOD_GET, METHOD_POST, METHOD_PUT, METHOD_DELETE,
                 METHOD_HEAD });
     }

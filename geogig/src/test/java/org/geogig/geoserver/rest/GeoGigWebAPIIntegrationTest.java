@@ -9,47 +9,40 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.EOFException;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.Serializable;
-import java.net.URL;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.Random;
 
+import org.geogig.geoserver.GeoGigTestData;
+import org.geogig.geoserver.GeoGigTestData.CatalogBuilder;
+import org.geogig.geoserver.config.RepositoryInfo;
+import org.geogig.geoserver.config.RepositoryManager;
 import org.geoserver.catalog.Catalog;
-import org.geoserver.catalog.CatalogFactory;
 import org.geoserver.catalog.DataStoreInfo;
-import org.geoserver.catalog.NamespaceInfo;
-import org.geoserver.catalog.WorkspaceInfo;
-import org.geoserver.data.test.SystemTestData;
+import org.geoserver.catalog.LayerInfo;
 import org.geoserver.test.GeoServerSystemTestSupport;
+import org.geoserver.test.TestSetup;
+import org.geoserver.test.TestSetupFrequency;
 import org.geotools.data.DataAccess;
-import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-import org.locationtech.geogig.api.Context;
 import org.locationtech.geogig.api.GeoGIG;
-import org.locationtech.geogig.api.GlobalContextBuilder;
 import org.locationtech.geogig.api.ObjectId;
 import org.locationtech.geogig.api.Ref;
 import org.locationtech.geogig.api.RevObject;
-import org.locationtech.geogig.api.TestPlatform;
 import org.locationtech.geogig.api.plumbing.RefParse;
-import org.locationtech.geogig.api.plumbing.ResolveGeogigDir;
 import org.locationtech.geogig.api.plumbing.ResolveTreeish;
 import org.locationtech.geogig.api.plumbing.RevObjectParse;
-import org.locationtech.geogig.api.porcelain.CommitOp;
-import org.locationtech.geogig.cli.test.functional.general.CLITestContextBuilder;
 import org.locationtech.geogig.geotools.data.GeoGigDataStore;
 import org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory;
 import org.locationtech.geogig.storage.ObjectSerializingFactory;
 import org.locationtech.geogig.storage.datastream.DataStreamSerializationFactoryV1;
-import org.locationtech.geogig.test.integration.RepositoryTestCase;
 import org.opengis.feature.Feature;
 import org.opengis.feature.type.FeatureType;
 import org.restlet.data.MediaType;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -58,80 +51,70 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mockrunner.mock.web.MockHttpServletResponse;
 
+@TestSetup(run = TestSetupFrequency.ONCE)
 public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
 
-    private static final String WORKSPACE = "geogigtest";
+    private String BASE_URL;
 
-    private static final String STORE = "geogigstore";
+    private static final Random rnd = new Random();
 
-    private static final String BASE_URL = "/geogig/" + WORKSPACE + ":" + STORE;
+    @Rule
+    public GeoGigTestData geogigData = new GeoGigTestData();
 
-    private static RepositoryTestCase helper;
+    @Before
+    public void before() throws Exception {
+        // protected void onSetUp(SystemTestData testData) throws Exception {
 
-    @Override
-    protected void onSetUp(SystemTestData testData) throws Exception {
-        helper = new RepositoryTestCase() {
+        geogigData.init()//
+                .config("user.name", "gabriel")//
+                .config("user.email", "gabriel@test.com")//
+                .createTypeTree("lines", "geom:LineString:srid=4326")//
+                .createTypeTree("points", "geom:Point:srid=4326")//
+                .add()//
+                .commit("created type trees")//
+                .get();
 
-            @Override
-            protected Context createInjector() {
-                TestPlatform testPlatform = (TestPlatform) createPlatform();
-                GlobalContextBuilder.builder = new CLITestContextBuilder(testPlatform);
-                return GlobalContextBuilder.builder.build();
-            }
+        geogigData.insert("points",//
+                "p1=geom:POINT(0 0)",//
+                "p2=geom:POINT(1 1)",//
+                "p3=geom:POINT(2 2)");
 
-            @Override
-            protected void setUpInternal() throws Exception {
-                configureGeoGigDataStore();
-            }
-        };
-        helper.repositoryTempFolder.create();
-        helper.setUp();
-    }
+        geogigData.insert("lines",//
+                "l1=geom:LINESTRING(-10 0, 10 0)",//
+                "l2=geom:LINESTRING(0 0, 180 0)");
 
-    @AfterClass
-    public static void oneTimeTearDown() throws Exception {
-        if (helper != null) {
-            helper.tearDown();
-            helper.repositoryTempFolder.delete();
-        }
-    }
-
-    private void configureGeoGigDataStore() throws Exception {
-        helper.insertAndAdd(helper.lines1);
-        helper.getGeogig().command(CommitOp.class).call();
+        geogigData.add().commit("Added test features");
 
         Catalog catalog = getCatalog();
-        CatalogFactory factory = catalog.getFactory();
-        NamespaceInfo ns = factory.createNamespace();
-        ns.setPrefix(WORKSPACE);
-        ns.setURI("http://geogig.org");
-        catalog.add(ns);
-        WorkspaceInfo ws = factory.createWorkspace();
-        ws.setName(ns.getName());
-        catalog.add(ws);
+        CatalogBuilder catalogBuilder = geogigData.newCatalogBuilder(catalog);
+        int i = rnd.nextInt();
+        catalogBuilder.namespace("geogig.org/" + i).workspace("geogigws" + i)
+                .store("geogigstore" + i);
+        catalogBuilder.addAllRepoLayers().build();
 
-        DataStoreInfo ds = factory.createDataStore();
-        ds.setEnabled(true);
-        ds.setDescription("Test Geogig DataStore");
-        ds.setName(STORE);
-        ds.setType(GeoGigDataStoreFactory.DISPLAY_NAME);
-        ds.setWorkspace(ws);
-        Map<String, Serializable> connParams = ds.getConnectionParameters();
+        String workspaceName = catalogBuilder.workspaceName();
+        String storeName = catalogBuilder.storeName();
 
-        Optional<URL> geogigDir = helper.getGeogig().command(ResolveGeogigDir.class).call();
-        File repositoryUrl = new File(geogigDir.get().toURI()).getParentFile();
-        assertTrue(repositoryUrl.exists() && repositoryUrl.isDirectory());
+        String layerName = workspaceName + ":points";
+        LayerInfo pointLayerInfo = catalog.getLayerByName(layerName);
+        assertNotNull(pointLayerInfo);
 
-        connParams.put(GeoGigDataStoreFactory.REPOSITORY.key, repositoryUrl);
-        connParams.put(GeoGigDataStoreFactory.DEFAULT_NAMESPACE.key, ns.getURI());
-        catalog.add(ds);
+        layerName = workspaceName + ":lines";
+        LayerInfo lineLayerInfo = catalog.getLayerByName(layerName);
+        assertNotNull(lineLayerInfo);
 
-        DataStoreInfo dsInfo = catalog.getDataStoreByName(WORKSPACE, STORE);
+        DataStoreInfo dsInfo = catalog.getDataStoreByName(workspaceName, storeName);
         assertNotNull(dsInfo);
         assertEquals(GeoGigDataStoreFactory.DISPLAY_NAME, dsInfo.getType());
         DataAccess<? extends FeatureType, ? extends Feature> dataStore = dsInfo.getDataStore(null);
         assertNotNull(dataStore);
         assertTrue(dataStore instanceof GeoGigDataStore);
+
+        String repoId = (String) dsInfo.getConnectionParameters().get(
+                GeoGigDataStoreFactory.REPOSITORY.key);
+        RepositoryInfo repositoryInfo = RepositoryManager.get().get(repoId);
+        assertNotNull(repositoryInfo);
+        BASE_URL = "/geogig/" + repositoryInfo.getId();
     }
 
     /**
@@ -158,7 +141,7 @@ public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
     public void testRevObjectExists() throws Exception {
         final String resource = BASE_URL + "/repo/exists?oid=";
 
-        GeoGIG geogig = helper.getGeogig();
+        GeoGIG geogig = geogigData.getGeogig();
         Ref head = geogig.command(RefParse.class).setName(Ref.HEAD).call().get();
         ObjectId commitId = head.getObjectId();
 
@@ -179,7 +162,7 @@ public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
      */
     @Test
     public void testGetObject() throws Exception {
-        GeoGIG geogig = helper.getGeogig();
+        GeoGIG geogig = geogigData.getGeogig();
         Ref head = geogig.command(RefParse.class).setName(Ref.HEAD).call().get();
         ObjectId commitId = head.getObjectId();
         ObjectId treeId = geogig.command(ResolveTreeish.class).setTreeish(commitId).call().get();
@@ -189,7 +172,7 @@ public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
     }
 
     private void testGetRemoteObject(ObjectId oid) throws Exception {
-        GeoGIG geogig = helper.getGeogig();
+        GeoGIG geogig = geogigData.getGeogig();
 
         final String resource = BASE_URL + "/repo/objects/";
         final String url = resource + oid.toString();
@@ -217,7 +200,7 @@ public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
      */
     @Test
     public void testGetBatchedObjects() throws Exception {
-        GeoGIG geogig = helper.getGeogig();
+        GeoGIG geogig = geogigData.getGeogig();
         Ref head = geogig.command(RefParse.class).setName(Ref.HEAD).call().get();
         ObjectId commitId = head.getObjectId();
 
@@ -225,7 +208,7 @@ public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
     }
 
     private void testGetBatchedRemoteObjects(ObjectId oid) throws Exception {
-        GeoGIG geogig = helper.getGeogig();
+        GeoGIG geogig = geogigData.getGeogig();
 
         final String resource = BASE_URL + "/repo/batchobjects";
         final String url = resource;
@@ -287,7 +270,6 @@ public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
                     return endOfData();
                 if (len != 20)
                     throw new IllegalStateException("We need a 'readFully' operation!");
-                System.out.println(bytes);
                 return formats.createObjectReader().read(new ObjectId(id), bytes);
             } catch (EOFException e) {
                 return endOfData();

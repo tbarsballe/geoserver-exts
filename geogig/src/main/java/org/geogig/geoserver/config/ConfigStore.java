@@ -150,7 +150,11 @@ public class ConfigStore {
     public List<RepositoryInfo> getRepositories() {
         lock.writeLock().lock();
         try {
-            List<Resource> list = getConfigRoot().list();
+            Resource configRoot = getConfigRoot();
+            List<Resource> list = configRoot.list();
+            if (null == list) {
+                return newArrayList();
+            }
             Iterator<Resource> xmlfiles = filter(list.iterator(), FILENAMEFILTER);
             return newArrayList(filter(transform(xmlfiles, LOADER), notNull()));
         } finally {

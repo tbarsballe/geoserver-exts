@@ -500,11 +500,11 @@ public class GeoGigTestData extends ExternalResource {
             }
             assertTrue(repositoryUrl.exists() && repositoryUrl.isDirectory());
 
-            connParams.put(GeoGigDataStoreFactory.REPOSITORY.key, repositoryUrl);
+            connParams.put(GeoGigDataStoreFactory.REPOSITORY.key, repositoryUrl.getAbsolutePath());
             connParams.put(GeoGigDataStoreFactory.DEFAULT_NAMESPACE.key, ns.getURI());
             catalog.add(ds);
 
-            DataStoreInfo dsInfo = catalog.getDataStoreByName(WORKSPACE, STORE);
+            DataStoreInfo dsInfo = catalog.getDataStoreByName(ws.getName(), storeName);
             assertNotNull(dsInfo);
             assertEquals(GeoGigDataStoreFactory.DISPLAY_NAME, dsInfo.getType());
             DataAccess<? extends FeatureType, ? extends Feature> dataStore;

@@ -48,6 +48,7 @@ class DeprecatedDataStoreConfigFixer implements CatalogListener {
         try {
             ensureNewConfig(event.getSource());
         } catch (RuntimeException rte) {
+            rte.printStackTrace();
             LOGGER.log(Level.WARNING,
                     "Unexpected exception handing add event on " + event.getSource()
                             + ". Returning silently to let the catalog go on.", rte);
@@ -76,7 +77,7 @@ class DeprecatedDataStoreConfigFixer implements CatalogListener {
             return;
         }
         final String repositoryParam = String.valueOf(params.get(REPOSITORY.key));
-        final String resolverParam = String.valueOf(params.get(RESOLVER_CLASS_NAME.key));
+        final String resolverParam = (String) params.get(RESOLVER_CLASS_NAME.key);
         RepositoryManager manager = RepositoryManager.get();
         if (GeoGigInitializer.REPO_RESOLVER_CLASSNAME.equals(resolverParam)) {
             // verify the repo info exists

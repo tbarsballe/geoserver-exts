@@ -6,10 +6,12 @@ import static org.geoserver.catalog.Predicates.equal;
 import static org.geoserver.catalog.Predicates.isNull;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.geoserver.catalog.CascadeDeleteVisitor;
 import org.geoserver.catalog.Catalog;
@@ -55,10 +57,23 @@ public class RepositoryManager {
 
     private ConfigStore store;
 
-    public static RepositoryManager get() {
-        RepositoryManager repoManager = GeoServerExtensions.bean(RepositoryManager.class);
-        Preconditions.checkState(repoManager != null);
-        return repoManager;
+    private final RepositoryCache repoCache;
+
+    private static RepositoryManager INSTANCE;
+
+    public static synchronized RepositoryManager get() {
+        if (INSTANCE == null) {
+            INSTANCE = GeoServerExtensions.bean(RepositoryManager.class);
+            Preconditions.checkState(INSTANCE != null);
+        }
+        return INSTANCE;
+    }
+
+    static void close() {
+        if (INSTANCE != null) {
+            INSTANCE.repoCache.invalidateAll();
+            INSTANCE = null;
+        }
     }
 
     public static Supplier<RepositoryManager> supplier() {
@@ -68,14 +83,19 @@ public class RepositoryManager {
     public RepositoryManager(ConfigStore store) {
         checkNotNull(store);
         this.store = store;
+        this.repoCache = new RepositoryCache(this);
     }
 
     public List<RepositoryInfo> getAll() {
         return store.getRepositories();
     }
 
-    public RepositoryInfo get(final String repoId) throws IOException {
-        return store.load(repoId);
+    public RepositoryInfo get(final String repoId) throws IOException, NoSuchElementException {
+        try {
+            return store.load(repoId);
+        } catch (FileNotFoundException e) {
+            throw new NoSuchElementException("No repository named " + repoId + " exists");
+        }
     }
 
     public List<DataStoreInfo> findGeogigStores() {
@@ -170,6 +190,8 @@ public class RepositoryManager {
         if (info.getId() == null && !isGeogigDirectory(new File(info.getLocation()))) {
             create(info);
         }
+        // so far we don't need to invalidate the GeoGIG instance from the cache here... re-evaluate
+        // if any configuration option would require so in the future
         return store.save(info);
     }
 
@@ -189,20 +211,12 @@ public class RepositoryManager {
 
     public List<Ref> listBranches(final String repositoryId) throws IOException {
         GeoGIG geogig = getRepository(repositoryId);
-        try {
-            List<Ref> refs = geogig.command(BranchListOp.class).call();
-            return refs;
-        } finally {
-            geogig.close();
-        }
+        List<Ref> refs = geogig.command(BranchListOp.class).call();
+        return refs;
     }
 
     public GeoGIG getRepository(String repositoryId) throws IOException {
-        RepositoryInfo repositoryInfo = get(repositoryId);
-        File repoDir = new File(repositoryInfo.getLocation());
-        GeoGIG geogig = new GeoGIG(repoDir);
-        geogig.getRepository();
-        return geogig;
+        return repoCache.get(repositoryId);
     }
 
     public void delete(final String repoId) {
@@ -211,7 +225,11 @@ public class RepositoryManager {
         for (DataStoreInfo storeInfo : repoStores) {
             storeInfo.accept(deleteVisitor);
         }
-        this.store.delete(repoId);
+        try {
+            this.store.delete(repoId);
+        } finally {
+            this.repoCache.invalidate(repoId);
+        }
     }
 
     RepositoryInfo findOrCreateByLocation(final String repositoryDirectory) {

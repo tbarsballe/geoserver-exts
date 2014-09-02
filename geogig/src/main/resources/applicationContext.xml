@@ -14,6 +14,9 @@
     <constructor-arg ref="geogigConfigStore"/>
   </bean>
 
+  <bean id="geoGigGeoServerLifeCycleListener" class="org.geogig.geoserver.config.GeoGigGeoServerLifeCycleListener">
+  </bean>
+
   <!--  REST  -->
 
   <bean id="geogigDispatcherMapping" class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
@@ -27,7 +30,6 @@
   </bean>
 
   <bean id="geogigDispatcher" class="org.geogig.geoserver.rest.GeogigDispatcher" >
-    <constructor-arg ref="catalog"/>
   </bean>
 
   <bean id="GeogigLayerIntegrationListener" class="org.geogig.geoserver.wms.GeogigLayerIntegrationListener" >

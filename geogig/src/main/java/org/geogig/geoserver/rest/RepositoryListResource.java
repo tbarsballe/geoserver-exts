@@ -6,11 +6,10 @@ package org.geogig.geoserver.rest;
 
 import static org.locationtech.geogig.rest.repository.RESTUtils.repositoryProvider;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.geoserver.catalog.DataStoreInfo;
+import org.geogig.geoserver.config.RepositoryInfo;
 import org.geoserver.rest.MapResource;
 import org.geoserver.rest.format.DataFormat;
 import org.geoserver.rest.format.FreemarkerFormat;
@@ -42,7 +41,7 @@ public class RepositoryListResource extends MapResource {
 
     @Override
     public Map<String, Object> getMap() throws Exception {
-        List<String> repoNames = getRepoNames();
+        List<String> repoNames = getRepoIds();
 
         Map<String, Object> map = Maps.newHashMap();
         map.put("repositories", repoNames);
@@ -50,20 +49,15 @@ public class RepositoryListResource extends MapResource {
         return map;
     }
 
-    private List<String> getRepoNames() {
+    private List<String> getRepoIds() {
         Request request = getRequest();
-        CatalogRepositoryProvider repoFinder = (CatalogRepositoryProvider) repositoryProvider(request);
+        GeoServerRepositoryProvider repoFinder = (GeoServerRepositoryProvider) repositoryProvider(request);
 
-        List<DataStoreInfo> geogigStores = repoFinder.findGeogigStores();
-
-        List<String> repoNames = Lists.newArrayListWithCapacity(geogigStores.size());
-        for (DataStoreInfo info : geogigStores) {
-            String wsname = info.getWorkspace().getName();
-            String storename = info.getName();
-            String repoName = wsname + ":" + storename;
-            repoNames.add(repoName);
+        List<RepositoryInfo> repos = repoFinder.findRepositories();
+        List<String> repoIds = Lists.newArrayListWithCapacity(repos.size());
+        for (RepositoryInfo info : repos) {
+            repoIds.add(info.getId());
         }
-        Collections.sort(repoNames);
-        return repoNames;
+        return repoIds;
     }
 }
