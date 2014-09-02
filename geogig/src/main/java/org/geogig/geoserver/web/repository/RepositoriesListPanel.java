@@ -146,7 +146,7 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
 
             final String repoId = repo.getObject().getId();
             final List<? extends CatalogInfo> stores;
-            stores = RepositoryManager.get().findDataStoes(repoId);
+            stores = RepositoryManager.get().findDataStores(repoId);
 
             // collect the objects that will be removed (besides the roots)
             Catalog catalog = GeoServerApplication.get().getCatalog();

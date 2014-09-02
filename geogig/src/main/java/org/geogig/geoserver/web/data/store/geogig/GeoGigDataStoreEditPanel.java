@@ -34,9 +34,11 @@ import org.geoserver.catalog.DataStoreInfo;
 import org.geoserver.web.data.store.DataAccessEditPage;
 import org.geoserver.web.data.store.DataAccessNewPage;
 import org.geoserver.web.data.store.StoreEditPanel;
+import org.geoserver.web.data.store.panel.TextParamPanel;
 import org.geoserver.web.util.MapModel;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 
 public class GeoGigDataStoreEditPanel extends StoreEditPanel {
@@ -143,16 +145,11 @@ public class GeoGigDataStoreEditPanel extends StoreEditPanel {
                 panel = new RepositoryEditFormPanel(modalWindow.getContentId()) {
                     private static final long serialVersionUID = -2629733074852452891L;
 
+                    @SuppressWarnings("unchecked")
                     @Override
                     protected void saved(final RepositoryInfo info, final AjaxRequestTarget target) {
-                        final String newRepoId = info.getId();
                         modalWindow.close(target);
-                        repository.setModelObject(newRepoId);
-                        branchNameModel.setObject(null);
-                        branch.updateChoices(true, form);
-                        target.addComponent(repository);
-                        target.addComponent(branch);
-
+                        updateRepository((Form<DataStoreInfo>) form, target, info);
                     }
 
                     @Override
@@ -189,6 +186,7 @@ public class GeoGigDataStoreEditPanel extends StoreEditPanel {
 
                     private static final long serialVersionUID = 1L;
 
+                    @SuppressWarnings("unchecked")
                     @Override
                     protected void geogigDirectoryClicked(final File file, AjaxRequestTarget target) {
                         // clear the raw input of the field won't show the new model value
@@ -197,12 +195,8 @@ public class GeoGigDataStoreEditPanel extends StoreEditPanel {
                         info.setLocation(file.getAbsolutePath());
                         info = manager.save(info);
                         modalWindow.close(target);
-                        repository.setModelObject(info.getId());
-                        branchNameModel.setObject(null);
-                        branch.updateChoices(true, form);
-                        target.addComponent(repository);
-                        target.addComponent(branch);
-                    };
+                        updateRepository((Form<DataStoreInfo>) form, target, info);
+                    }
                 };
                 chooser.setFileTableHeight(null);
                 modalWindow.setContent(chooser);
@@ -213,6 +207,27 @@ public class GeoGigDataStoreEditPanel extends StoreEditPanel {
 
         };
         return link;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void updateRepository(final Form<DataStoreInfo> form, AjaxRequestTarget target,
+            RepositoryInfo info) {
+        repository.setModelObject(info.getId());
+        branchNameModel.setObject(null);
+        branch.updateChoices(true, form);
+        target.addComponent(repository);
+        target.addComponent(branch);
+
+        IModel<DataStoreInfo> storeModel = form.getModel();
+        String name = storeModel.getObject().getName();
+        if (Strings.isNullOrEmpty(name)) {
+            Component namePanel = form.get("dataStoreNamePanel");
+            if (namePanel != null && namePanel instanceof TextParamPanel) {
+                TextParamPanel paramPanel = (TextParamPanel) namePanel;
+                paramPanel.getFormComponent().setModelObject(info.getName());
+                target.addComponent(form);
+            }
+        }
     }
 
     private static class RepositoryListDettachableModel extends
@@ -228,35 +243,6 @@ public class GeoGigDataStoreEditPanel extends StoreEditPanel {
             }
             Collections.sort(ids);
             return ids;
-        }
-    }
-
-    private static class StoreRepoDetachableModel extends LoadableDetachableModel<RepositoryInfo> {
-
-        private static final long serialVersionUID = 3965708694858939242L;
-
-        private IModel<String> repoIdModel;
-
-        public StoreRepoDetachableModel(IModel<String> repoIdModel) {
-            this.repoIdModel = repoIdModel;
-        }
-
-        @Override
-        protected RepositoryInfo load() {
-            String id = repoIdModel.getObject();
-            if (REPOSITORY.sample != null && REPOSITORY.sample.equals(id)) {
-                id = null;
-            }
-            RepositoryInfo info = null;
-            if (id != null) {
-                try {
-                    RepositoryManager repositoryManager = RepositoryManager.get();
-                    info = repositoryManager.get(id);
-                } catch (IOException e) {
-                    throw Throwables.propagate(e);
-                }
-            }
-            return info;
         }
     }
 
