@@ -1,13 +1,17 @@
 package org.geogig.geoserver.config;
 
+import static java.lang.String.format;
+
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.geotools.util.logging.Logging;
 import org.locationtech.geogig.api.GeoGIG;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
@@ -18,7 +22,7 @@ import com.google.common.cache.RemovalNotification;
 
 class RepositoryCache {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(RepositoryCache.class);
+    private static final Logger LOGGER = Logging.getLogger(RepositoryCache.class);
 
     private LoadingCache<String, GeoGIG> repoCache;
 
@@ -31,10 +35,15 @@ class RepositoryCache {
                 GeoGIG geogig = notification.getValue();
                 if (geogig != null) {
                     try {
+                        URL location = geogig.getRepository().getLocation();
+                        LOGGER.fine(format("Closing cached GeoGig repository instance %s", location));
                         geogig.close();
+                        LOGGER.finer(format("Closed cached GeoGig repository instance %s", location));
                     } catch (RuntimeException e) {
-                        LOGGER.warn("Error disposing GeoGig repository instance for id {}", repoId,
-                                e);
+                        LOGGER.log(
+                                Level.WARNING,
+                                format("Error disposing GeoGig repository instance for id %s",
+                                        repoId), e);
                     }
                 }
             }
@@ -53,7 +62,8 @@ class RepositoryCache {
                     geogig.getRepository();
                     return geogig;
                 } catch (Exception e) {
-                    LOGGER.warn("Error loading GeoGig repository instance for id {}", repoId, e);
+                    LOGGER.log(Level.WARNING,
+                            format("Error loading GeoGig repository instance for id %s", repoId), e);
                     throw e;
                 }
             }

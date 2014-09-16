@@ -4,10 +4,14 @@
  */
 package org.geogig.geoserver.rest;
 
+import static org.custommonkey.xmlunit.XMLAssert.assertXpathEvaluatesTo;
+import static org.custommonkey.xmlunit.XMLAssert.assertXpathExists;
+import static org.custommonkey.xmlunit.XMLAssert.assertXpathNotExists;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +25,7 @@ import org.geogig.geoserver.config.RepositoryManager;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.DataStoreInfo;
 import org.geoserver.catalog.LayerInfo;
+import org.geoserver.data.test.SystemTestData;
 import org.geoserver.test.GeoServerSystemTestSupport;
 import org.geoserver.test.TestSetup;
 import org.geoserver.test.TestSetupFrequency;
@@ -42,6 +47,7 @@ import org.locationtech.geogig.storage.datastream.DataStreamSerializationFactory
 import org.opengis.feature.Feature;
 import org.opengis.feature.type.FeatureType;
 import org.restlet.data.MediaType;
+import org.w3c.dom.Document;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.AbstractIterator;
@@ -60,6 +66,14 @@ public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
 
     @Rule
     public GeoGigTestData geogigData = new GeoGigTestData();
+
+    /**
+     * Override to avoid creating default geoserver test data
+     */
+    @Override
+    protected void setUpTestData(SystemTestData testData) throws Exception {
+        // do nothing
+    }
 
     @Before
     public void before() throws Exception {
@@ -277,6 +291,85 @@ public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
                 throw Throwables.propagate(e);
             }
         }
+    }
+
+    @Test
+    public void testRemoteAdd() throws Exception {
+        String remoteURL = "http://example.com/geogig/upstream";
+
+        final String url = BASE_URL + "/remote?remoteName=upstream&remoteURL=" + remoteURL;
+        MockHttpServletResponse sr = getAsServletResponse(url);
+        assertEquals(200, sr.getStatusCode());
+
+        Document dom = super.dom(new ByteArrayInputStream(sr.getOutputStreamContent().getBytes()),
+                true);
+
+        // <response><success>true</success><name>upstream</name></response>
+        assertXpathEvaluatesTo("true", "/response/success", dom);
+        assertXpathEvaluatesTo("upstream", "/response/name", dom);
+
+        dom = getAsDOM(url);
+
+        // <response><success>false</success><error>REMOTE_ALREADY_EXISTS</error></response>
+        assertXpathEvaluatesTo("false", "/response/success", dom);
+        assertXpathEvaluatesTo("REMOTE_ALREADY_EXISTS", "/response/error", dom);
+    }
+
+    @Test
+    public void testRemoteRemove() throws Exception {
+        String remoteURL = "http://example.com/geogig/upstream";
+
+        final String addUrl = BASE_URL + "/remote?remoteURL=" + remoteURL + "&remoteName=";
+        final String removeUrl = BASE_URL + "/remote?remove=true&remoteName=";
+        final String listUrl = BASE_URL + "/remote?list=true";
+
+        MockHttpServletResponse sr;
+        Document dom;
+        dom = getAsDOM(addUrl + "upstream");
+        assertXpathEvaluatesTo("true", "/response/success", dom);
+        assertXpathEvaluatesTo("upstream", "/response/name", dom);
+
+        dom = getAsDOM(addUrl + "origin");
+        assertXpathEvaluatesTo("true", "/response/success", dom);
+        assertXpathEvaluatesTo("origin", "/response/name", dom);
+
+        dom = getAsDOM(listUrl);
+        assertXpathExists("/response/Remote/name[text() = 'upstream']", dom);
+        assertXpathExists("/response/Remote/name[text() = 'origin']", dom);
+
+        dom = getAsDOM(removeUrl + "upstream");
+        assertXpathEvaluatesTo("true", "/response/success", dom);
+        assertXpathEvaluatesTo("upstream", "/response/name", dom);
+
+        dom = getAsDOM(listUrl);
+        assertXpathNotExists("/response/Remote/name[text() = 'upstream']", dom);
+        assertXpathExists("/response/Remote/name[text() = 'origin']", dom);
+
+        dom = getAsDOM(removeUrl + "origin");
+        assertXpathEvaluatesTo("true", "/response/success", dom);
+        assertXpathEvaluatesTo("origin", "/response/name", dom);
+
+        dom = getAsDOM(listUrl);
+        assertXpathNotExists("/response/Remote/name[text() = 'upstream']", dom);
+        assertXpathNotExists("/response/Remote/name[text() = 'origin']", dom);
+    }
+
+    @Test
+    public void testRemoteUpdate() throws Exception {
+        String remoteURL = "http://example.com/geogig/upstream";
+        String newURL = "http://new.example.com/geogig/upstream";
+
+        final String addUrl = BASE_URL + "/remote?remoteName=upstream&remoteURL=" + remoteURL;
+        final String renameUrl = BASE_URL
+                + "/remote?update=true&remoteName=upstream&newName=new_name&remoteURL=" + newURL;
+
+        Document dom = getAsDOM(addUrl);
+        assertXpathEvaluatesTo("true", "/response/success", dom);
+        assertXpathEvaluatesTo("upstream", "/response/name", dom);
+
+        dom = getAsDOM(renameUrl);
+        assertXpathEvaluatesTo("true", "/response/success", dom);
+        assertXpathEvaluatesTo("new_name", "/response/name", dom);
     }
 
 }

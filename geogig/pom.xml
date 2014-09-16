@@ -146,6 +146,11 @@
       <version>${gs.version}</version>
       <scope>provided</scope>
     </dependency>
+    <dependency>
+      <groupId>com.jolbox</groupId>
+      <artifactId>bonecp</artifactId>
+      <version>0.8.0.RELEASE</version>
+    </dependency>
     
     <dependency>
       <groupId>junit</groupId>
@@ -274,25 +279,30 @@
                   <include>org.geotools.jdbc:gt-jdbc-spatialite</include>
                   <include>org.geotools:gt-geojson</include>
                   
+                  <include>ch.qos.logback:logback-core</include>
+                  <include>ch.qos.logback:logback-classic</include>
+                  <include>org.slf4j:slf4j-api</include>
+                  
+                  <include>com.jolbox:bonecp</include>
                   
                   <!-- Ignore these, lets use geoserver's logging mechanism
                   <include>org.slf4j:slf4j-api</include>
                   <include>org.slf4j:jul-to-slf4j</include>
-                  <include>ch.qos.logback:logback-core</include>
-                  <include>ch.qos.logback:logback-classic</include>
                    -->
                 </includes>
               </artifactSet>
-              <!--
               <relocations>
                 <relocation>
+                  <pattern>org.slf4j</pattern>
+                  <shadedPattern>shaded.org.slf4j</shadedPattern>
+                </relocation>
+                <!-- relocation>
                     rename the guava package. Remove this relocation and add an exclude 
                     once geoserver adopts the same guava version than geogig
                   <pattern>com.google.common</pattern>
                   <shadedPattern>shaded.com.google.common</shadedPattern>
-                </relocation>
+                </relocation-->
               </relocations>
-              -->
             </configuration>
           </execution>
         </executions>
