@@ -1,0 +1,23 @@
+<html xmlns:wicket="http://wicket.apache.org/">
+<head>
+<title>Remotes</title>
+</head>
+<body>
+<wicket:extend>
+<legend> Global Remote Configuration </legend>
+<fieldset>
+<div> <input type="checkbox"></input> <span> Log Remote Security Events </span> </div>
+<div> <input type="checkbox"></input> <span> Use Whitelist to Restrict remotes </span> </div>
+</fieldset>
+<legend> Remote Filters </legend>
+<form wicket:id="form">
+<fieldset>
+<a href="#" wicket:id="whitelist.add">Add remote filter</a>
+<div wicket:id="whitelist.rules"> </div>
+</fieldset>
+<button type="submit" wicket:id="submit">Submit</button>
+</form>
+<div wicket:id="popup"></div>
+</wicket:extend>
+</body>
+</html>

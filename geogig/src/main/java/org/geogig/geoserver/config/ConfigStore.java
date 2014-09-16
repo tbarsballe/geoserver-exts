@@ -23,6 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import org.geogig.geoserver.web.security.WhitelistRule;
 import org.geoserver.platform.resource.Paths;
 import org.geoserver.platform.resource.Resource;
 import org.geoserver.platform.resource.ResourceStore;
@@ -160,6 +161,55 @@ public class ConfigStore {
         } finally {
             lock.writeLock().unlock();
         }
+    }
+
+
+    /**
+     * Loads the security whitelist.
+     */
+    public List<WhitelistRule> getWhitelist() throws IOException {
+        lock.readLock().lock();
+        try {
+            Resource resource = whitelistResource();
+            return loadWhitelist(resource);
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    private Resource whitelistResource() {
+        return resourceLoader.get("geogig/config/whitelist.xml");
+    }
+
+    private static List<WhitelistRule> loadWhitelist(Resource input) throws IOException {
+        File parent = input.parent().dir();
+        File f = new File(parent, input.name());
+        if (!(parent.exists() && f.exists())) {
+            return newArrayList();
+        }
+        try (Reader reader = new InputStreamReader(input.in(), Charsets.UTF_8)) {
+            return (List<WhitelistRule>) getConfigredXstream().fromXML(reader);
+        } catch (Exception e) {
+            String msg = "Unable to load whitelist " + input.name();
+            LOGGER.log(Level.WARNING, msg, e);
+            throw new IOException(msg, e);
+        }
+    }
+
+    /**
+     * Saves the security whitelist.
+     */
+    public List<WhitelistRule> saveWhitelist(List<WhitelistRule> whitelist) {
+        checkNotNull(whitelist);
+        lock.writeLock().lock();
+        try (OutputStream out = whitelistResource().out()) {
+            getConfigredXstream().toXML(whitelist, new OutputStreamWriter(out, Charsets.UTF_8));
+        } catch (IOException e) {
+            throw Throwables.propagate(e);
+        } finally {
+            lock.writeLock().unlock();
+        }
+        return whitelist;
     }
 
     /**
