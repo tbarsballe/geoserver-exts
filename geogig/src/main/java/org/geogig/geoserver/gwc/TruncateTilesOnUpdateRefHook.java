@@ -97,7 +97,8 @@ public class TruncateTilesOnUpdateRefHook implements CommandHook {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <T> T post(AbstractGeoGigOp<T> command, Object retVal, boolean success) throws Exception {
+    public <T> T post(AbstractGeoGigOp<T> command, @Nullable Object retVal,
+            @Nullable RuntimeException exception) throws Exception {
         checkArgument(command instanceof UpdateRef);
         final UpdateRef cmd = (UpdateRef) command;
         final String refName = (String) cmd.getClientData().get("name");
@@ -107,6 +108,7 @@ public class TruncateTilesOnUpdateRefHook implements CommandHook {
             return (T) retVal;
         }
 
+        boolean success = exception == null;
         if (!success) {
             LOGGER.info(
                     "GWC geogig truncate post-hook returning, UpdateRef operation failed on ref '{}'.",

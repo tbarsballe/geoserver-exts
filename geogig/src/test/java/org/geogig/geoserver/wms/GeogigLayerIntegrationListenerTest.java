@@ -2,6 +2,7 @@ package org.geogig.geoserver.wms;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory.REPOSITORY;
 
 import java.io.Serializable;
 import java.util.List;
@@ -15,7 +16,6 @@ import org.geoserver.catalog.DataStoreInfo;
 import org.geoserver.catalog.LayerIdentifierInfo;
 import org.geoserver.catalog.LayerInfo;
 import org.geoserver.catalog.ResourceInfo;
-import org.geoserver.catalog.StoreInfo;
 import org.geoserver.catalog.WorkspaceInfo;
 import org.geoserver.data.test.SystemTestData;
 import org.geoserver.test.GeoServerSystemTestSupport;
@@ -172,6 +172,12 @@ public class GeogigLayerIntegrationListenerTest extends GeoServerSystemTestSuppo
 
     private void assertIdentifier(LayerInfo layer) {
         assertNotNull(layer);
+
+        final ResourceInfo resource = layer.getResource();
+        final DataStoreInfo store = (DataStoreInfo) resource.getStore();
+        final Map<String, Serializable> params = store.getConnectionParameters();
+        final String repoId = (String) params.get(REPOSITORY.key);
+
         List<LayerIdentifierInfo> identifiers = layer.getIdentifiers();
         LayerIdentifierInfo expected = null;
         for (LayerIdentifierInfo idinfo : identifiers) {
@@ -182,13 +188,7 @@ public class GeogigLayerIntegrationListenerTest extends GeoServerSystemTestSuppo
 
         assertNotNull("No geogig identifier added for layer " + layer, expected);
 
-        ResourceInfo resource = layer.getResource();
-        StoreInfo store = resource.getStore();
-        WorkspaceInfo workspace = store.getWorkspace();
-
-        String expectedId = workspace.getName() + ":" + store.getName() + ":"
-                + resource.getNativeName();
-        Map<String, Serializable> params = store.getConnectionParameters();
+        String expectedId = repoId + ":" + resource.getNativeName();
         if (params.containsKey(GeoGigDataStoreFactory.BRANCH.key)) {
             String branch = (String) params.get(GeoGigDataStoreFactory.BRANCH.key);
             expectedId += ":" + branch;
