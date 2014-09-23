@@ -113,13 +113,24 @@ public final class GeometryEncoder {
             json.array();
             embeddedLineStringToJson(polygon.getExteriorRing(), json);
             for (int i = 0; i < polygon.getNumInteriorRing(); i++) {
-                embeddedLineStringToJson(polygon.getInteriorRingN(i), json);
+                reversedLineStringToJson(polygon.getInteriorRingN(i), json);
             }
             json.endArray();
             json.endObject();
         } else if (geom instanceof com.vividsolutions.jts.geom.MultiPolygon) {
             com.vividsolutions.jts.geom.MultiPolygon mpoly = (com.vividsolutions.jts.geom.MultiPolygon) geom;
-            toJson(mpoly.getGeometryN(0), json);
+            json.object();
+            json.key("rings");
+            json.array();
+            for (int n = 0; n < mpoly.getNumGeometries(); n++) {
+                com.vividsolutions.jts.geom.Polygon polygon = (com.vividsolutions.jts.geom.Polygon) mpoly.getGeometryN(n);
+                embeddedLineStringToJson(polygon.getExteriorRing(), json);
+                for (int i = 0; i < polygon.getNumInteriorRing(); i++) {
+                    reversedLineStringToJson(polygon.getInteriorRingN(i), json);
+                }
+            }
+            json.endArray();
+            json.endObject();
         } else if (geom instanceof com.vividsolutions.jts.geom.GeometryCollection) {
             com.vividsolutions.jts.geom.GeometryCollection collection = (com.vividsolutions.jts.geom.GeometryCollection) geom;
             String geometryType = determineGeometryType(collection);
@@ -151,6 +162,14 @@ public final class GeometryEncoder {
         json.array();
         for (com.vividsolutions.jts.geom.Coordinate c : line.getCoordinates()) {
             embeddedCoordinateToJson(c, json);
+        }
+        json.endArray();
+    }
+
+    private static void reversedLineStringToJson(com.vividsolutions.jts.geom.LineString line, JSONBuilder json) {
+        json.array();
+        for (int n = line.getNumPoints() - 1; n >= 0; n--) {
+            embeddedCoordinateToJson(line.getCoordinateN(n), json);
         }
         json.endArray();
     }

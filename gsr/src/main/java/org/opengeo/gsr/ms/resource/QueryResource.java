@@ -113,39 +113,23 @@ public class QueryResource extends Resource {
         return format.toRepresentation(error);
     }
 
-    private Representation buildJsonRepresentation() {
+    private Representation buildJsonRepresentation() throws IOException {
     	String format = getRequest().getResourceRef().getQueryAsForm().getFirstValue("f");
         if (!"json".equals(format)) throw new IllegalArgumentException("json is the only supported format");
         String workspace = (String) getRequest().getAttributes().get("workspace");
-
-        LayersAndTables layersAndTables = LayersAndTables.find(catalog, workspace);
-        
         String layerOrTableId = (String) getRequest().getAttributes().get("layerOrTable");
         Integer layerOrTableIndex = Integer.valueOf(layerOrTableId);
-        LayerInfo l = null;
-        for (LayerOrTable layerOrTable : layersAndTables.layers) {
-            if (layerOrTable.id == layerOrTableIndex) {
-                l = layerOrTable.layer;
-                break;
-            }
-        }
 
-        if (l == null) {
-            for (LayerOrTable layerOrTable : layersAndTables.tables) {
-                if (layerOrTable.id == layerOrTableIndex) {
-                    l = layerOrTable.layer;
-                    break;
-                }
-            }
-        }
+        LayerOrTable layerOrTable = LayersAndTables.find(catalog, workspace, layerOrTableIndex);
+        LayerInfo l = layerOrTable.layer;
 
         if (null == l) {
-            throw new NoSuchElementException("No table or layer in workspace \"" + workspace + " for id " + layerOrTableId + "\" of " + layersAndTables);
+            throw new NoSuchElementException("No table or layer in workspace \"" + workspace + " for id " + layerOrTableId);
         }
 
         FeatureTypeInfo featureType = (FeatureTypeInfo) l.getResource();
         if (null == featureType) {
-            throw new NoSuchElementException("No table or layer in workspace \"" + workspace + " for id " + layerOrTableId + "\" of " + layersAndTables);
+            throw new NoSuchElementException("No table or layer in workspace \"" + workspace + " for id " + layerOrTableId);
         }
 
         final String geometryProperty;
@@ -282,14 +266,14 @@ public class QueryResource extends Resource {
             JSONBuilder json = new JSONBuilder(writer);
             FeatureSource<? extends FeatureType, ? extends Feature> source =
                     featureType.getFeatureSource(null, null);
-            final String[] effectiveProperties = adjustProperties(returnGeometry, properties, source.getSchema());
-            LOG.info("Effective properties" + (effectiveProperties == null ? null : Arrays.<String>asList(effectiveProperties)));
+            final List<String> effectiveProperties = adjustProperties(returnGeometry, properties, source.getSchema());
+            LOG.info("Effective properties" + effectiveProperties);
 
             final Query query;
             if (effectiveProperties == null) {
                 query = new Query(featureType.getName(), geometryFilter);
             } else {
-                query = new Query(featureType.getName(), geometryFilter, effectiveProperties);
+                query = new Query(featureType.getName(), geometryFilter, effectiveProperties.toArray(new String[0]));
             }
             query.setCoordinateSystemReproject(outCRS);
             
@@ -303,25 +287,26 @@ public class QueryResource extends Resource {
             writer.close();
         }
         
-        private String[] adjustProperties(boolean addGeometry, String[] originalProperties, FeatureType schema) {
+        private List<String> adjustProperties(boolean addGeometry, String[] originalProperties, FeatureType schema) {
             if (originalProperties == null) {
                 return null;
             }
             
-            String[] effectiveProperties =
-                new String[originalProperties.length + (addGeometry ? 1 : 0)];
+            List<String> effectiveProperties = new ArrayList<String>();
             for (int i = 0; i < originalProperties.length; i++) {
-                effectiveProperties[i] = adjustOneProperty(originalProperties[i], schema);
+                String property = adjustOneProperty(originalProperties[i], schema);
+                if (property != null) effectiveProperties.add(property);
             }
+
             if (addGeometry){ 
-                effectiveProperties[effectiveProperties.length - 1] =
-                        schema.getGeometryDescriptor().getLocalName();
+                effectiveProperties.add(schema.getGeometryDescriptor().getLocalName());
             }
             
             return effectiveProperties;
         }
 
         private String adjustOneProperty(String name, FeatureType schema) {
+            if ("objectid".equals(name)) return null;
             List<String> candidates = new ArrayList<String>();
             for (PropertyDescriptor d : schema.getDescriptors()) {
                 String pname = d.getName().getLocalPart();
@@ -477,7 +462,7 @@ public class QueryResource extends Resource {
         } catch (JSONException e) {
             return SpatialReferenceEncoder.parseSpatialReference(srText);
         } catch (FactoryException e) {
-            throw new NoSuchElementException("Could not find spatial reference for id " + srText);
+            throw new NoSuchElementException("Could not find spatial reference for id " + srText + "; " + e.getMessage());
         }
     }
     

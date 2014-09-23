@@ -70,6 +70,7 @@ public class SpatialReferenceEncoder {
         } else {
             try {
                 int srid = Integer.parseInt(srText);
+                if (srid == 102100) srid = 3857;
                 return CRS.decode("EPSG:" + srid);
             } catch (NumberFormatException e) {
                 // fall through - it may be a JSON representation
@@ -103,6 +104,7 @@ public class SpatialReferenceEncoder {
         String withEPSGPrefix;
         try {
             Integer asInteger = Integer.valueOf(wkid);
+            if (asInteger == 102100) asInteger = 3857;
             withEPSGPrefix = "EPSG:" + asInteger;
         } catch (NumberFormatException e) {
             withEPSGPrefix = "EPSG:" + wkid;

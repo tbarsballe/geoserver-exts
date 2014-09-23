@@ -61,6 +61,7 @@ public class ServiceFinder extends Router {
         };
         Router mapService = new Router(getContext()) {
                 {
+                    setRoutingMode(FIRST);
                         Finder rootResourceFinder = new Finder(getContext()) {
                                 @Override
                                 public Resource findTarget(Request request, Response response) {
@@ -71,6 +72,12 @@ public class ServiceFinder extends Router {
                                 @Override
                                 public Resource findTarget(Request request, Response response) {
                                         return new LayerListResource(getContext(), request, response, geoServer.getCatalog());
+                                };
+                        };
+                        Finder layerFinder = new Finder(getContext()) {
+                                @Override
+                                public Resource findTarget(Request request, Response response) {
+                                        return new LayerResource(getContext(), request, response, geoServer.getCatalog());
                                 };
                         };
                         Finder queryFinder = new Finder(getContext()) {
@@ -97,16 +104,18 @@ public class ServiceFinder extends Router {
                                 return new MapTileResource(getContext(), request, response, geoServer.getCatalog(), dispatcher);
                             }
                         };
-                        attach("", rootResourceFinder);
+                        attach("/{layerOrTable}/query", queryFinder);
+                        attach("/{layerOrTable}", layerFinder);
                         attach("/export", exportMapFinder);
                         attach("/layers", layerListFinder);
-                        attach("/{layerOrTable}/query", queryFinder);
                         attach("/legend", legendFinder);
                         attach("/tile/{level}/{row}/{col}", tileFinder);
+                        attach("", rootResourceFinder);
                 }
         };
         Router featureService = new Router(getContext()) {
                 {
+                    setRoutingMode(FIRST);
                         Finder rootResourceFinder = new Finder(getContext()) {
                                 @Override
                                 public Resource findTarget(Request request, Response response) {

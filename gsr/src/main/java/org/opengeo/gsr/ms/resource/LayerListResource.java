@@ -132,11 +132,16 @@ public class LayerListResource extends Resource {
     
     private static void encodeLayersOrTables(List<LayerOrTable> layers, JSONBuilder json) throws IOException {
         json.array();
-        for (int i = 0; i < layers.size(); i++) {
-            final LayerOrTable layerOrTable = layers.get(i);
+        for (LayerOrTable layerOrTable : layers) {
+            encodeLayerOrTable(layerOrTable, json);
+        }
+        json.endArray();
+    }
+
+    public static void encodeLayerOrTable(LayerOrTable layerOrTable, JSONBuilder json) throws IOException{
             final LayerInfo layer = layerOrTable.layer;
             if (!layer.isAdvertised()) {
-                continue;
+                return;
             }
             json.object();
             json.key("id").value(layerOrTable.id);
@@ -210,8 +215,6 @@ public class LayerListResource extends Resource {
             }
             json.key("capabilities").value("Query,Time,Data");
             json.endObject();
-        }
-        json.endArray();
     }
     
     private static void encodeSchemaProperties(JSONBuilder json, FeatureType ftype) {
