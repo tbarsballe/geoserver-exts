@@ -12,6 +12,8 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import net.sf.json.util.JSONBuilder;
 
@@ -23,7 +25,7 @@ import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.catalog.LayerInfo;
 import org.geoserver.catalog.MetadataLinkInfo;
 import org.geoserver.catalog.ResourceInfo;
-// import org.geotools.feature.FeatureTypes;
+import org.geotools.referencing.CRS;
 import org.geotools.styling.FeatureTypeStyle;
 import org.geotools.styling.Rule;
 import org.geotools.styling.Style;
@@ -32,6 +34,7 @@ import org.opengeo.gsr.core.feature.FeatureEncoder;
 import org.opengeo.gsr.core.feature.FieldTypeEnum;
 import org.opengeo.gsr.core.format.GeoServicesJsonFormat;
 import org.opengeo.gsr.core.geometry.GeometryEncoder;
+import org.opengeo.gsr.core.geometry.SpatialReferences;
 import org.opengeo.gsr.core.renderer.StyleEncoder;
 import org.opengeo.gsr.ms.resource.LayerOrTable;
 import org.opengeo.gsr.ms.resource.LayersAndTables;
@@ -39,6 +42,7 @@ import org.opengeo.gsr.ms.resource.ScaleRange;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.feature.type.PropertyDescriptor;
 import org.opengis.feature.type.PropertyType;
+import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.restlet.Context;
 import org.restlet.data.MediaType;
@@ -81,6 +85,7 @@ import org.restlet.resource.Variant;
  * @author Jody Garnett (Boundless)
  */
 public class LayerResource extends Resource {
+    private static final Logger LOGGER = org.geotools.util.logging.Logging.getLogger(LayerResource.class);
     private final class JsonLayerRepresentation extends OutputRepresentation {
         private final LayerOrTable entry;
         private final LayerInfo layerInfo;
@@ -152,9 +157,18 @@ public class LayerResource extends Resource {
                     json.key("minScale").value(range.minScale);
                     json.key("maxScale").value(range.maxScale);
 
-                    // extent - layer extent (includes srs info)
-                    json.key("extent");
-                    GeometryEncoder.envelopeToJson(entry.boundingBox, json);
+                    if (entry.boundingBox != null) {
+                        json.key("extent");
+                        try {
+                            CoordinateReferenceSystem WEB_MERCATOR = CRS.decode("EPSG:3857");
+                            GeometryEncoder.referencedEnvelopeToJson(entry.boundingBox, SpatialReferences.fromCRS(WEB_MERCATOR), json);
+                        } catch (FactoryException e) {
+                            LOGGER.log(Level.WARNING, "Omitting bbox because we couldn't find EPSG:3857", e);
+                        }
+                    }
+                    // // extent - layer extent (includes srs info)
+                    // json.key("extent");
+                    // GeometryEncoder.envelopeToJson(entry.boundingBox, json);
 
                     // drawingInfo (renderer, transparency, labelingInfo)
                     json.key("drawingInfo");
@@ -172,7 +186,7 @@ public class LayerResource extends Resource {
                     // hasZ - check CRS
                     CoordinateReferenceSystem crs = schema.getGeometryDescriptor().getCoordinateReferenceSystem();
                     int dimension = crs.getCoordinateSystem().getDimension();
-                    json.key("extent").value(dimension > 2 ? "true" : "false");					
+                    json.key("hasZ").value(dimension > 2 ? "true" : "false");					
                 }
                 // enableZDefaults - ignore
                 // zDefault - ignore

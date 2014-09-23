@@ -77,7 +77,7 @@ public class ServiceFinder extends Router {
                         Finder layerFinder = new Finder(getContext()) {
                                 @Override
                                 public Resource findTarget(Request request, Response response) {
-                                        return new LayerResource(getContext(), request, response, geoServer.getCatalog());
+                                        return new org.opengeo.gsr.ms.resource.LayerResource(getContext(), request, response, geoServer.getCatalog());
                                 };
                         };
                         Finder queryFinder = new Finder(getContext()) {

@@ -145,10 +145,13 @@ public class LayerListResource extends Resource {
             }
             json.object();
             json.key("id").value(layerOrTable.id);
+            json.key("objectIdField").value("objectid");
             json.key("type").value("Feature Layer");
-            json.key("name").value(layer.getName());
+            String title = layer.getResource().getTitle();
+            if (title == null) title = layer.getResource().getName();
+            json.key("name").value(title);
             json.key("currentVersion").value(2.24);
-            json.key("defaultVisibility").value(false);
+            json.key("defaultVisibility").value(true);
             json.key("definitionExpression").value("");
             final String description = layer.getResource().getAbstract();
             json.key("description").value(description != null ? description : "");
@@ -184,6 +187,8 @@ public class LayerListResource extends Resource {
                 json.key("drawingInfo");
                 json.object().key("renderer");
                 StyleEncoder.encodeRenderer(json, layerOrTable.renderer);
+                json.key("transparency").value(0);
+                json.key("labelingInfo").value(null);
                 json.endObject();
             }
             DimensionInfo time = (DimensionInfo) layer.getResource().getMetadata().get(ResourceInfo.TIME);

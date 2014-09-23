@@ -161,13 +161,51 @@ public class StyleEncoder {
         if (symbolizer != null) {
             final Symbol symbol = symbolizerToSymbol(symbolizer);
             if (symbol != null) {
-                return new SimpleRenderer(symbol, "", "");
+                String title = findSingleTitle(style);
+                String description = findSingleDescription(style);
+                return new SimpleRenderer(symbol, title, description);
             } else {
                 return null;
             }
         } else {
             return null;
         }
+    }
+
+    private static String findSingleTitle(Style style) {
+        List<FeatureTypeStyle> featureTypeStyles = style.featureTypeStyles();
+        if (featureTypeStyles == null || featureTypeStyles.size() != 1) return null;
+        
+        FeatureTypeStyle featureTypeStyle = featureTypeStyles.get(0);
+        if (featureTypeStyle == null) return null; 
+        
+        List<Rule> rules = featureTypeStyle.rules();
+        if (rules == null || rules.size() != 1) return null;
+
+        Rule rule = rules.get(0);
+
+        String title = rule.getTitle();
+        if (title == null) title = featureTypeStyle.getTitle();
+        if (title == null) title = style.getTitle();
+        return title;
+    }
+    
+    private static String findSingleDescription(Style style) {
+        List<FeatureTypeStyle> featureTypeStyles = style.featureTypeStyles();
+        if (featureTypeStyles == null || featureTypeStyles.size() != 1) return null;
+        
+        FeatureTypeStyle featureTypeStyle = featureTypeStyles.get(0);
+        if (featureTypeStyle == null) return null; 
+        
+        List<Rule> rules = featureTypeStyle.rules();
+        if (rules == null || rules.size() != 1) return null;
+
+        Rule rule = rules.get(0);
+
+        String title = rule.getTitle();
+        if (title == null) title = featureTypeStyle.getTitle();
+        if (title == null) title = style.getTitle();
+        return null;
     }
     
     private static Renderer rulesToClassBreaksRenderer(List<Rule> rules) {

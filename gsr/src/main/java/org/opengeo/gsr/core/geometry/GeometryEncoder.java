@@ -148,6 +148,12 @@ public final class GeometryEncoder {
     }
 
     private static void embeddedCoordinateToJson(com.vividsolutions.jts.geom.Coordinate coord, JSONBuilder json) {
+        if (Double.isInfinite(coord.x) || Double.isInfinite(coord.y)) {
+            return;
+        }
+        if (Double.isNaN(coord.x) || Double.isNaN(coord.y)) {
+            return;
+        }
         json.array()
           .value(coord.x)
           .value(coord.y)
