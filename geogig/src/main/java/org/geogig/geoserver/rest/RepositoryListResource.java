@@ -6,6 +6,7 @@ package org.geogig.geoserver.rest;
 
 import static org.locationtech.geogig.rest.repository.RESTUtils.repositoryProvider;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -41,23 +42,20 @@ public class RepositoryListResource extends MapResource {
 
     @Override
     public Map<String, Object> getMap() throws Exception {
-        List<String> repoNames = getRepoIds();
+        List<RepositoryInfo> repositories = getRepositories();
 
         Map<String, Object> map = Maps.newHashMap();
-        map.put("repositories", repoNames);
+        map.put("repositories", repositories);
         map.put("page", getPageInfo());
         return map;
     }
 
-    private List<String> getRepoIds() {
+    private List<RepositoryInfo> getRepositories() {
         Request request = getRequest();
         GeoServerRepositoryProvider repoFinder = (GeoServerRepositoryProvider) repositoryProvider(request);
 
-        List<RepositoryInfo> repos = repoFinder.findRepositories();
-        List<String> repoIds = Lists.newArrayListWithCapacity(repos.size());
-        for (RepositoryInfo info : repos) {
-            repoIds.add(info.getId());
-        }
-        return repoIds;
+        List<RepositoryInfo> repos = new ArrayList<>(repoFinder.findRepositories());
+
+        return repos;
     }
 }

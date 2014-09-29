@@ -8,7 +8,7 @@
 <#if repositories?size != 0>
 <ul>
 <#foreach repo in repositories>
-<li><a href="${page.pageURI(repo)}">${repo}</a></li>
+<li><a href="${page.pageURI(repo.id)}">${repo.id}</a> (${repo.name})</li>
 </#foreach>
 </ul>
 <#else>
