@@ -57,7 +57,8 @@ public final class NetworkSecurityHook implements CommandHook {
         return command;
     }
 
-    public <T> T post(AbstractGeoGigOp<T> command, Object retVal, boolean success) throws Exception {
+    @Override
+    public <T> T post(AbstractGeoGigOp<T> command, Object retVal, RuntimeException potentialException) throws Exception {
         return (T) retVal;
     }
 
