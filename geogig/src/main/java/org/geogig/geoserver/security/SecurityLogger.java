@@ -5,16 +5,25 @@ import static java.lang.String.format;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
 
 import org.geogig.geoserver.config.LogStore;
 import org.locationtech.geogig.api.AbstractGeoGigOp;
 import org.locationtech.geogig.api.Context;
+import org.locationtech.geogig.api.ObjectId;
+import org.locationtech.geogig.api.Ref;
 import org.locationtech.geogig.api.porcelain.CloneOp;
 import org.locationtech.geogig.api.porcelain.FetchOp;
+import org.locationtech.geogig.api.porcelain.FetchResult;
+import org.locationtech.geogig.api.porcelain.FetchResult.ChangedRef;
+import org.locationtech.geogig.api.porcelain.FetchResult.ChangedRef.ChangeTypes;
 import org.locationtech.geogig.api.porcelain.PullOp;
+import org.locationtech.geogig.api.porcelain.PullResult;
 import org.locationtech.geogig.api.porcelain.PushOp;
 import org.locationtech.geogig.api.porcelain.RemoteAddOp;
 import org.locationtech.geogig.api.porcelain.RemoteRemoveOp;
@@ -179,6 +188,15 @@ public class SecurityLogger {
         }
 
         @Override
+        CharSequence buildPost(PullOp command, Object commandResult) {
+            PullResult pr = (PullResult) commandResult;
+            FetchResult fr = pr.getFetchResult();
+            StringBuilder sb = formatFetchResult(fr);
+            return format("%s success. Parameters: %s. Changes: %s", friendlyName(),
+                    params(command), sb);
+        }
+
+        @Override
         String params(PullOp c) {
             return format("remote=%s, refSpecs=%s, depth=%s, author=%s, author email=%s",
                     c.getRemoteName(), c.getRefSpecs(), c.getDepth(), c.getAuthor(),
@@ -205,6 +223,14 @@ public class SecurityLogger {
         }
 
         @Override
+        CharSequence buildPost(FetchOp command, Object commandResult) {
+            FetchResult fr = (FetchResult) commandResult;
+            StringBuilder sb = formatFetchResult(fr);
+            return format("%s success. Parameters: %s. Changes: %s", friendlyName(),
+                    params(command), sb);
+        }
+
+        @Override
         String params(FetchOp c) {
             return format("remotes=%s, all=%s, full depth=%s, depth=%s, prune=%s",
                     c.getRemoteNames(), c.isAll(), c.isFullDepth(), c.getDepth(), c.isPrune());
@@ -221,6 +247,55 @@ public class SecurityLogger {
         String params(CloneOp c) {
             return format("url=%s, branch=%s, depth=%s", c.getRepositoryURL().orNull(), c
                     .getBranch().orNull(), c.getDepth().orNull());
+        }
+    }
+
+    private static final StringBuilder formatFetchResult(FetchResult fr) {
+        Map<String, List<ChangedRef>> refs = fr.getChangedRefs();
+
+        StringBuilder sb = new StringBuilder();
+        if (refs.isEmpty()) {
+            sb.append("already up to date");
+        } else {
+            for (Iterator<Entry<String, List<ChangedRef>>> it = refs.entrySet().iterator(); it
+                    .hasNext();) {
+                Entry<String, List<ChangedRef>> entry = it.next();
+                String remoteUrl = entry.getKey();
+                List<ChangedRef> changedRefs = entry.getValue();
+                sb.append(" From ").append(remoteUrl).append(": [");
+                print(changedRefs, sb);
+                sb.append("]");
+            }
+        }
+        return sb;
+    }
+
+    private static String toString(ObjectId objectId) {
+        return objectId.toString().substring(0, 8);
+    }
+
+    private static void print(List<ChangedRef> changedRefs, StringBuilder sb) {
+        for (Iterator<ChangedRef> it = changedRefs.iterator(); it.hasNext();) {
+            ChangedRef ref = it.next();
+            Ref oldRef = ref.getOldRef();
+            Ref newRef = ref.getNewRef();
+            if (ref.getType() == ChangeTypes.CHANGED_REF) {
+                sb.append(oldRef.getName()).append(" ");
+                sb.append(toString(oldRef.getObjectId()));
+                sb.append(" -> ");
+                sb.append(toString(newRef.getObjectId()));
+            } else if (ref.getType() == ChangeTypes.ADDED_REF) {
+                String reftype = (newRef.getName().startsWith(Ref.TAGS_PREFIX)) ? "tag" : "branch";
+                sb.append("* [new ").append(reftype).append("] ").append(newRef.getName())
+                        .append(" -> ").append(toString(newRef.getObjectId()));
+            } else if (ref.getType() == ChangeTypes.REMOVED_REF) {
+                sb.append("x [deleted] ").append(oldRef.getName());
+            } else {
+                sb.append("[deepened]" + newRef.getName());
+            }
+            if (it.hasNext()) {
+                sb.append(", ");
+            }
         }
     }
 }
