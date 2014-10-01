@@ -1,4 +1,4 @@
-package org.geogig.geoserver.web.security;
+package org.geogig.geoserver.security;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.List;
 
 import org.geogig.geoserver.config.ConfigStore;
+import org.geogig.geoserver.config.WhitelistRule;
 import org.geoserver.platform.GeoServerExtensions;
 import org.locationtech.geogig.api.AbstractGeoGigOp;
 import org.locationtech.geogig.api.Remote;
@@ -18,7 +19,14 @@ import org.locationtech.geogig.api.porcelain.PushOp;
 
 import com.google.common.base.Optional;
 
+/**
+ * Classpath {@link CommandHook hook} that catches remotes related commands before they are executed
+ * and validates them against the {@link WhitelistRule whitelist rules} to let them process or not.
+ *
+ */
 public final class NetworkSecurityHook implements CommandHook {
+
+    @Override
     public <C extends AbstractGeoGigOp<?>> C pre(C command)
             throws CannotRunGeogigOperationException {
         if (command instanceof LsRemote) {
@@ -57,12 +65,14 @@ public final class NetworkSecurityHook implements CommandHook {
         return command;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T post(AbstractGeoGigOp<T> command, Object retVal,
             RuntimeException potentialException) throws Exception {
         return (T) retVal;
     }
 
+    @Override
     public boolean appliesTo(Class<? extends AbstractGeoGigOp<?>> clazz) {
         return LsRemote.class.equals(clazz) || CloneOp.class.equals(clazz)
                 || FetchOp.class.equals(clazz) || PushOp.class.equals(clazz);

@@ -1,8 +1,11 @@
-package org.geogig.geoserver.web.security;
+package org.geogig.geoserver.config;
 
 import java.io.Serializable;
 
 public final class WhitelistRule implements Serializable {
+
+    private static final long serialVersionUID = -6823703091481727394L;
+
     private String name;
 
     private String pattern;

@@ -7,7 +7,8 @@ import org.locationtech.geogig.api.hooks.CannotRunGeogigOperationException;
 import org.locationtech.geogig.api.hooks.CommandHook;
 
 /**
- * Classpath {@link CommandHook command hook} that simply delegates to {@link SecurityLogger}
+ * Classpath {@link CommandHook command hook} that logs remotes related command events to by simply
+ * delegating to {@link SecurityLogger}
  * 
  * @see SecurityLogger#interestedIn(Class)
  * @see SecurityLogger#logPre(AbstractGeoGigOp)
