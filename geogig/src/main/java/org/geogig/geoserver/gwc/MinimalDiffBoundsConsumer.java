@@ -17,7 +17,7 @@ import org.locationtech.geogig.api.Bounded;
 import org.locationtech.geogig.api.Bucket;
 import org.locationtech.geogig.api.Node;
 import org.locationtech.geogig.api.NodeRef;
-import org.locationtech.geogig.api.plumbing.diff.DiffTreeVisitor;
+import org.locationtech.geogig.api.plumbing.diff.PreOrderDiffWalk;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -25,7 +25,7 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 
-class MinimalDiffBoundsConsumer implements DiffTreeVisitor.Consumer {
+class MinimalDiffBoundsConsumer implements PreOrderDiffWalk.Consumer {
 
     private static final GeometryFactory GEOM_FACTORY = CompactMultiPoint.GEOM_FACTORY;
 

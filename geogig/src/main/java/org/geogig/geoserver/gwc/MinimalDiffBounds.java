@@ -11,7 +11,7 @@ import org.locationtech.geogig.api.ObjectId;
 import org.locationtech.geogig.api.Ref;
 import org.locationtech.geogig.api.RevTree;
 import org.locationtech.geogig.api.plumbing.ResolveTreeish;
-import org.locationtech.geogig.api.plumbing.diff.DiffTreeVisitor;
+import org.locationtech.geogig.api.plumbing.diff.PreOrderDiffWalk;
 import org.locationtech.geogig.storage.ObjectDatabase;
 
 import com.google.common.base.Optional;
@@ -71,13 +71,13 @@ public class MinimalDiffBounds extends AbstractGeoGigOp<Geometry> {
         ObjectDatabase leftSource = resolveSafeDb(left);
         ObjectDatabase rightSource = resolveSafeDb(right);
 
-        DiffTreeVisitor visitor = new DiffTreeVisitor(left, right, leftSource, rightSource);
-        MinimalDiffBoundsConsumer walk = new MinimalDiffBoundsConsumer();
+        PreOrderDiffWalk visitor = new PreOrderDiffWalk(left, right, leftSource, rightSource);
+        MinimalDiffBoundsConsumer consumer = new MinimalDiffBoundsConsumer();
         if (treeName != null) {
-            walk.setTreeNameFilter(treeName);
+            consumer.setTreeNameFilter(treeName);
         }
-        visitor.walk(walk);
-        Geometry minimalBounds = walk.buildGeometry();
+        visitor.walk(consumer);
+        Geometry minimalBounds = consumer.buildGeometry();
         return minimalBounds;
     }
 
