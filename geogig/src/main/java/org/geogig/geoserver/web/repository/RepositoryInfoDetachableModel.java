@@ -9,8 +9,8 @@ import org.geogig.geoserver.config.RepositoryManager;
 import com.google.common.base.Throwables;
 
 /**
- * A RepositoryInfo detachable model that holds the store id to retrieve it on demand from
- * the catalog
+ * A RepositoryInfo detachable model that holds the store id to retrieve it on demand from the
+ * catalog
  */
 public class RepositoryInfoDetachableModel extends LoadableDetachableModel<RepositoryInfo> {
 

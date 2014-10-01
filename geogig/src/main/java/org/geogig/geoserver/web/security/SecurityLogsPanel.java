@@ -168,7 +168,7 @@ public class SecurityLogsPanel extends GeoServerTablePanel<LogEvent> {
         final List<Property<LogEvent>> PROPERTIES = Arrays.asList(/* EVENT_ID, */
         SEVERITY, TIMESTAMP, REPOSITORY, USER, MESSAGE);
 
-        //private transient List<LogEvent> items;
+        // private transient List<LogEvent> items;
 
         private transient LogStore logStore;
 
@@ -184,10 +184,10 @@ public class SecurityLogsPanel extends GeoServerTablePanel<LogEvent> {
 
         @Override
         protected List<LogEvent> getItems() {
-            //if (items == null) {
-                LogStore logStore = logStore();
-                List<LogEvent> items = logStore.getLogEntries(0, Integer.MAX_VALUE);
-            //}
+            // if (items == null) {
+            LogStore logStore = logStore();
+            List<LogEvent> items = logStore.getLogEntries(0, Integer.MAX_VALUE);
+            // }
             return items;
         }
 

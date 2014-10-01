@@ -4,7 +4,9 @@ import java.io.Serializable;
 
 public final class WhitelistRule implements Serializable {
     private String name;
+
     private String pattern;
+
     private boolean requireSSL;
 
     public WhitelistRule(String name, String pattern, boolean requireSSL) {

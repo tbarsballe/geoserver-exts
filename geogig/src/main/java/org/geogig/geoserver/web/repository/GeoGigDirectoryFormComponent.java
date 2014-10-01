@@ -108,7 +108,8 @@ class GeoGigDirectoryFormComponent extends FormComponentPanel<String> {
                 };
                 chooser.setFileTableHeight(null);
                 dialog.setContent(chooser);
-                dialog.setTitle(new ResourceModel("GeoGigDirectoryFormComponent.chooser.chooseParentTile"));
+                dialog.setTitle(new ResourceModel(
+                        "GeoGigDirectoryFormComponent.chooser.chooseParentTile"));
                 dialog.show(target);
             }
 

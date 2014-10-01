@@ -163,7 +163,6 @@ public class ConfigStore {
         }
     }
 
-
     /**
      * Loads the security whitelist.
      */

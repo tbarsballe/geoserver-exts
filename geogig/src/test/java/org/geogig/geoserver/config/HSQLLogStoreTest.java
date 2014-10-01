@@ -30,7 +30,7 @@ public class HSQLLogStoreTest extends AbstractLogStoreTest {
         props.setProperty(PROP_SCRIPT, "hsqldb.sql");
         props.setProperty(PROP_RUN_SCRIPT, "true");
 
-        //runScript(driverClassName, jdbcUrl, getClass().getResource("hsqldb.sql"), "sa", null);
+        // runScript(driverClassName, jdbcUrl, getClass().getResource("hsqldb.sql"), "sa", null);
     }
 
 }

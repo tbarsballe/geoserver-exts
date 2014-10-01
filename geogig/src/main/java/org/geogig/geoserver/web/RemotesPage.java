@@ -25,6 +25,7 @@ import org.geoserver.web.GeoServerSecuredPage;
  */
 public class RemotesPage extends GeoServerSecuredPage {
     private List<WhitelistRule> rules;
+
     private ModalWindow window;
 
     public RemotesPage() {
@@ -38,14 +39,16 @@ public class RemotesPage extends GeoServerSecuredPage {
         Form form = new Form("form") {
             @Override
             protected void onSubmit() {
-                final ConfigStore configStore = (ConfigStore) GeoServerExtensions.bean("geogigConfigStore");
+                final ConfigStore configStore = (ConfigStore) GeoServerExtensions
+                        .bean("geogigConfigStore");
                 configStore.saveWhitelist(rules);
             }
         };
         window = new ModalWindow("popup");
         add(window);
         add(form);
-        final WhitelistRulePanel whitelistRulePanel = new WhitelistRulePanel("whitelist.rules", rules, window);
+        final WhitelistRulePanel whitelistRulePanel = new WhitelistRulePanel("whitelist.rules",
+                rules, window);
         whitelistRulePanel.setOutputMarkupId(true);
         form.add(whitelistRulePanel);
         form.add(new AjaxLink("whitelist.add") {

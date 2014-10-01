@@ -35,8 +35,6 @@ import org.geoserver.web.data.store.DataAccessEditPage;
 import org.geoserver.web.data.store.DataAccessNewPage;
 import org.geoserver.web.data.store.StoreEditPanel;
 import org.geoserver.web.data.store.StoreExtensionPoints;
-import org.geoserver.web.data.store.panel.CheckBoxParamPanel;
-import org.geoserver.web.data.store.panel.TextParamPanel;
 import org.junit.Before;
 import org.junit.Test;
 import org.locationtech.geogig.api.ObjectId;
@@ -139,7 +137,7 @@ public class GeoGigDataStoreEditPanelTest extends GeoServerWicketTestSupport {
     public void testRefreshBranchListWithBadConnectionParams() throws Exception {
         startPanelForNewStore();
         editForm.getModelObject().getConnectionParameters()
-        .put(GeoGigDataStoreFactory.REPOSITORY.key, UUID.randomUUID().toString());
+                .put(GeoGigDataStoreFactory.REPOSITORY.key, UUID.randomUUID().toString());
 
         final FormTester formTester = tester.newFormTester("dataStoreForm");
         final String base = "dataStoreForm:parametersPanel:";
@@ -161,8 +159,8 @@ public class GeoGigDataStoreEditPanelTest extends GeoServerWicketTestSupport {
     public void testRefreshBranchList() throws Exception {
         startPanelForNewStore();
         editForm.getModelObject().getConnectionParameters()
-        .put(GeoGigDataStoreFactory.REPOSITORY.key, UUID.randomUUID().toString());
-        
+                .put(GeoGigDataStoreFactory.REPOSITORY.key, UUID.randomUUID().toString());
+
         final FormTester formTester = tester.newFormTester("dataStoreForm");
         final String base = "dataStoreForm:parametersPanel:";
         BranchSelectionPanel branchPanel = (BranchSelectionPanel) tester
