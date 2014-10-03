@@ -5,8 +5,8 @@ import static java.lang.String.format;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -19,14 +19,14 @@ import org.locationtech.geogig.api.ObjectId;
 import org.locationtech.geogig.api.Ref;
 import org.locationtech.geogig.api.porcelain.CloneOp;
 import org.locationtech.geogig.api.porcelain.FetchOp;
-import org.locationtech.geogig.api.porcelain.FetchResult;
-import org.locationtech.geogig.api.porcelain.FetchResult.ChangedRef;
-import org.locationtech.geogig.api.porcelain.FetchResult.ChangedRef.ChangeTypes;
 import org.locationtech.geogig.api.porcelain.PullOp;
 import org.locationtech.geogig.api.porcelain.PullResult;
 import org.locationtech.geogig.api.porcelain.PushOp;
 import org.locationtech.geogig.api.porcelain.RemoteAddOp;
 import org.locationtech.geogig.api.porcelain.RemoteRemoveOp;
+import org.locationtech.geogig.api.porcelain.TransferSummary;
+import org.locationtech.geogig.api.porcelain.TransferSummary.ChangedRef;
+import org.locationtech.geogig.api.porcelain.TransferSummary.ChangedRef.ChangeTypes;
 import org.locationtech.geogig.repository.Repository;
 
 import com.google.common.base.Preconditions;
@@ -190,7 +190,7 @@ public class SecurityLogger {
         @Override
         CharSequence buildPost(PullOp command, Object commandResult) {
             PullResult pr = (PullResult) commandResult;
-            FetchResult fr = pr.getFetchResult();
+            TransferSummary fr = pr.getFetchResult();
             StringBuilder sb = formatFetchResult(fr);
             return format("%s success. Parameters: %s. Changes: %s", friendlyName(),
                     params(command), sb);
@@ -224,7 +224,7 @@ public class SecurityLogger {
 
         @Override
         CharSequence buildPost(FetchOp command, Object commandResult) {
-            FetchResult fr = (FetchResult) commandResult;
+            TransferSummary fr = (TransferSummary) commandResult;
             StringBuilder sb = formatFetchResult(fr);
             return format("%s success. Parameters: %s. Changes: %s", friendlyName(),
                     params(command), sb);
@@ -250,18 +250,18 @@ public class SecurityLogger {
         }
     }
 
-    private static final StringBuilder formatFetchResult(FetchResult fr) {
-        Map<String, List<ChangedRef>> refs = fr.getChangedRefs();
+    private static final StringBuilder formatFetchResult(TransferSummary fr) {
+        Map<String, Collection<ChangedRef>> refs = fr.getChangedRefs();
 
         StringBuilder sb = new StringBuilder();
         if (refs.isEmpty()) {
             sb.append("already up to date");
         } else {
-            for (Iterator<Entry<String, List<ChangedRef>>> it = refs.entrySet().iterator(); it
+            for (Iterator<Entry<String, Collection<ChangedRef>>> it = refs.entrySet().iterator(); it
                     .hasNext();) {
-                Entry<String, List<ChangedRef>> entry = it.next();
+                Entry<String, Collection<ChangedRef>> entry = it.next();
                 String remoteUrl = entry.getKey();
-                List<ChangedRef> changedRefs = entry.getValue();
+                Collection<ChangedRef> changedRefs = entry.getValue();
                 sb.append(" From ").append(remoteUrl).append(": [");
                 print(changedRefs, sb);
                 sb.append("]");
@@ -274,7 +274,7 @@ public class SecurityLogger {
         return objectId.toString().substring(0, 8);
     }
 
-    private static void print(List<ChangedRef> changedRefs, StringBuilder sb) {
+    private static void print(Collection<ChangedRef> changedRefs, StringBuilder sb) {
         for (Iterator<ChangedRef> it = changedRefs.iterator(); it.hasNext();) {
             ChangedRef ref = it.next();
             Ref oldRef = ref.getOldRef();
