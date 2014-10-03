@@ -30,6 +30,11 @@
       <version>${geogig.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.locationtech.geogig</groupId>
+      <artifactId>geogig-osm</artifactId>
+      <version>${geogig.version}</version>
+    </dependency>
+    <dependency>
       <!-- track geogig's guava version instead of the one in the geoserver-exts root pom that tracks the one used by geoserver -->
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
@@ -289,6 +294,33 @@
                   <include>org.slf4j:slf4j-api</include>
                   <include>org.slf4j:jul-to-slf4j</include>
                    -->
+                   
+                   <!-- geogig-osm deps -->
+                   <!-- 
+[INFO] +- org.openstreetmap.osmosis:osmosis-core:jar:0.43.1:compile
+[INFO] |  +- org.codehaus.woodstox:stax2-api:jar:3.1.1:compile
+[INFO] |  +- xerces:xercesImpl:jar:2.9.1:compile
+[INFO] |  +- org.codehaus.woodstox:woodstox-core-lgpl:jar:4.1.4:compile
+[INFO] |  +- net.sf.jpf:jpf:jar:1.5:compile
+[INFO] |  |  \- commons-logging:commons-logging:jar:1.0.4:compile
+[INFO] |  \- org.apache.commons:commons-compress:jar:1.4.1:compile
+[INFO] |     \- org.tukaani:xz:jar:1.0:compile
+[INFO] +- org.openstreetmap.osmosis:osmosis-xml:jar:0.43.1:compile
+[INFO] |  \- commons-codec:commons-codec:jar:1.7:compile
+[INFO] +- org.openstreetmap.osmosis:osmosis-pbf:jar:0.43.1:compile
+[INFO] |  +- org.openstreetmap.osmosis:osmosis-osm-binary:jar:0.43.1:compile
+[INFO] |  \- com.google.protobuf:protobuf-java:jar:2.4.1:compile                   
+                    -->
+                   <include>org.openstreetmap.osmosis:*</include>
+                   <include>org.codehaus.woodstox:stax2-api</include>
+                   <include>xerces:xercesImpl</include>
+                   <include>org.codehaus.woodstox:woodstox-core-lgpl</include>
+                   <include>net.sf.jpf:jpf</include>
+                   <include>commons-logging:commons-logging</include>
+                   <include>org.apache.commons:commons-compress</include>
+                   <include>org.tukaani:xz:jar</include>
+                   <include>commons-codec:commons-codec</include>
+                   <include>com.google.protobuf:protobuf-java</include>               
                 </includes>
               </artifactSet>
               <relocations>
