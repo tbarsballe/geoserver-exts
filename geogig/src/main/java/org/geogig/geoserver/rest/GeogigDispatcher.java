@@ -14,12 +14,15 @@ import javax.servlet.http.HttpServletResponse;
 import org.geoserver.ows.util.ResponseUtils;
 import org.geoserver.rest.GeoServerServletConverter;
 import org.geoserver.rest.PageInfo;
-import org.geoserver.rest.RestletException;
 import org.geotools.util.logging.Logging;
+import org.locationtech.geogig.rest.RestletException;
+import org.locationtech.geogig.rest.TaskStatusResource;
+import org.locationtech.geogig.rest.osm.OSMRouter;
 import org.locationtech.geogig.rest.repository.CommandResource;
 import org.locationtech.geogig.rest.repository.FixedEncoder;
 import org.locationtech.geogig.rest.repository.RepositoryProvider;
 import org.locationtech.geogig.rest.repository.RepositoryRouter;
+import org.locationtech.geogig.web.api.CommandSpecException;
 import org.restlet.Restlet;
 import org.restlet.Router;
 import org.restlet.data.Request;
@@ -28,6 +31,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.AbstractController;
 
+import com.google.common.base.Charsets;
 import com.noelios.restlet.application.Decoder;
 import com.noelios.restlet.ext.servlet.ServletConverter;
 
@@ -91,12 +95,23 @@ public class GeogigDispatcher extends AbstractController {
 
     public Router createInboundRoot() {
         Router router = createRoot();
+
         router.attach("", RepositoryListResource.class);
         router.attach("/", RepositoryListResource.class);
+
+        router.attach("/tasks.{extension}", TaskStatusResource.class);
+        router.attach("/tasks", TaskStatusResource.class);
+        router.attach("/tasks/{taskId}.{extension}", TaskStatusResource.class);
+        router.attach("/tasks/{taskId}", TaskStatusResource.class);
+
+        Router osm = new OSMRouter();
+        router.attach("/{repository}/osm", osm);
+
         router.attach("/{repository}", RepositoryResource.class);
         router.attach("/{repository}/repo", makeRepoRouter());
         router.attach("/{repository}/{command}.{extension}", CommandResource.class);
         router.attach("/{repository}/{command}", CommandResource.class);
+
         return router;
     }
 
@@ -111,6 +126,14 @@ public class GeogigDispatcher extends AbstractController {
         try {
             converter.service(req, resp);
         } catch (Exception e) {
+            if (e instanceof CommandSpecException) {
+                String msg = e.getMessage();
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                if (msg != null) {
+                    resp.getOutputStream().write(msg.getBytes(Charsets.UTF_8));
+                }
+                return null;
+            }
             RestletException re = null;
             if (e instanceof RestletException) {
                 re = (RestletException) e;
