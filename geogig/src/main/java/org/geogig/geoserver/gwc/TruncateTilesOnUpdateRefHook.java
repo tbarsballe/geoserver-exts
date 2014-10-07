@@ -95,57 +95,6 @@ public class TruncateTilesOnUpdateRefHook implements CommandHook {
         return command;
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T> T post(AbstractGeoGigOp<T> command, @Nullable Object retVal,
-            @Nullable RuntimeException exception) throws Exception {
-        checkArgument(command instanceof UpdateRef);
-        final UpdateRef cmd = (UpdateRef) command;
-        final String refName = (String) cmd.getClientData().get("name");
-        checkState(refName != null, "refName not captured in pre-hook");
-        if (Boolean.TRUE.equals(cmd.getClientData().get("ignore"))) {
-            LOGGER.debug("GWC geogig truncate post-hook returning, ref '{}' is ignored.", refName);
-            return (T) retVal;
-        }
-
-        boolean success = exception == null;
-        if (!success) {
-            LOGGER.info(
-                    "GWC geogig truncate post-hook returning, UpdateRef operation failed on ref '{}'.",
-                    refName);
-            return (T) retVal;
-        }
-
-        final GWC mediator = GWC.get();
-        if (mediator == null) {
-            LOGGER.debug("GWC geogig truncate post-hook returning, GWC mediator not installed?.");
-            return (T) retVal;
-        }
-
-        final Optional<Ref> oldValue = (Optional<Ref>) cmd.getClientData().get("oldValue");
-        final Optional<Ref> newValue = (Optional<Ref>) retVal;// == oldValue if the ref was deleted
-
-        checkState(oldValue != null, "oldValue not captured in pre-hook");
-
-        if (oldValue.equals(newValue)) {
-            LOGGER.debug("GWC geogig truncate post-hook returning, ref '{}' didn't change ({}).",
-                    refName, oldValue);
-            return (T) retVal;
-        }
-
-        List<LayerInfo> affectedLayers;
-        final String newRefName = newValue.get().getName();
-        Stopwatch sw = Stopwatch.createStarted();
-        affectedLayers = findAffectedLayers(mediator, command.context(), newRefName);
-        LOGGER.debug("GWC geogig truncate post-hook found {} affected layers on branch {} in {}.",
-                affectedLayers.size(), refName, sw.stop());
-
-        for (LayerInfo layer : affectedLayers) {
-            truncate(mediator, command.context(), layer, oldValue, newValue);
-        }
-        return (T) retVal;
-    }
-
     private void truncate(GWC mediator, Context geogigContext, LayerInfo layer,
             Optional<Ref> oldValue, Optional<Ref> newValue) {
 
@@ -228,5 +177,53 @@ public class TruncateTilesOnUpdateRefHook implements CommandHook {
             }
         }
         return dataStoreHead;
+    }
+
+    @Override
+    public <T> T post(AbstractGeoGigOp<T> command, Object retVal, boolean success) throws Exception {
+        checkArgument(command instanceof UpdateRef);
+        final UpdateRef cmd = (UpdateRef) command;
+        final String refName = (String) cmd.getClientData().get("name");
+        checkState(refName != null, "refName not captured in pre-hook");
+        if (Boolean.TRUE.equals(cmd.getClientData().get("ignore"))) {
+            LOGGER.debug("GWC geogig truncate post-hook returning, ref '{}' is ignored.", refName);
+            return (T) retVal;
+        }
+
+        if (!success) {
+            LOGGER.info(
+                    "GWC geogig truncate post-hook returning, UpdateRef operation failed on ref '{}'.",
+                    refName);
+            return (T) retVal;
+        }
+
+        final GWC mediator = GWC.get();
+        if (mediator == null) {
+            LOGGER.debug("GWC geogig truncate post-hook returning, GWC mediator not installed?.");
+            return (T) retVal;
+        }
+
+        final Optional<Ref> oldValue = (Optional<Ref>) cmd.getClientData().get("oldValue");
+        final Optional<Ref> newValue = (Optional<Ref>) retVal;// == oldValue if the ref was deleted
+
+        checkState(oldValue != null, "oldValue not captured in pre-hook");
+
+        if (oldValue.equals(newValue)) {
+            LOGGER.debug("GWC geogig truncate post-hook returning, ref '{}' didn't change ({}).",
+                    refName, oldValue);
+            return (T) retVal;
+        }
+
+        List<LayerInfo> affectedLayers;
+        final String newRefName = newValue.get().getName();
+        Stopwatch sw = Stopwatch.createStarted();
+        affectedLayers = findAffectedLayers(mediator, command.context(), newRefName);
+        LOGGER.debug("GWC geogig truncate post-hook found {} affected layers on branch {} in {}.",
+                affectedLayers.size(), refName, sw.stop());
+
+        for (LayerInfo layer : affectedLayers) {
+            truncate(mediator, command.context(), layer, oldValue, newValue);
+        }
+        return (T) retVal;
     }
 }
