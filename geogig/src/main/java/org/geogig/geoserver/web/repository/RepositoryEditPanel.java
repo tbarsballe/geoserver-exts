@@ -26,12 +26,9 @@ public class RepositoryEditPanel extends FormComponentPanel<RepositoryInfo> {
 
     private TextField<String> name;
 
-    private final boolean isNew;
-
     public RepositoryEditPanel(final String wicketId, IModel<RepositoryInfo> model,
             final boolean isNew) {
         super(wicketId, model);
-        this.isNew = isNew;
 
         IModel<String> parentModel = new PropertyModel<String>(model, "parentDirectory");
         parent = new GeoGigDirectoryFormComponent("parentDirectory", parentModel);
