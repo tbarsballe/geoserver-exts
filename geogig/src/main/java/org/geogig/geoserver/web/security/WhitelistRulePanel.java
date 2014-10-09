@@ -1,7 +1,9 @@
 package org.geogig.geoserver.web.security;
 
-import java.util.Arrays;
-import java.util.Comparator;
+import static com.google.common.collect.Lists.newArrayList;
+
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.wicket.Component;
@@ -13,161 +15,58 @@ import org.apache.wicket.markup.html.image.Image;
 import org.apache.wicket.markup.html.panel.Fragment;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
-import org.apache.wicket.model.PropertyModel;
+import org.geogig.geoserver.config.ConfigStore;
 import org.geogig.geoserver.config.WhitelistRule;
+import org.geoserver.platform.GeoServerExtensions;
 import org.geoserver.web.GeoServerApplication;
+import org.geoserver.web.wicket.GeoServerDataProvider;
 import org.geoserver.web.wicket.GeoServerDataProvider.Property;
-import org.geoserver.web.wicket.GeoServerDataProvider.PropertyPlaceholder;
+import org.geoserver.web.wicket.GeoServerTablePanel;
 import org.geoserver.web.wicket.ImageAjaxLink;
-import org.geoserver.web.wicket.ReorderableTablePanel;
 
-public class WhitelistRulePanel extends ReorderableTablePanel<WhitelistRule> {
+import com.google.common.collect.ImmutableList;
+
+public class WhitelistRulePanel extends GeoServerTablePanel<WhitelistRule> {
 
     private static final long serialVersionUID = 6946747039214324528L;
 
-    private static final Property<WhitelistRule> EDIT = new PropertyPlaceholder<WhitelistRule>("");
-
-    private static final Property<WhitelistRule> REMOVE = new PropertyPlaceholder<WhitelistRule>("");
-
-    private static final Property<WhitelistRule> NAME = new Property<WhitelistRule>() {
-
-        private static final long serialVersionUID = 5237551692154668294L;
-
-        @Override
-        public boolean isSearchable() {
-            return false;
-        }
-
-        @Override
-        public boolean isVisible() {
-            return true;
-        }
-
-        /**
-         * @return {@code null} to forbid sorting by name
-         */
-        @Override
-        public Comparator<WhitelistRule> getComparator() {
-            return null;
-        }
-
-        @SuppressWarnings("rawtypes")
-        @Override
-        public IModel getModel(IModel m) {
-            return new PropertyModel(m, "name");
-        }
-
-        @Override
-        public Object getPropertyValue(WhitelistRule rule) {
-            return rule.getName();
-        }
-
-        @Override
-        public String getName() {
-            return "Name";
-        }
-    };
-
-    private static final Property<WhitelistRule> PATTERN = new Property<WhitelistRule>() {
-
-        private static final long serialVersionUID = 5035796335685759752L;
-
-        @Override
-        public boolean isSearchable() {
-            return false;
-        }
-
-        @Override
-        public boolean isVisible() {
-            return true;
-        }
-
-        /**
-         * @return {@code null} to forbid sorting by pattern
-         */
-        @Override
-        public Comparator<WhitelistRule> getComparator() {
-            return null;
-        }
-
-        @SuppressWarnings("rawtypes")
-        @Override
-        public IModel getModel(IModel m) {
-            return new PropertyModel(m, "pattern");
-        }
-
-        @Override
-        public Object getPropertyValue(WhitelistRule rule) {
-            return rule.getPattern();
-        }
-
-        @Override
-        public String getName() {
-            return "Pattern";
-        }
-    };
-
-    private static final Property<WhitelistRule> REQUIRE_SSL = new Property<WhitelistRule>() {
-
-        private static final long serialVersionUID = 3194344616642281474L;
-
-        @Override
-        public boolean isSearchable() {
-            return false;
-        }
-
-        @Override
-        public boolean isVisible() {
-            return true;
-        }
-
-        /**
-         * @return {@code null} to forbid sorting
-         */
-        @Override
-        public Comparator<WhitelistRule> getComparator() {
-            return null;
-        }
-
-        @SuppressWarnings("rawtypes")
-        @Override
-        public IModel getModel(IModel m) {
-            return new PropertyModel(m, "requireSSL");
-        }
-
-        @Override
-        public Object getPropertyValue(WhitelistRule rule) {
-            return rule.isRequireSSL();
-        }
-
-        @Override
-        public String getName() {
-            return "Require SSL";
-        }
-    };
-
-    private static List<Property<WhitelistRule>> PROPERTIES = Arrays.asList(NAME, PATTERN,
-            REQUIRE_SSL, EDIT, REMOVE);
-
     private final ModalWindow window;
 
-    private final List<WhitelistRule> items;
+    private WhitelistRulesProvider provider;
 
-    public WhitelistRulePanel(String id, List<WhitelistRule> items, ModalWindow window) {
-        super(id, items, PROPERTIES);
+    public WhitelistRulePanel(String id, ModalWindow window) {
+        super(id, new WhitelistRulesProvider());
+        super.setOutputMarkupId(true);
+        super.setSelectable(false);
+        super.setSortable(true);
+        super.setFilterable(true);
+        super.setFilterVisible(true);
+        super.setPageable(true);
+        this.provider = (WhitelistRulesProvider) super.getDataProvider();
         this.window = window;
-        this.items = items;
+    }
+
+    public void save() {
+        provider.save();
+    }
+
+    public void add(WhitelistRule rule) {
+        provider.add(rule);
+    }
+
+    public List<WhitelistRule> getRules() {
+        return provider.getItems();
     }
 
     @SuppressWarnings("rawtypes")
     @Override
     public Component getComponentForProperty(String id, final IModel model,
             Property<WhitelistRule> property) {
-        if (property == NAME) {
+        if (property == WhitelistRulesProvider.NAME) {
             return new Label(id, property.getModel(model));
-        } else if (property == PATTERN) {
+        } else if (property == WhitelistRulesProvider.PATTERN) {
             return new Label(id, property.getModel(model));
-        } else if (property == REQUIRE_SSL) {
+        } else if (property == WhitelistRulesProvider.REQUIRE_SSL) {
             final WhitelistRule rule = (WhitelistRule) model.getObject();
             @SuppressWarnings("deprecation")
             Fragment fragment = new Fragment(id, "image.cell");
@@ -178,7 +77,7 @@ public class WhitelistRulePanel extends ReorderableTablePanel<WhitelistRule> {
                         "../lock_open.png")));
             }
             return fragment;
-        } else if (property == EDIT) {
+        } else if (property == WhitelistRulesProvider.EDIT) {
             ImageAjaxLink link = new ImageAjaxLink(id, new ResourceReference(
                     GeoServerApplication.class, "img/icons/silk/pencil.png")) {
 
@@ -186,16 +85,16 @@ public class WhitelistRulePanel extends ReorderableTablePanel<WhitelistRule> {
 
                 @Override
                 public void onClick(AjaxRequestTarget target) {
-                    window.setInitialHeight(300);
-                    window.setInitialWidth(300);
+                    window.setInitialHeight(360);
+                    window.setInitialWidth(400);
                     window.setTitle(new Model<String>("Edit whitelist rule"));
                     window.setContent(new WhitelistRuleEditor(window.getContentId(), model, window,
-                            WhitelistRulePanel.this));
+                            WhitelistRulePanel.this, false));
                     window.show(target);
                 }
             };
             return link;
-        } else if (property == REMOVE) {
+        } else if (property == WhitelistRulesProvider.REMOVE) {
             final WhitelistRule rule = (WhitelistRule) model.getObject();
             ImageAjaxLink link = new ImageAjaxLink(id, new ResourceReference(
                     GeoServerApplication.class, "img/icons/silk/delete.png")) {
@@ -204,7 +103,8 @@ public class WhitelistRulePanel extends ReorderableTablePanel<WhitelistRule> {
 
                 @Override
                 protected void onClick(AjaxRequestTarget target) {
-                    items.remove(rule);
+                    provider.remove(rule);
+                    provider.save();
                     target.addComponent(WhitelistRulePanel.this);
                 }
             };
@@ -215,5 +115,64 @@ public class WhitelistRulePanel extends ReorderableTablePanel<WhitelistRule> {
             throw new IllegalArgumentException("Property " + property
                     + " is not associated with this component.");
         }
+    }
+
+    private static class WhitelistRulesProvider extends GeoServerDataProvider<WhitelistRule> {
+
+        private static final long serialVersionUID = 7545140184962032147L;
+
+        private List<WhitelistRule> rules;
+
+        @Override
+        protected List<Property<WhitelistRule>> getProperties() {
+            return PROPERTIES;
+        }
+
+        public void add(WhitelistRule rule) {
+            getItems().add(rule);
+        }
+
+        public void remove(WhitelistRule rule) {
+            getItems().remove(rule);
+        }
+
+        public void save() {
+            final ConfigStore configStore;
+            configStore = (ConfigStore) GeoServerExtensions.bean("geogigConfigStore");
+            List<WhitelistRule> rules = getItems();
+            configStore.saveWhitelist(rules);
+        }
+
+        @Override
+        protected List<WhitelistRule> getItems() {
+            if (rules == null) {
+                ConfigStore configStore = (ConfigStore) GeoServerExtensions
+                        .bean("geogigConfigStore");
+                try {
+                    rules = new ArrayList<>(configStore.getWhitelist());
+                } catch (IOException e) {
+                    rules = newArrayList();
+                }
+            }
+            return rules;
+        }
+
+        private static final Property<WhitelistRule> EDIT = new PropertyPlaceholder<WhitelistRule>(
+                "");
+
+        private static final Property<WhitelistRule> REMOVE = new PropertyPlaceholder<WhitelistRule>(
+                "");
+
+        private static final Property<WhitelistRule> NAME = new BeanProperty<>("Name", "name");
+
+        private static final Property<WhitelistRule> PATTERN = new BeanProperty<>("Pattern",
+                "pattern");
+
+        private static final Property<WhitelistRule> REQUIRE_SSL = new BeanProperty<>(
+                "Require SSL", "requireSSL");
+
+        private static List<Property<WhitelistRule>> PROPERTIES = ImmutableList.of(NAME, PATTERN,
+                REQUIRE_SSL, EDIT, REMOVE);
+
     }
 }
