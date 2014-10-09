@@ -3,6 +3,7 @@ package org.geogig.geoserver.security;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.geogig.geoserver.config.ConfigStore;
@@ -82,11 +83,16 @@ public final class NetworkSecurityHook implements CommandHook {
             throw new CannotRunGeogigOperationException("Unable to obtain the remotes white list: "
                     + e.getMessage(), e);
         }
-        for (WhitelistRule rule : rules) {
-            if (ruleBlocks(rule, remoteUrl)) {
-                String msg = String.format("Blocked %s. Remote: %s", rule, remoteUrl);
-                throw new CannotRunGeogigOperationException(msg);
+        if (!rules.isEmpty()) {
+            for (WhitelistRule rule : rules) {
+                if (!ruleBlocks(rule, remoteUrl)) {
+                    return;// break fast if any of the rules doesn't block the url
+                }
             }
+
+            String msg = String.format("Remote %s does not pass any white list rule:", remoteUrl,
+                    new ArrayList<>(rules));
+            throw new CannotRunGeogigOperationException(msg);
         }
     }
 
