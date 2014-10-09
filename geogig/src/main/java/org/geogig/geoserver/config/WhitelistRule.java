@@ -41,4 +41,11 @@ public final class WhitelistRule implements Serializable {
     public boolean isRequireSSL() {
         return requireSSL;
     }
+
+    @Override
+    public String toString() {
+        return new StringBuilder("Rule[").append("name: ").append(name).append(", pattern: '")
+                .append(pattern).append("'").append(requireSSL ? "" : " (requires SSL)")
+                .append("]").toString();
+    }
 }
