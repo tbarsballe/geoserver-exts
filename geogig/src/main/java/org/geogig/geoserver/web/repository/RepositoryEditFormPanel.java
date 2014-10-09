@@ -143,7 +143,7 @@ public abstract class RepositoryEditFormPanel extends Panel {
                 IModel<RemoteInfo> model = new Model<RemoteInfo>(ri);
                 RemotesListPanel table = RepositoryEditFormPanel.this.remotes;
                 RemoteEditPanel editPanel = new RemoteEditPanel(popupWindow.getContentId(), model,
-                        popupWindow, table, true);
+                        popupWindow, table);
 
                 popupWindow.setContent(editPanel);
                 popupWindow.setTitle(new ResourceModel("RemoteEditPanel.title"));

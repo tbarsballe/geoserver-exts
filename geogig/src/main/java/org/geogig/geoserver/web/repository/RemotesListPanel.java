@@ -103,7 +103,7 @@ public class RemotesListPanel extends GeoServerTablePanel<RemoteInfo> {
                 IModel<RemoteInfo> model = this.getModel();
                 RemotesListPanel table = RemotesListPanel.this;
                 RemoteEditPanel editPanel = new RemoteEditPanel(popupWindow.getContentId(), model,
-                        popupWindow, table, false);
+                        popupWindow, table);
 
                 popupWindow.setContent(editPanel);
                 popupWindow.setTitle(new ResourceModel("RemoteEditPanel.title"));
