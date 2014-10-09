@@ -29,7 +29,7 @@ public class RemotesPage extends GeoServerSecuredPage {
     private ModalWindow window;
 
     public RemotesPage() {
-        add(new SecurityLogsPanel("table"));
+        add(new SecurityLogsPanel("securityLogsPanel"));
         ConfigStore configStore = (ConfigStore) GeoServerExtensions.bean("geogigConfigStore");
         try {
             rules = configStore.getWhitelist();
