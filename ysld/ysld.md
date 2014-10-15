@@ -45,7 +45,7 @@ The following is an outline of the Ysld language:
 
       symbolizer: &symbolizer
         geometry: <expression>
-        options: <options>
+        <options>
 
     #
     # start of syntax
@@ -59,7 +59,7 @@ The following is an outline of the Ysld language:
       abstract: <text>
       transform:
         name: <text>
-        params: <options>
+        params: <args>
       rules:
       - name: <text>
         title: <text>
@@ -180,11 +180,12 @@ Symbolizer options are specified as normal mappings on a symbolizer object.
 For example:
 
     text:
-      options:
-        followLine: true
-        maxAngleDelta: 90
-        maxDisplacement: 400
-        repeat: 150
+      -followLine: true
+      -maxAngleDelta: 90
+      -maxDisplacement: 400
+      -repeat: 150
+
+Options start with the prefix '-' and are limited to numeric, bool and text (no expressions).
 
 ## Arrays
 
