@@ -174,18 +174,23 @@ One of the values in the tuple may be omitted as in:
     - scale: (,10000)
     - scale: (10000,)
 
-## Options
+## Hints
 
-Symbolizer options are specified as normal mappings on a symbolizer object. 
+Symbolizer hints are specified as normal mappings on a symbolizer object. 
 For example:
 
     text:
-      -followLine: true
-      -maxAngleDelta: 90
-      -maxDisplacement: 400
-      -repeat: 150
+      +followLine: true
+      +maxAngleDelta: 90
+      +maxDisplacement: 400
+      +repeat: 150
 
-Options start with the prefix '-' and are limited to numeric, bool and text (no expressions).
+Hints start with the prefix '+' and are limited to numeric, bool and text (no expressions).
+
+If you are checking the GeoServer docs hints are called "vendor options" (and only documented for text symbolizer):
+
+* [labeling](http://docs.geoserver.org/latest/en/user/styling/sld-reference/labeling.html)
+* [foss4g style workshop](https://github.com/boundlessgeo/workshops/tree/master/workshops/geoserver/style/source/style)
 
 ## Arrays
 
