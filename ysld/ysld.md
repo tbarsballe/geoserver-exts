@@ -180,8 +180,9 @@ Symbolizer hints are specified as normal mappings on a symbolizer object. Hints 
 
 If you are checking the GeoServer docs hints are called "vendor options":
 
-* [labeling](http://docs.geoserver.org/latest/en/user/styling/sld-reference/labeling.html)
-* [foss4g style workshop](https://github.com/boundlessgeo/workshops/tree/master/workshops/geoserver/style/source/style)
+* [user manual](http://docs.geoserver.org/latest/en/user/styling/sld-reference/labeling.html)
+* [style workshop](https://github.com/boundlessgeo/workshops/tree/master/workshops/geoserver/style/source/style)
+* [javadocs](http://docs.geotools.org/stable/javadocs/org/geotools/styling/TextSymbolizer.html)
 
 Hints can be used with any symbolizer:
 
