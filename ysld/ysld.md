@@ -176,21 +176,91 @@ One of the values in the tuple may be omitted as in:
 
 ## Hints
 
-Symbolizer hints are specified as normal mappings on a symbolizer object. 
-For example:
+Symbolizer hints are specified as normal mappings on a symbolizer object. Hints start with the prefix 'x-' and are limited to numeric, bool and text (no expressions).
 
-    text:
-      +followLine: true
-      +maxAngleDelta: 90
-      +maxDisplacement: 400
-      +repeat: 150
-
-Hints start with the prefix '+' and are limited to numeric, bool and text (no expressions).
-
-If you are checking the GeoServer docs hints are called "vendor options" (and only documented for text symbolizer):
+If you are checking the GeoServer docs hints are called "vendor options":
 
 * [labeling](http://docs.geoserver.org/latest/en/user/styling/sld-reference/labeling.html)
 * [foss4g style workshop](https://github.com/boundlessgeo/workshops/tree/master/workshops/geoserver/style/source/style)
+
+Hints can be used with any symbolizer:
+
+    point:
+      ...
+      # No labels should overlap this feature, used to ensure point graphics are clearly visible
+      # and not obscured by text
+      x-labelObstacle: true
+
+The majority of hints focus on controlling text:
+
+    text:
+      # When false does not allow labels on lines to get beyond the beginning/end of the line. 
+      # By default a partial overrun is tolerated, set to false to disallow it.
+      x-allowOverruns: false
+      
+      # Number of pixels are which a long label should be split into multiple lines. Works on all
+      # geometries, on lines it is mutually exclusive with the followLine option
+      x-autoWrap: true
+      
+      # Enables conflict resolution (default, true) meaning no two labels will be allowed to
+      # overlap. Symbolizers with conflict resolution off are considered outside of the
+      # conflict resolution game, they don't reserve area and can overlap with other labels.
+      x-conflictResolution: true
+      
+      # When true activates curved labels on linear geometries. The label will follow the shape of 
+      # the current line, as opposed to being drawn a tangent straight line
+      x-followLine: true
+      
+      # When true forces labels to a readable orientation, when false they make follow the line
+      # orientation even if that means the label will look upside down (useful when using
+      # TTF symbol fonts to add direction markers along a line)
+      x-forceLeftToRight: true
+      
+      # Sets the percentage of the label that must sit inside the geometry to allow drawing
+      # the label. Works only on polygons.
+      x-goodnessOfFit: 90
+      
+      # Pixels between the stretched graphic and the text, applies when graphic stretching is in use
+      x-graphic-margin: 10
+      
+      # Stretches the graphic below a label to fit the label size. Possible values are 'stretch',
+      # 'proportional'.
+      x-graphic-resize: true
+
+      # If true, geometries with the same labels are grouped and considered a single entity to be
+      # abeled. This allows to avoid or control repeated labels
+      x-group: 'zone'
+
+      # When false,  only the biggest geometry in a group is labelled (the biggest is obtained by
+      # merging, when possible, the original geometries). When true, also the smaller items in the
+      # group are labeled. Works only on lines at the moment.
+      x-labelAllGroup: false
+      
+      # When positive it's the desired distance between two subsequent labels on a "big" geometry.
+      # Works only on lines at the moment. If zero only one label is drawn no matter how big the
+      # geometry is
+      x-repeat: 0
+
+      # When drawing curved labels, max allowed angle between two subsequent characters. Higher
+      # angles may cause disconnected words or overlapping characters
+      x-maxAngleDelta: 90
+
+      # The distance, in pixel, a label can be displaced from its natural position in an attempt to
+      # find a position that does not conflict with already drawn labels.
+      x-maxDisplacement: 400
+      
+      # Minimum distance between two labels in the same label group. To be used when both
+      # displacement and repeat are used to avoid having two labels too close to each other
+      x-minGroupDistance: 3
+
+      # Option to truncate labels placed on the border of the displayArea (display partial labels).
+      x-partials: true
+      
+      # Option overriding manual rotation to align label rotation automatically for polygons.
+      x-polygonAlign: true
+      
+      # The minimum distance between two labels, in pixels
+      x-spaceAround: 50
 
 ## Arrays
 
