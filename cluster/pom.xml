@@ -121,7 +121,7 @@
   </build>
   
   <properties>
-    <hazelcast.version>2.3.1</hazelcast.version>
+    <hazelcast.version>3.3.1</hazelcast.version>
   </properties>
 </project>
 
