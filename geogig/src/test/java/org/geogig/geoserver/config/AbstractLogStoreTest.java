@@ -36,6 +36,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
@@ -61,7 +62,7 @@ public class AbstractLogStoreTest {
         File resourceDirectory = tmpDir.getRoot();
         resourceStore = new FileSystemResourceStore(resourceDirectory);
         logStore = new LogStore(resourceStore);
-
+        SecurityContextHolder.clearContext();
         setUpConfigFile();
     }
 

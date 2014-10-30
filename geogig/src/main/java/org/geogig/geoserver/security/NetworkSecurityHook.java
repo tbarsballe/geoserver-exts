@@ -5,6 +5,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.geogig.geoserver.config.ConfigStore;
 import org.geogig.geoserver.config.WhitelistRule;
@@ -17,6 +19,7 @@ import org.locationtech.geogig.api.plumbing.LsRemote;
 import org.locationtech.geogig.api.porcelain.CloneOp;
 import org.locationtech.geogig.api.porcelain.FetchOp;
 import org.locationtech.geogig.api.porcelain.PushOp;
+import org.springframework.security.web.util.IpAddressMatcher;
 
 import com.google.common.base.Optional;
 
@@ -90,7 +93,7 @@ public final class NetworkSecurityHook implements CommandHook {
                 }
             }
 
-            String msg = String.format("Remote %s does not pass any white list rule:", remoteUrl,
+            String msg = String.format("Remote %s does not pass any white list rule: %s", remoteUrl,
                     new ArrayList<>(rules));
             throw new CannotRunGeogigOperationException(msg);
         }
@@ -113,11 +116,31 @@ public final class NetworkSecurityHook implements CommandHook {
             return true;
         }
 
-        if (rule.getPattern().startsWith("[.*]")) {
+        String pattern = rule.getPattern();
+        if (pattern.startsWith("[.*]")) {
             final String effectivePattern = rule.getPattern().substring("[.*]".length());
-            return host.endsWith(effectivePattern);
+            return !host.endsWith(effectivePattern);
         } else {
-            return host.equals(rule.getPattern());
+            Matcher matcher = IP_ADDRESS_OR_CIDR_RANGE.matcher(pattern);
+            String effectiveHost;
+            if (host.startsWith("[") && host.endsWith("]")) { // signifies ipv6 address
+                effectiveHost = host.substring(1, host.length() - 1);
+            } else {
+                effectiveHost = host;
+            }
+            if (matcher.matches()) {
+                try {
+                    IpAddressMatcher ipMatcher = new IpAddressMatcher(matcher.group());
+                    return !ipMatcher.matches(effectiveHost);
+                } catch (IllegalArgumentException e) {
+                    // still account for malformed addresses since the regex is too loose
+                    return false;
+                }
+            } else {
+                return !host.equalsIgnoreCase(pattern);
+            }
         }
     }
+
+    private static final Pattern IP_ADDRESS_OR_CIDR_RANGE = Pattern.compile("^(([:\\p{XDigit}]+)|([\\d\\.]+))(/\\d+)?$");
 }
