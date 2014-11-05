@@ -263,6 +263,46 @@ The majority of hints focus on controlling text:
       # The minimum distance between two labels, in pixels
       x-spaceAround: 50
 
+Additional hints for working with graphic fills:
+
+     # Used to specify top, right, bottom and left margins around the graphic used in the fill.
+     # Allowed values:
+     # top right bottom left (one explicit value per margin)
+     x-graphic-margin: 5 10 5 10
+     
+     # top right-left bottom (three values, with right and left sharing the same value)
+     x-graphic-margin: 5 10 5
+     
+     # top-bottom right-left (two values, top and bottom sharing the same value)
+     x-graphic-margin: 5 10
+     
+     # top-right-bottom-left (single value for all four margins)
+     x-graphic-margin: 5
+     
+     # Activates random distribution of symbol.
+     # none disables random distribution
+     x-random: none
+     
+     # free generates a completely random distribution
+     x-random: free
+     # grid will generate a regular grid of positions, and only randomizes the position of the symbol
+     # around the cell centers, providing a more even distribution in space
+     x-random: grid
+     
+     # Determines the size the the texture fill tile that will contain the randomly distributed symbols.
+     # A smaller tile size will create a more regular pattern
+     x-random-tile-size: 10
+     
+     # Activates random symbol rotation. Possible values are none (no rotation) or free.
+     x-random-rotation: free
+     
+     # Determines the number of symbols in the tile. Increasing this number will generate a more dense distribution of symbols
+     x-random-symbol-count: 5
+     
+     # The “seed” used to generate the random distribution. Changing this value will result in a
+     # different symbol distribution.
+     x-random-seed property: 42
+
 ## Arrays
 
 Lists and arrays are specified as space delimited. For example:
