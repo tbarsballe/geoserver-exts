@@ -12,14 +12,21 @@
   <name>OpenGeo GeoServer Extensions</name>
 
   <organization>
-    <name>OpenGeo</name>
-    <url>http://www.opengeo.org</url>
+    <name>Boundless</name>
+    <url>http://http://boundlessgeo.com</url>
   </organization>
 
   <licenses>
     <license>
       <name>General Public License (GPL)</name>
+      <distribution>repo</distribution>
       <url>http://www.gnu.org/copyleft/gpl.txt</url>
+    </license>
+    <license>
+      <name>End User License Agreement</name>
+      <url>http://boundlessgeo.com/site-map/legal/opengeo-suite-eula/</url>
+      <distribution>manual</distribution>
+      <comments>License Agreement for OpenGeo Suite customers using binary distribution</comments>
     </license>
   </licenses>
 
