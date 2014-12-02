@@ -8,6 +8,7 @@ import org.geotools.data.DataStore;
 
 public class MongoDataStoreFactory extends AbstractDataStoreFactory {
 
+    public static final Param NAMESPACE = new Param("namespace", String.class, "Namespace prefix", false);
     public static final Param DATASTORE_URI = new Param("data_store", String.class, "MongoDB URI", true, "mongodb://localhost/<database name>");
     public static final Param SCHEMASTORE_URI = new Param("schema_store", String.class, "Schema Store URI", true, "file://<absolute path>");
     
@@ -23,13 +24,18 @@ public class MongoDataStoreFactory extends AbstractDataStoreFactory {
     
     @Override
     public Param[] getParametersInfo() {
-        return new Param[]{DATASTORE_URI, SCHEMASTORE_URI};
+        return new Param[]{NAMESPACE, DATASTORE_URI, SCHEMASTORE_URI};
     }
 
     @Override
     public MongoDataStore createDataStore(Map<String, Serializable> params) throws IOException {
-        return new MongoDataStore(
+        MongoDataStore dataStore = new MongoDataStore(
                 (String)DATASTORE_URI.lookUp(params), (String)SCHEMASTORE_URI.lookUp(params));
+        String uri = (String) NAMESPACE.lookUp(params);
+        if (uri != null) {
+            dataStore.setNamespaceURI(uri);
+        }
+        return dataStore;
     }
 
     @Override
