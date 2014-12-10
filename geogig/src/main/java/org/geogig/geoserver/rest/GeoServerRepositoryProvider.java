@@ -31,17 +31,33 @@ public class GeoServerRepositoryProvider implements RepositoryProvider {
         return Optional.fromNullable(repo);
     }
 
+    public Optional<RepositoryInfo> findRepository(Request request) {
+        Optional<String> repositoryId = getRepositoryId(request);
+        if (!repositoryId.isPresent()) {
+            return Optional.absent();
+        }
+        try {
+            String repoId = repositoryId.get();
+            RepositoryManager repositoryManager = RepositoryManager.get();
+            RepositoryInfo repositoryInfo;
+            repositoryInfo = repositoryManager.get(repoId);
+            return Optional.of(repositoryInfo);
+        } catch (NoSuchElementException | IOException e) {
+            return Optional.absent();
+        }
+    }
+
     public List<RepositoryInfo> findRepositories() {
         return RepositoryManager.get().getAll();
     }
 
     @Override
     public Optional<GeoGIG> getGeogig(Request request) {
-        Optional<String> repositoryName = getRepositoryId(request);
-        if (!repositoryName.isPresent()) {
+        Optional<String> repositoryId = getRepositoryId(request);
+        if (!repositoryId.isPresent()) {
             return Optional.absent();
         }
-        GeoGIG geogig = findRepository(request, repositoryName.get());
+        GeoGIG geogig = findRepository(request, repositoryId.get());
         return Optional.of(geogig);
     }
 

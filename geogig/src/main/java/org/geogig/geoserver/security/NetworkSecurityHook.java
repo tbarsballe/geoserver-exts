@@ -3,7 +3,10 @@ package org.geogig.geoserver.security;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.geogig.geoserver.config.ConfigStore;
 import org.geogig.geoserver.config.WhitelistRule;
@@ -16,6 +19,7 @@ import org.locationtech.geogig.api.plumbing.LsRemote;
 import org.locationtech.geogig.api.porcelain.CloneOp;
 import org.locationtech.geogig.api.porcelain.FetchOp;
 import org.locationtech.geogig.api.porcelain.PushOp;
+import org.springframework.security.web.util.IpAddressMatcher;
 
 import com.google.common.base.Optional;
 
@@ -34,31 +38,25 @@ public final class NetworkSecurityHook implements CommandHook {
             Optional<Remote> remote = lsRemote.getRemote();
             if (remote.isPresent()) {
                 String url = remote.get().getFetchURL();
-                if (isRestricted(url)) {
-                    throw new CannotRunGeogigOperationException();
-                }
+                checkRestricted(url);
             }
         } else if (command instanceof CloneOp) {
             CloneOp cloneOp = (CloneOp) command;
             Optional<String> url = cloneOp.getRepositoryURL();
-            if (url.isPresent() && isRestricted(url.get())) {
-                throw new CannotRunGeogigOperationException();
+            if (url.isPresent()) {
+                checkRestricted(url.get());
             }
         } else if (command instanceof FetchOp) {
             FetchOp fetchOp = (FetchOp) command;
             for (Remote r : fetchOp.getRemotes()) {
-                if (isRestricted(r.getFetchURL())) {
-                    throw new CannotRunGeogigOperationException();
-                }
+                checkRestricted(r.getFetchURL());
             }
         } else if (command instanceof PushOp) {
             PushOp pushOp = (PushOp) command;
             Optional<Remote> remote = pushOp.getRemote();
             if (remote.isPresent()) {
-                String url = remote.get().getFetchURL();
-                if (isRestricted(url)) {
-                    throw new CannotRunGeogigOperationException();
-                }
+                String url = remote.get().getPushURL();
+                checkRestricted(url);
             }
         }
 
@@ -78,20 +76,27 @@ public final class NetworkSecurityHook implements CommandHook {
                 || FetchOp.class.equals(clazz) || PushOp.class.equals(clazz);
     }
 
-    private final boolean isRestricted(String url) {
+    private final void checkRestricted(String remoteUrl) throws CannotRunGeogigOperationException {
+
         ConfigStore configStore = (ConfigStore) GeoServerExtensions.bean("geogigConfigStore");
+        List<WhitelistRule> rules;
         try {
-            List<WhitelistRule> rules = configStore.getWhitelist();
+            rules = configStore.getWhitelist();
+        } catch (IOException e) {
+            throw new CannotRunGeogigOperationException("Unable to obtain the remotes white list: "
+                    + e.getMessage(), e);
+        }
+        if (!rules.isEmpty()) {
             for (WhitelistRule rule : rules) {
-                if (ruleBlocks(rule, url)) {
-                    return true;
+                if (!ruleBlocks(rule, remoteUrl)) {
+                    return;// break fast if any of the rules doesn't block the url
                 }
             }
-        } catch (IOException e) {
-            // LOG.error(e);
-            return true; // fail closed
+
+            String msg = String.format("Remote %s does not pass any white list rule: %s", remoteUrl,
+                    new ArrayList<>(rules));
+            throw new CannotRunGeogigOperationException(msg);
         }
-        return false;
     }
 
     private final boolean ruleBlocks(WhitelistRule rule, String url) {
@@ -102,8 +107,8 @@ public final class NetworkSecurityHook implements CommandHook {
             return false;
         }
 
-        if (parsed.getHost() == null || parsed.getProtocol() == null
-                || parsed.getProtocol().equals("file")) {
+        final String host = parsed.getHost();
+        if (host == null || parsed.getProtocol() == null || parsed.getProtocol().equals("file")) {
             return false;
         }
 
@@ -111,11 +116,31 @@ public final class NetworkSecurityHook implements CommandHook {
             return true;
         }
 
-        if (rule.getPattern().startsWith("[.*]")) {
+        String pattern = rule.getPattern();
+        if (pattern.startsWith("[.*]")) {
             final String effectivePattern = rule.getPattern().substring("[.*]".length());
-            return parsed.getHost().endsWith(effectivePattern);
+            return !host.endsWith(effectivePattern);
         } else {
-            return parsed.getHost().equals(rule.getPattern());
+            Matcher matcher = IP_ADDRESS_OR_CIDR_RANGE.matcher(pattern);
+            String effectiveHost;
+            if (host.startsWith("[") && host.endsWith("]")) { // signifies ipv6 address
+                effectiveHost = host.substring(1, host.length() - 1);
+            } else {
+                effectiveHost = host;
+            }
+            if (matcher.matches()) {
+                try {
+                    IpAddressMatcher ipMatcher = new IpAddressMatcher(matcher.group());
+                    return !ipMatcher.matches(effectiveHost);
+                } catch (IllegalArgumentException e) {
+                    // still account for malformed addresses since the regex is too loose
+                    return false;
+                }
+            } else {
+                return !host.equalsIgnoreCase(pattern);
+            }
         }
     }
+
+    private static final Pattern IP_ADDRESS_OR_CIDR_RANGE = Pattern.compile("^(([:\\p{XDigit}]+)|([\\d\\.]+))(/\\d+)?$");
 }

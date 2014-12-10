@@ -67,7 +67,9 @@ public class RepositoriesListPanel extends GeoServerTablePanel<RepositoryInfo> {
             return nameLink(id, itemModel);
         } else if (property == RepositoryProvider.LOCATION) {
             String location = (String) RepositoryProvider.LOCATION.getModel(itemModel).getObject();
-            return new Label(id, location);
+            Label label = new Label(id, location);
+            // label.add(new SimpleAttributeModifier("style", "word-wrap:break-word;"));
+            return label;
         } else if (property == RepositoryProvider.REMOVELINK) {
             return removeLink(id, itemModel);
         }

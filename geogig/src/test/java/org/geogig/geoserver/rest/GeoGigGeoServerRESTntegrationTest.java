@@ -115,7 +115,6 @@ public class GeoGigGeoServerRESTntegrationTest extends CatalogRESTTestSupport {
                     + " </connectionParameters>\n"//
                     + "</dataStore>\n";
             message = message.replace("${repository}", repository);
-            System.err.println(message);
 
             Catalog catalog = getCatalog();
             CatalogBuilder catalogBuilder = geogigData.newCatalogBuilder(catalog);
@@ -160,7 +159,6 @@ public class GeoGigGeoServerRESTntegrationTest extends CatalogRESTTestSupport {
                 + " </connectionParameters>\n"//
                 + "</dataStore>\n";
         message = message.replace("${repository}", repository);
-
         Catalog catalog = getCatalog();
         CatalogBuilder catalogBuilder = geogigData.newCatalogBuilder(catalog);
         catalogBuilder.setUpWorkspace("gigws2");

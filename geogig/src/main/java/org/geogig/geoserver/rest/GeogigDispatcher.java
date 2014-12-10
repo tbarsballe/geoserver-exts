@@ -107,6 +107,7 @@ public class GeogigDispatcher extends AbstractController {
         Router osm = new OSMRouter();
         router.attach("/{repository}/osm", osm);
 
+        router.attach("/{repository}.{extension}", RepositoryResource.class);
         router.attach("/{repository}", RepositoryResource.class);
         router.attach("/{repository}/repo", makeRepoRouter());
         router.attach("/{repository}/{command}.{extension}", CommandResource.class);

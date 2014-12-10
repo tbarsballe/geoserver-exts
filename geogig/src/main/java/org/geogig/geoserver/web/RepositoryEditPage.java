@@ -10,11 +10,9 @@ import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.model.IModel;
 import org.geogig.geoserver.config.RepositoryInfo;
 import org.geogig.geoserver.web.repository.RepositoryEditFormPanel;
-import org.geogig.geoserver.web.repository.RepositoryEditPanel;
 import org.geoserver.web.GeoServerSecuredPage;
 
 /**
- * @see RepositoryEditPanel
  */
 public class RepositoryEditPage extends GeoServerSecuredPage {
 

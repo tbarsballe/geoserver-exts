@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import javax.annotation.Nullable;
+
 import org.geoserver.catalog.CascadeDeleteVisitor;
 import org.geoserver.catalog.Catalog;
 import org.geoserver.catalog.CatalogInfo;
@@ -26,15 +28,21 @@ import org.locationtech.geogig.api.ContextBuilder;
 import org.locationtech.geogig.api.GeoGIG;
 import org.locationtech.geogig.api.GlobalContextBuilder;
 import org.locationtech.geogig.api.Ref;
+import org.locationtech.geogig.api.Remote;
 import org.locationtech.geogig.api.porcelain.BranchListOp;
 import org.locationtech.geogig.api.porcelain.InitOp;
 import org.locationtech.geogig.cli.CLIContextBuilder;
 import org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory;
+import org.locationtech.geogig.remote.IRemoteRepo;
+import org.locationtech.geogig.remote.RemoteUtils;
+import org.locationtech.geogig.repository.Hints;
 import org.locationtech.geogig.repository.Repository;
 import org.opengis.filter.Filter;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
 
@@ -242,6 +250,62 @@ public class RepositoryManager {
         RepositoryInfo info = new RepositoryInfo();
         info.setLocation(repositoryDirectory);
         return save(info);
+    }
+
+    /**
+     * Utility class to connect to a remote to see if its alive and we're able to connect.
+     * 
+     * @return the remote's head ref if succeeded
+     * @throws Exception if can't connect for any reason; the exception message should be indicative
+     *         of the problem
+     */
+    public static Ref pingRemote(final String location, @Nullable String user,
+            @Nullable String password) throws Exception {
+
+        if (Strings.isNullOrEmpty(location)) {
+            throw new IllegalArgumentException("Please indicate the remote repository URL");
+        }
+        Remote remote;
+        {
+            String fetchurl = location;
+            String pushurl = location;
+            String name = "tempremote";
+            String fetch = "+" + Ref.HEADS_PREFIX + "*:" + Ref.REMOTES_PREFIX + name + "/*";
+            boolean mapped = false;
+            String mappedBranch = null;
+            remote = new Remote(name, fetchurl, pushurl, fetch, mapped, mappedBranch, user,
+                    password);
+        }
+
+        return pingRemote(remote);
+    }
+
+    private static Ref pingRemote(Remote remote) throws Exception {
+
+        Optional<IRemoteRepo> remoteRepo;
+        try {
+            Hints hints = Hints.readOnly();
+            remoteRepo = RemoteUtils.newRemote(GlobalContextBuilder.builder.build(hints), remote,
+                    null, null);
+            if (!remoteRepo.isPresent()) {
+                throw new IllegalArgumentException("Repository not found or not reachable");
+            } else {
+                IRemoteRepo repo = remoteRepo.get();
+                try {
+                    repo.open();
+                    Ref head = repo.headRef();
+                    return head;
+                } finally {
+                    try {
+                        repo.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unable to connect: " + e.getMessage(), e);
+        }
     }
 
 }
