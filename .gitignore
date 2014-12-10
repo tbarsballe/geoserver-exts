@@ -11,3 +11,4 @@ target/
 .project
 .settings
 .metadata
+git.properties
