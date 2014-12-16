@@ -15,6 +15,10 @@
    <bean id="hzCluster" 
          class="org.geoserver.cluster.hazelcast.HzCluster">
       <property name="dataDirectory" ref="dataDirectory"/>
+      <property name="rawCatalog" ref="rawCatalog"/>
    </bean>
 
+   <bean id="hzCacheProvider" class="org.geoserver.cluster.hazelcast.HzCacheProvider">
+      <constructor-arg ref="xstreamPersisterFactory"/>
+   </bean>
 </beans>

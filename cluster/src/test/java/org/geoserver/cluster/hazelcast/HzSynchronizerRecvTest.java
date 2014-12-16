@@ -1,16 +1,22 @@
 package org.geoserver.cluster.hazelcast;
 
-import static org.junit.Assert.*;
-import static org.easymock.EasyMock.*;
-import static org.hamcrest.CoreMatchers.*;
+import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.expect;
+import static org.hamcrest.Matchers.hasItems;
+import static org.junit.Assert.assertThat;
 
+import java.util.UUID;
+
+import org.easymock.Capture;
+import org.easymock.EasyMock;
+import org.easymock.IAnswer;
 import org.geoserver.catalog.DataStoreInfo;
+import org.geoserver.catalog.FeatureTypeInfo;
 import org.geoserver.catalog.LayerInfo;
-import org.geoserver.wms.WMSInfo;
-import org.geoserver.wms.WMSInfoImpl;
 import org.geoserver.catalog.WorkspaceInfo;
 import org.geoserver.catalog.impl.DataStoreInfoImpl;
 import org.geoserver.catalog.impl.LayerInfoImpl;
+import org.geoserver.catalog.impl.FeatureTypeInfoImpl;
 import org.geoserver.catalog.impl.WorkspaceInfoImpl;
 import org.geoserver.cluster.ConfigChangeEvent;
 import org.geoserver.cluster.ConfigChangeEvent.Type;
@@ -22,7 +28,10 @@ import org.geoserver.config.SettingsInfo;
 import org.geoserver.config.impl.GeoServerInfoImpl;
 import org.geoserver.config.impl.LoggingInfoImpl;
 import org.geoserver.config.impl.SettingsInfoImpl;
+import org.geoserver.wms.WMSInfo;
+import org.geoserver.wms.WMSInfoImpl;
 import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.hazelcast.core.Message;
@@ -49,17 +58,20 @@ public abstract class HzSynchronizerRecvTest extends HzSynchronizerTest {
             expect(info.getId()).andStubReturn(layerId);
             
             expectationTestDisableLayer(info, layerName, layerId);
+            
         }
         replay(info);
         {
             sync = getSynchronizer();
             sync.initialize(configWatcher);
+            sync.start();
             ConfigChangeEvent evt = new ConfigChangeEvent(layerId, layerName, LayerInfoImpl.class, Type.MODIFY);
             
             // Mock a message coming in from the cluster
             
             mockMessage(evt);
         }
+        
         waitForSync();
         verify(info);
     }
@@ -101,6 +113,47 @@ public abstract class HzSynchronizerRecvTest extends HzSynchronizerTest {
         verify(info, wsInfo);
     }
     
+    protected abstract void expectationTestFTDelete(FeatureTypeInfo info, String ftName, String ftId, String dsId, Class clazz) throws Exception;
+
+    @Test
+    public void testFTDelete() throws Exception {
+        FeatureTypeInfo info;
+        final String ftName = "testFT";
+        final String ftId = "FeatureType-TEST";
+        DataStoreInfo dsInfo;
+        final String dsName = "testStore";
+        final String dsId = "DataStore-TEST";
+        
+        {
+            dsInfo = createMock(DataStoreInfo.class);
+            info = createMock(FeatureTypeInfo.class);
+    
+            expect(dsInfo.getName()).andStubReturn(dsName);
+            expect(dsInfo.getId()).andStubReturn(dsId);
+            
+            expect(info.getName()).andStubReturn(ftName);
+            expect(info.getId()).andStubReturn(ftId);
+            expect(info.getStore()).andStubReturn(dsInfo);
+            
+            expect(catalog.getStore(EasyMock.eq(dsId), EasyMock.anyObject(Class.class))).andStubReturn(dsInfo);;
+            
+            expectationTestFTDelete(info, ftName, ftId, dsId, FeatureTypeInfo.class);
+        }
+        replay(info, dsInfo);
+        {
+            sync = getSynchronizer();
+            sync.initialize(configWatcher);
+            ConfigChangeEvent evt = new ConfigChangeEvent(ftId, ftName, FeatureTypeInfoImpl.class, Type.REMOVE);
+            evt.setStoreId(dsId);
+            
+            // Mock a message coming in from the cluster
+            
+            mockMessage(evt);
+        }
+        waitForSync();
+        verify(info, dsInfo);
+    }
+  
     protected abstract void expectationTestContactChange(GeoServerInfo info, String storeId) throws Exception;
 
     @Test
@@ -176,6 +229,7 @@ public abstract class HzSynchronizerRecvTest extends HzSynchronizerTest {
             mockMessage(evtLayer);
             
             waitForSync();
+            
         }
         verify(gsInfo, layerInfo);
     }
@@ -345,7 +399,7 @@ public abstract class HzSynchronizerRecvTest extends HzSynchronizerTest {
 
     protected void mockMessage(ConfigChangeEvent evt) {
         evt.setSource(remoteAddress);
-        Message<Event> msg = new Message<Event>(TOPIC_NAME, evt);
+        Message<Event> msg = new Message<Event>(TOPIC_NAME, evt, 0, null);
         for(MessageListener<Event> listener: captureTopicListener.getValues()){
             listener.onMessage(msg);
         }

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Logger;
 
+import org.geoserver.catalog.Catalog;
 import org.geoserver.cluster.ClusterConfig;
 import org.geoserver.cluster.ClusterConfigWatcher;
 import org.geoserver.config.GeoServerDataDirectory;
@@ -14,6 +15,7 @@ import org.geotools.util.logging.Logging;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 
+import com.google.common.base.Optional;
 import com.hazelcast.config.Config;
 import com.hazelcast.config.XmlConfigBuilder;
 import com.hazelcast.core.Hazelcast;
@@ -36,6 +38,10 @@ public class HzCluster implements DisposableBean, InitializingBean {
     GeoServerResourceLoader rl;
     ClusterConfigWatcher watcher;
 
+    private Catalog rawCatalog;
+
+    private static HzCluster CLUSTER;
+    
     /**
      * Get a file from the cluster config directory. Create it by copying a template from the
      * classpath if it doesn't exist.
@@ -56,12 +62,20 @@ public class HzCluster implements DisposableBean, InitializingBean {
         return file;
     }
     
+    static Optional<HzCluster> getInstanceIfAvailable(){
+        return Optional.fromNullable(CLUSTER);
+    }
+    
     /**
      * Is clustering enabled
      * @return
      */
     public boolean isEnabled() {
         return hz!=null;
+    }
+    
+    public boolean isRunning() {
+        return isEnabled() && hz.getLifecycleService().isRunning();
     }
     
     /**
@@ -82,6 +96,14 @@ public class HzCluster implements DisposableBean, InitializingBean {
     }
     
     /**
+     * @return milliseconds to wait for node ack notifications upon sending a config change event.
+     *         Defaults to 2000ms.
+     */
+    public int getAckTimeoutMillis() {
+        return getClusterConfig().getAckTimeoutMillis();
+    }
+    
+    /**
      * Get the HazelcastInstance being used for clustering
      * @return
      * @throws IllegalStateException if clustering is not enabled
@@ -94,15 +116,20 @@ public class HzCluster implements DisposableBean, InitializingBean {
     @Override
     public void afterPropertiesSet() throws Exception {
         watcher = loadConfig();
-        if(watcher.get().isEnabled())
+        if(watcher.get().isEnabled()){
             hz = Hazelcast.newHazelcastInstance(loadHazelcastConfig(rl));
+            CLUSTER = this;
+        }
     }
 
     @Override
     public void destroy() throws Exception {
-        if(hz!=null) {
+        if (hz != null) {
+            LOGGER.info("HzCluster.destroy() invoked, shutting down Hazelcast instance...");
+            CLUSTER = null;
             hz.getLifecycleService().shutdown();
-            hz=null;
+            hz = null;
+            LOGGER.info("HzCluster.destroy(): Hazelcast instance shut down complete");
         }
     }
     
@@ -125,6 +152,17 @@ public class HzCluster implements DisposableBean, InitializingBean {
         rl=dd.getResourceLoader();
     }
     
+    /**
+     * For Spring initialisation, don't call otherwise.
+     */
+    public void setRawCatalog(Catalog rawCatalog) throws IOException {
+        this.rawCatalog = rawCatalog;
+    }
+
+    public Catalog getRawCatalog() {
+        return rawCatalog;
+    }
+
     ClusterConfigWatcher loadConfig() throws IOException {
         File f = getConfigFile(HzCluster.CONFIG_FILENAME, HzCluster.class);
         
