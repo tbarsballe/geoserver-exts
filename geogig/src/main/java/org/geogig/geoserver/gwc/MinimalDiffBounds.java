@@ -68,8 +68,8 @@ public class MinimalDiffBounds extends AbstractGeoGigOp<Geometry> {
         RevTree left = resolveTree(leftRefSpec);
         RevTree right = resolveTree(rightRefSpec);
 
-        ObjectDatabase leftSource = resolveSafeDb(left);
-        ObjectDatabase rightSource = resolveSafeDb(right);
+        ObjectDatabase leftSource = objectDatabase();
+        ObjectDatabase rightSource = objectDatabase();
 
         PreOrderDiffWalk visitor = new PreOrderDiffWalk(left, right, leftSource, rightSource);
         MinimalDiffBoundsConsumer consumer = new MinimalDiffBoundsConsumer();
@@ -81,23 +81,12 @@ public class MinimalDiffBounds extends AbstractGeoGigOp<Geometry> {
         return minimalBounds;
     }
 
-    /**
-     * If {@code refSpec} can easily be determined to be on the object database (e.g. its a ref),
-     * then returns the repository object database, otherwise the staging database, just to be safe
-     */
-    private ObjectDatabase resolveSafeDb(RevTree tree) {
-        if (objectDatabase().exists(tree.getId())) {
-            return objectDatabase();
-        }
-        return stagingDatabase();
-    }
-
     private RevTree resolveTree(String refSpec) {
 
         Optional<ObjectId> id = command(ResolveTreeish.class).setTreeish(refSpec).call();
         Preconditions.checkState(id.isPresent(), "%s did not resolve to a tree", refSpec);
 
-        return stagingDatabase().getTree(id.get());
+        return objectDatabase().getTree(id.get());
     }
 
 }

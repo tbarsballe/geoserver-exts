@@ -204,7 +204,7 @@ public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
 
         ObjectSerializingFactory factory = DataStreamSerializationFactoryV1.INSTANCE;
 
-        RevObject actual = factory.createObjectReader().read(oid, responseStream);
+        RevObject actual = factory.read(oid, responseStream);
         RevObject expected = geogig.command(RevObjectParse.class).setObjectId(oid).call().get();
         assertEquals(expected, actual);
     }
@@ -284,7 +284,7 @@ public class GeoGigWebAPIIntegrationTest extends GeoServerSystemTestSupport {
                     return endOfData();
                 if (len != 20)
                     throw new IllegalStateException("We need a 'readFully' operation!");
-                return formats.createObjectReader().read(new ObjectId(id), bytes);
+                return formats.read(new ObjectId(id), bytes);
             } catch (EOFException e) {
                 return endOfData();
             } catch (IOException e) {
