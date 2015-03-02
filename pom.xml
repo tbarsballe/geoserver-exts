@@ -8,7 +8,7 @@
   <groupId>org.opengeo</groupId>
   <artifactId>geoserver-exts</artifactId>
   <packaging>pom</packaging>
-  <version>2.6-SNAPSHOT</version>
+  <version>2.7-SNAPSHOT</version>
   <name>OpenGeo GeoServer Extensions</name>
 
   <organization>
@@ -558,8 +558,8 @@
   </modules>
 
   <properties>
-    <gs.version>2.6-SNAPSHOT</gs.version>
-    <gt.version>12-SNAPSHOT</gt.version>
+    <gs.version>2.7-SNAPSHOT</gs.version>
+    <gt.version>13-SNAPSHOT</gt.version>
     <spring.version>3.1.1.RELEASE</spring.version>
     <spring.security.version>3.1.0.RELEASE</spring.security.version>
     <jetty.version>6.1.8</jetty.version>
