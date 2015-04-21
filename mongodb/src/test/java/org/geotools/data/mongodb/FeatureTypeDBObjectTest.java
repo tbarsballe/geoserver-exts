@@ -8,15 +8,20 @@ import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.MultiPolygon;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
+
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
+import org.hamcrest.Matcher;
+
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
+
 import org.junit.Test;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
@@ -112,7 +117,7 @@ public class FeatureTypeDBObjectTest {
         Map<?,?> originalUserData = left.getUserData();
         assertThat(resultUserData.size(), is(equalTo(originalUserData.size())));
         for (Map.Entry entry : resultUserData.entrySet()) {
-            assertThat(entry.getValue(), is(equalTo(originalUserData.get(entry.getKey()))));
+            assertThat(entry.getValue(), (Matcher)is(equalTo(originalUserData.get(entry.getKey()))));
         }
         
         // verify we persist and restore same number of attributes
@@ -147,7 +152,7 @@ public class FeatureTypeDBObjectTest {
             Map<?,?> oadUserData = oad.getUserData();
             assertThat(radUserData.size(), is(equalTo(oadUserData.size())));
             for (Map.Entry entry : radUserData.entrySet()) {
-                assertThat(entry.getValue(), is(equalTo(oadUserData.get(entry.getKey()))));
+                assertThat(entry.getValue(), (Matcher)is(equalTo(oadUserData.get(entry.getKey()))));
             }
         }
     }
