@@ -43,7 +43,7 @@
 
 
     <!-- 
-      The following are geotools dependencies that geogig uses but we declare ecplicitly
+      The following are geotools dependencies that geogig uses but we declare explicitly
       here with a provided scope, since we excluded all geotools transitive dependencies
       in the geogig entries above in order to avoid having duplicates when geogig is tied
       to a different geotools version than this project.
@@ -100,7 +100,7 @@
       <groupId>org.geotools.jdbc</groupId>
       <artifactId>gt-jdbc-spatialite</artifactId>
       <version>${gt.version}</version>
-      <!-- scope>provided</scope-->
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -288,11 +288,11 @@
                   <include>javax.inject:javax.inject</include>
                   <include>jline:jline</include>
                   <include>org.mongodb:mongo-java-driver</include>
-                  <include>org.xerial:spatialite-jdbc</include>
-                  <include>org.xerial:sqlite-jdbc</include>
+                  <!--include>org.xerial:spatialite-jdbc</include-->
+                  <!--include>org.xerial:sqlite-jdbc</include-->
                   
-                  <include>org.geotools.jdbc:gt-jdbc-spatialite</include>
-                  <include>org.geotools:gt-geojson</include>
+                  <!--include>org.geotools.jdbc:gt-jdbc-spatialite</include-->
+                  <!--include>org.geotools:gt-geojson</include-->
                   
                   <include>ch.qos.logback:logback-core</include>
                   <include>ch.qos.logback:logback-classic</include>
