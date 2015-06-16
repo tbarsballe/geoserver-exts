@@ -1,0 +1,1 @@
+Gs-cloudwatch is a GeoServer Extension that reports various GeoServer metrics to the Amazon Web Services cloudwatch service. This will allow better autoscaling of a GeoServer cluster or notification when GeoServer is under heavy load. 

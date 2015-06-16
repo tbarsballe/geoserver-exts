@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:tx="http://www.springframework.org/schema/tx"
+  xmlns:task="http://www.springframework.org/schema/task"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx.xsd
+    http://www.springframework.org/schema/task
+    http://www.springframework.org/schema/task/spring-task-3.0.xsd"
+    default-autowire="byName">
+
+    <!-- Metrics stuff below here -->
+
+    <bean id="gs-cloudwatch-metricRegistry" class="com.codahale.metrics.MetricRegistry" />
+    <bean id="gs-cloudwatch-mde" class="com.boundlessgeo.suite.geoserver.cloudwatch.aws.MetricDatumEncoder"/>
+
+    <!-- cloudwatch -->
+    <bean id="gs-cloudwatch-cs" class="com.boundlessgeo.suite.geoserver.cloudwatch.aws.CloudwatchSender">
+        <property name="providers">
+            <list>
+                <ref bean="gs-cloudwatch-jmx"/>
+                <ref bean="gs-cloudwatch-mmp"/>
+                <ref bean="wmsServiceInterceptor-instrument" />
+            </list>
+        </property>
+    </bean>
+
+
+    <!-- metric providers -->
+
+    <bean id="gs-cloudwatch-jmx" class="com.boundlessgeo.suite.geoserver.cloudwatch.metrics.JmxSystemMonitor">
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+    </bean>
+    <bean id="gs-cloudwatch-mmp" class="com.boundlessgeo.suite.geoserver.cloudwatch.metrics.MonitorMetricProvider">
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+     </bean>
+
+    <!-- instruments -->
+
+     <!-- this id should cause this bean to be injected as a proxy aroudn the WMS
+     due to the wildcard convention in the WNS application context -->
+     <bean init-method="afterPropertiesSet" id="wmsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument" >
+         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+         <property name="encoder" ref="gs-cloudwatch-mde"/>
+         <property name="serviceName" value="wms"/>
+     </bean>
+
+
+
+
+    <!-- spring timing stuff below here  (need to make interval a config-->
+
+    <task:executor id="executor" pool-size="5"/>
+    <task:scheduler id="scheduler" pool-size="5"/>
+
+    <task:scheduled-tasks>
+        <task:scheduled ref="gs-cloudwatch-cs" method="sendAllMetrics" fixed-delay="10000" />
+  </task:scheduled-tasks>
+</beans>

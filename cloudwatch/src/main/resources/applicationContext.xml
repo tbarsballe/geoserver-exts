@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:tx="http://www.springframework.org/schema/tx"
+  xmlns:task="http://www.springframework.org/schema/task"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/tx
+    http://www.springframework.org/schema/tx/spring-tx.xsd
+    http://www.springframework.org/schema/task
+    http://www.springframework.org/schema/task/spring-task-3.0.xsd"
+    default-autowire="byName">
+
+
+    <bean id="gs-cloudwatch-mde" class="com.boundlessgeo.suite.geoserver.cloudwatch.aws.MetricDatumEncoder">
+        <!--<property name="autoScalingGroupName" value="boundless_geoserver_yas3fs"/>-->
+        <property name="autoScalingGroupName" value="#{ systemEnvironment['AUTOSCALINGGROUPNAME'] ?: 'boundless_geoserver_yas3fs'}"/>
+    </bean>
+
+    <bean id="gs-cloudwatch-cs" class="com.boundlessgeo.suite.geoserver.cloudwatch.aws.CloudwatchSender">
+        <property name="providers">
+            <list>
+                <ref bean="gs-cloudwatch-jmx"/>
+                <ref bean="gs-cloudwatch-mmp"/>
+                <ref bean="gs-cloudwatch-callbacks"/>
+
+                <ref bean="wmsServiceInterceptor-instrument" />
+                         <ref bean="cswServiceInterceptor-instrument" />
+                <ref bean="wpsServiceInterceptor-instrument" />
+       <ref bean="wcs20ServiceInterceptor-instrument" />
+                <ref bean="wfsServiceInterceptor-instrument" />
+                <ref bean="wcs100ServiceInterceptor-instrument" />
+                <ref bean="wcs111ServiceInterceptor-instrument" />
+
+            </list>
+        </property>
+    </bean>
+
+
+    <!-- metric providers -->
+
+    <bean id="gs-cloudwatch-jmx" class="com.boundlessgeo.suite.geoserver.cloudwatch.metrics.JmxSystemMonitor">
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+    </bean>
+    <bean id="gs-cloudwatch-mmp" class="com.boundlessgeo.suite.geoserver.cloudwatch.metrics.MonitorMetricProvider">
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+    </bean>
+
+    <!-- instruments -->
+
+        <!-- this id should cause this bean to be injected as a proxy aroudn the WMS
+        due to the wildcard convention in the WNS application context -->
+
+     <bean init-method="afterPropertiesSet" id="wmsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument" >
+         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+         <property name="encoder" ref="gs-cloudwatch-mde"/>
+         <property name="serviceName" value="wms"/>
+     </bean>
+     <bean init-method="afterPropertiesSet" id="wfsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+         <property name="encoder" ref="gs-cloudwatch-mde"/>
+         <property name="serviceName" value="wfs"/>
+     </bean>
+     <bean init-method="afterPropertiesSet" id="wcs100ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+         <property name="encoder" ref="gs-cloudwatch-mde"/>
+         <property name="serviceName" value="wcs100"/>
+     </bean>
+     <bean init-method="afterPropertiesSet" id="wcs111ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+         <property name="encoder" ref="gs-cloudwatch-mde"/>
+         <property name="serviceName" value="wcs111"/>
+     </bean>
+     <bean init-method="afterPropertiesSet" id="wcs20ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+         <property name="encoder" ref="gs-cloudwatch-mde"/>
+         <property name="serviceName" value="wcs2"/>
+     </bean>
+     <bean init-method="afterPropertiesSet" id="wpsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+         <property name="encoder" ref="gs-cloudwatch-mde"/>
+         <property name="serviceName" value="wps"/>
+     </bean>
+     <bean init-method="afterPropertiesSet" id="cswServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+         <property name="encoder" ref="gs-cloudwatch-mde"/>
+         <property name="serviceName" value="csw"/>
+     </bean>
+
+    <!-- Callbacks Stuff Here -->
+    <bean id="gs-cloudwatch-callbacks" class="com.boundlessgeo.suite.geoserver.cloudwatch.callbacks.OWSServiceDispatcherCallbacks" init-method="init">
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+        <property name="allowedMetrics">
+            <list>
+                <value>wms</value>
+                <value>wfs</value>
+                <value>wcs111</value>
+                <value>wcs100</value>
+                <value>wcs20</value>
+                <value>wps</value>
+                <value>csw</value>
+                <value>ows</value>
+                </list>
+        </property>
+    </bean>
+
+    <!-- Metrics stuff below here -->
+
+    <bean id="gs-cloudwatch-metricRegistry" class="com.codahale.metrics.MetricRegistry"/>
+
+
+    <!-- spring timing stuff below here  (need to make interval a config-->
+
+    <task:executor id="executor" pool-size="5"/>
+    <task:scheduler id="scheduler" pool-size="5"/>
+
+    <task:scheduled-tasks>
+        <task:scheduled ref="gs-cloudwatch-cs" method="sendAllMetrics" fixed-delay="10000" />
+    </task:scheduled-tasks>
+</beans>
