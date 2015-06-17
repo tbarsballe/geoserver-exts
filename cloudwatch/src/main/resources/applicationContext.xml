@@ -25,9 +25,9 @@
                 <ref bean="gs-cloudwatch-callbacks"/>
 
                 <ref bean="wmsServiceInterceptor-instrument" />
-                         <ref bean="cswServiceInterceptor-instrument" />
+                <ref bean="cswServiceInterceptor-instrument" />
                 <ref bean="wpsServiceInterceptor-instrument" />
-       <ref bean="wcs20ServiceInterceptor-instrument" />
+                <ref bean="wcs20ServiceInterceptor-instrument" />
                 <ref bean="wfsServiceInterceptor-instrument" />
                 <ref bean="wcs100ServiceInterceptor-instrument" />
                 <ref bean="wcs111ServiceInterceptor-instrument" />
@@ -51,41 +51,41 @@
         <!-- this id should cause this bean to be injected as a proxy aroudn the WMS
         due to the wildcard convention in the WNS application context -->
 
-     <bean init-method="afterPropertiesSet" id="wmsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument" >
-         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
-         <property name="encoder" ref="gs-cloudwatch-mde"/>
-         <property name="serviceName" value="wms"/>
-     </bean>
-     <bean init-method="afterPropertiesSet" id="wfsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
-         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
-         <property name="encoder" ref="gs-cloudwatch-mde"/>
-         <property name="serviceName" value="wfs"/>
-     </bean>
-     <bean init-method="afterPropertiesSet" id="wcs100ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
-         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
-         <property name="encoder" ref="gs-cloudwatch-mde"/>
-         <property name="serviceName" value="wcs100"/>
-     </bean>
-     <bean init-method="afterPropertiesSet" id="wcs111ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
-         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
-         <property name="encoder" ref="gs-cloudwatch-mde"/>
-         <property name="serviceName" value="wcs111"/>
-     </bean>
-     <bean init-method="afterPropertiesSet" id="wcs20ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
-         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
-         <property name="encoder" ref="gs-cloudwatch-mde"/>
-         <property name="serviceName" value="wcs2"/>
-     </bean>
-     <bean init-method="afterPropertiesSet" id="wpsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
-         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
-         <property name="encoder" ref="gs-cloudwatch-mde"/>
-         <property name="serviceName" value="wps"/>
-     </bean>
-     <bean init-method="afterPropertiesSet" id="cswServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
-         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
-         <property name="encoder" ref="gs-cloudwatch-mde"/>
-         <property name="serviceName" value="csw"/>
-     </bean>
+    <bean init-method="afterPropertiesSet" id="wmsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument" >
+        <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="serviceName" value="wms"/>
+    </bean>
+    <bean init-method="afterPropertiesSet" id="wfsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+        <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="serviceName" value="wfs"/>
+    </bean>
+    <bean init-method="afterPropertiesSet" id="wcs100ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+        <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="serviceName" value="wcs100"/>
+    </bean>
+    <bean init-method="afterPropertiesSet" id="wcs111ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+        <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="serviceName" value="wcs111"/>
+    </bean>
+    <bean init-method="afterPropertiesSet" id="wcs20ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+        <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="serviceName" value="wcs2"/>
+    </bean>
+    <bean init-method="afterPropertiesSet" id="wpsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+        <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="serviceName" value="wps"/>
+    </bean>
+    <bean init-method="afterPropertiesSet" id="cswServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
+        <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="serviceName" value="csw"/>
+    </bean>
 
     <!-- Callbacks Stuff Here -->
     <bean id="gs-cloudwatch-callbacks" class="com.boundlessgeo.suite.geoserver.cloudwatch.callbacks.OWSServiceDispatcherCallbacks" init-method="init">
