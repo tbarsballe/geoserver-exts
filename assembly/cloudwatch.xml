@@ -15,11 +15,5 @@
         <exclude>*-sources.jar</exclude>
       </excludes>
     </fileSet>
-    <fileSet>
-      <directory>cloudwatch/target/dependency</directory>
-      <outputDirectory></outputDirectory>
-      <includes>
-      </includes>
-    </fileSet>
   </fileSets>
 </assembly>
