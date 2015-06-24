@@ -1,0 +1,25 @@
+<assembly>
+  <id>cloudwatch</id>
+  <formats>
+    <format>zip</format>
+  </formats>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <fileSets>
+    <fileSet>
+      <directory>cloudwatch/target</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>cloudwatch-*.jar</include>
+      </includes>
+      <excludes>
+        <exclude>*-sources.jar</exclude>
+      </excludes>
+    </fileSet>
+    <fileSet>
+      <directory>cloudwatch/target/dependency</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>
