@@ -2,6 +2,7 @@ package org.geotools.ysld;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.describedAs;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -12,6 +13,8 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.nullValue;
 
 import java.awt.Color;
+import java.util.Arrays;
+import java.util.regex.Pattern;
 
 import org.geotools.styling.Rule;
 import org.geotools.ysld.parse.ScaleRange;
@@ -32,7 +35,6 @@ public enum TestUtils {
      * Matches a rule if it applies to a given scale
      * @param scale denominator of the scale
      */
-    @SuppressWarnings("unchecked")
     public static Matcher<Rule> appliesToScale(double scale) {
         return describedAs("rule applies to scale denom %0",
                 allOf(
@@ -46,7 +48,6 @@ public enum TestUtils {
                 );
     }
     
-    @SuppressWarnings("unchecked")
     public static Matcher<ScaleRange> rangeContains(double scale) {
         return describedAs("scale range that contains 1:%0",
                 allOf(
@@ -101,7 +102,6 @@ public enum TestUtils {
      * @param name
      * @return
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     public
        static Matcher<Expression> attribute(String name) {
            return Matchers.<Expression>allOf(
@@ -147,12 +147,68 @@ public enum TestUtils {
             
             @Override
             public boolean matches(Object arg0) {
+                if(arg0==null) {
+                    arg0="";
+                }
                 return arg0.toString().equals(value.toString());
             }
             
             @Override
             public void describeTo(Description arg0) {
                 arg0.appendText("lexicaly equal to ").appendValue(value.toString());
+            }
+            
+        };
+    }
+    /**
+     * Converts a Number to double, otherwise converts to string and then parses as double then matches to the given value.
+     * @param value
+     * @return
+     */
+    public static Matcher<? extends Object> numEqualTo (final double value, final double epsilon) {
+        return new BaseMatcher<Object>() {
+            
+            @Override
+            public boolean matches(Object obj) {
+                double num;
+                if(obj instanceof Number) {
+                    num = ((Number) obj).doubleValue();
+                } else {
+                    num = Double.parseDouble(obj.toString());
+                }
+                return Math.abs(num-value)<epsilon;
+            }
+            
+            @Override
+            public void describeTo(Description arg0) {
+                arg0.appendText("can be parsed as ").appendValue(value);
+                arg0.appendText(" to within ").appendValue(epsilon);
+            }
+            
+        };
+    }
+    /**
+     * Converts a Number to long, otherwise converts to string and then parses as double then matches to the given value.
+     * @param value
+     * @return
+     */
+    public static Matcher<? extends Object> numEqualTo (final long value) {
+        return new BaseMatcher<Object>() {
+            
+            @Override
+            public boolean matches(Object obj) {
+                double num;
+                if(obj instanceof Number) {
+                    num = ((Number) obj).longValue();
+                } else {
+                    num = Long.parseLong(obj.toString());
+                }
+                return num==value;
+            }
+            
+            @Override
+            public void describeTo(Description arg0) {
+                arg0.appendText("can be parsed as ").appendValue(value);
             }
             
         };
@@ -216,4 +272,193 @@ public enum TestUtils {
            c = new Color(Integer.parseInt(s,16));
            return isColor(c);
        }
+
+    /**
+     * Matches a YamlSeq where the specified entry matching the given matcher
+     * @param i
+     * @param m
+     * @return
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static Matcher<Object> yHasItem(final int i, final Matcher<? extends Object> m) {
+        return new BaseMatcher() {
+    
+            @Override
+            public boolean matches(Object obj) {
+                if(!(obj instanceof YamlSeq)) return false;
+                YamlSeq seq = (YamlSeq) obj;
+                
+                Object value = null;
+                try {
+                    value = seq.map(i);
+                } catch (IllegalArgumentException ex1) {
+                    try {
+                        value = seq.seq(i);
+                    } catch (IllegalArgumentException ex2) {
+                        value = seq.get(i);
+                    }
+                }
+                return (m.matches(value));
+            }
+    
+            @Override
+            public void describeTo(Description desc) {
+                desc.appendText("YamlSeq with item ").appendValue(i).appendText(" that ").appendDescriptionOf(m);
+            }
+            
+        };
+    }
+    
+    /**
+     * Matches a YamlMap with an entry as named that has a value which matches the given matcher
+     * @param key
+     * @param m
+     * @return
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static Matcher<Object> yHasEntry(final String key, final Matcher<? extends Object> m) {
+        return new BaseMatcher() {
+    
+            @Override
+            public boolean matches(Object obj) {
+                if(!(obj instanceof YamlMap)) return false;
+                YamlMap map = (YamlMap) obj;
+                
+                if(! map.has(key)) return false;
+                Object value = null;
+                try {
+                    value = map.map(key);
+                } catch (IllegalArgumentException ex1) {
+                    try {
+                        value = map.seq(key);
+                    } catch (IllegalArgumentException ex2) {
+                        value = map.get(key);
+                    }
+                }
+                return (m.matches(value));
+            }
+    
+            @Override
+            public void describeTo(Description desc) {
+                desc.appendText("YamlMap with entry ").appendValue(key).appendText(" and value ").appendDescriptionOf(m);
+            }
+            
+        };
+    }
+
+    /**
+     * Matches a YamlMap with an entry as named that has a value which matches the given matcher
+     * @param key
+     * @return
+     */
+    public static Matcher<Object> yHasEntry(final String key) { 
+        return yHasEntry(key, Matchers.any(Object.class));
+    }
+    
+    private static final Pattern TUPLE_STRIP= Pattern.compile("^\\s*\\(([^)]*)\\)\\s*$");
+    private static final Pattern TUPLE_SPLIT= Pattern.compile("\\s*,\\s*");
+    
+    
+    /**
+     * Matches a YamlSeq
+     * @param matchers
+     * @return
+     */
+    @SafeVarargs
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static Matcher<? extends Object> yContains(final Matcher<? extends Object>... matchers) {
+        return new BaseMatcher() {
+            
+            @Override
+            public boolean matches(Object obj) {
+                YamlSeq seq;
+                if(obj instanceof YamlSeq) {
+                    seq = (YamlSeq) obj;
+                } else {
+                    return false;
+                }
+                
+                if(seq.raw().size()!=matchers.length) {
+                    return false;
+                }
+                
+                for(int i=0; i<matchers.length; i++) {
+                    if(!matchers[i].matches(seq.get(i))) {
+                        return false;
+                    }
+                }
+                
+                return true;
+            }
+    
+            @Override
+            public void describeTo(Description desc) {
+                desc.appendList("Yaml Sequence with values [", ", ", "]", Arrays.asList(matchers));
+            }
+            
+        };
+    }
+    
+    /**
+     * Matches a YSLD Tuple with values matching the given matchers.
+     * @param matchers
+     * @return
+     */
+    @SafeVarargs
+    public static Matcher<? extends Object> yTuple(final Matcher<? extends Object>... matchers) {
+        return yContains(matchers);
+    }
+    
+    /**
+     * Matches a YSLD Tuple with n values
+     * @param n
+     * @return
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static Matcher<Object> yTuple(int n) {
+        Matcher[] matchers = new Matcher[n];
+        Arrays.fill(matchers, anything());
+        return Matchers.describedAs("A YSLD Tuple with %0 values", (Matcher)yTuple(matchers), n);
+    }
+    
+    /**
+     * For apparent consistency to the user, some values are wrapped in fake YAML strings.
+     * @param m
+     * @return
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    public static Matcher<? extends Object> fakeString(final Matcher<? extends Object> m) {
+        return new BaseMatcher() {
+            
+            @Override
+            public boolean matches(Object obj) {
+                if(obj instanceof String) {
+                    String str = (String) obj;
+                    if(str.startsWith("'") && str.endsWith("'")) {
+                        str = str.substring(1, str.length()-1);
+                    } else if (str.startsWith("\"") && str.endsWith("\"")) {
+                        str = str.substring(1, str.length()-1);
+                    }
+                    return m.matches(str);
+                } else {
+                    return false;
+                }
+            }
+    
+            @Override
+            public void describeTo(Description desc) {
+                desc.appendText("a fake YAML string ").appendDescriptionOf(m);
+            }
+            
+        };
+    }
+    /**
+     * For apparent consistency to the user, some values are wrapped in fake YAML strings.
+     * @param m
+     * @return
+     */
+    public static Matcher<? extends Object> fakeString(final String s) {
+        return fakeString(equalTo(s));
+    }
+
 }
