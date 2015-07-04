@@ -6,19 +6,10 @@
   <includeBaseDirectory>false</includeBaseDirectory>
   <fileSets>
     <fileSet>
-      <directory>mongodb/target</directory>
-      <outputDirectory></outputDirectory>
-      <includes>
-        <include>gt-mongodb-*.jar</include>
-      </includes>
-      <excludes>
-        <exclude>*-sources.jar</exclude>
-      </excludes>
-    </fileSet>
-    <fileSet>
       <directory>mongodb/target/dependency</directory>
       <outputDirectory></outputDirectory>
       <includes>
+        <include>gt-mongodb-*.jar</include>
         <include>mongo-java-driver-*.jar</include>
       </includes>
     </fileSet>
