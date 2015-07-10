@@ -32,26 +32,26 @@
 
     <bean id="gs-cloudwatch-jmx" class="com.boundlessgeo.suite.geoserver.cloudwatch.metrics.JmxSystemMonitor">
         <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="enabled" value="true"/>
     </bean>
     <bean id="gs-cloudwatch-mmp" class="com.boundlessgeo.suite.geoserver.cloudwatch.metrics.MonitorMetricProvider">
         <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="enabled" value="true"/>
      </bean>
 
     <!-- instruments -->
 
-     <!-- this id should cause this bean to be injected as a proxy aroudn the WMS
-     due to the wildcard convention in the WNS application context -->
-     <bean init-method="afterPropertiesSet" id="wmsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument" >
-         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
-         <property name="encoder" ref="gs-cloudwatch-mde"/>
-         <property name="serviceName" value="wms"/>
-     </bean>
-
-
+    <!-- this id should cause this bean to be injected as a proxy aroudn the WMS
+    due to the wildcard convention in the WNS application context -->
+    <bean init-method="afterPropertiesSet" id="wmsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument" >
+        <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+        <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="serviceName" value="wms"/>
+        <property name="enabled" value="true"/>
+    </bean>
 
 
     <!-- spring timing stuff below here  (need to make interval a config-->
-
     <task:executor id="executor" pool-size="5"/>
     <task:scheduler id="scheduler" pool-size="5"/>
 

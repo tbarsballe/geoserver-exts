@@ -13,20 +13,23 @@ import org.aopalliance.intercept.MethodInterceptor;
 /**
  *
  * @author tingold@boundlessgeo.com
+ * @author tbattle@boundlessgeo.com
  */
 public abstract class Instrument implements MethodInterceptor, MetricProvider{
-    
+
 
     protected MetricDatumEncoder encoder;
-    
-    
+
+
     protected MetricRegistry metricRegistry;
-            
+
+    protected Boolean enabled;
+
     /**
      * @return the encoder
      */
     public MetricDatumEncoder getEncoder() {
-     
+
         return encoder;
     }
 
@@ -50,5 +53,19 @@ public abstract class Instrument implements MethodInterceptor, MetricProvider{
     public void setMetricRegistry(MetricRegistry metricRegistry) {
         this.metricRegistry = metricRegistry;
     }
-    
+
+    /**
+     * @return whether the service is enabled
+     */
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    /**
+     * @param whether the service is enabled
+     */
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
+    }
+
 }

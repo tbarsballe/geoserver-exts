@@ -15,18 +15,18 @@ import java.util.Collection;
 /**
  *
  * @author tingold@boundlessgeo.com
+ * @author tbattle@boundlessgeo.com
  */
 public class MonitorMetricProvider implements MetricProvider{
 
     private MetricDatumEncoder encoder;
-    
+    private Boolean enabled;
+
     //private static final Logger logger = LoggerFactory.getLogger(MonitorMetricProvider.class);
 
-    
+
     @Override
     public Collection<MetricDatum> getMetrics() {
-        
-
         return new ArrayList<MetricDatum>();
     }
 
@@ -44,5 +44,17 @@ public class MonitorMetricProvider implements MetricProvider{
         this.encoder = encoder;
     }
 
-    
+    /**
+     * @return whether the service is enabled
+     */
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    /**
+     * @param whether the service is enabled
+     */
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
+    }
 }

@@ -18,24 +18,26 @@ import java.util.List;
 
 
 /**
- *  stolen from the the MapMeter extension 
+ *  stolen from the the MapMeter extension
  */
 
 public class JmxSystemMonitor implements SystemMonitor, MetricProvider{
 
     private final String JRE_HEAP_PCT = "geoserver-jre-pct-used";
- 
-    
+
+
     private final String JRE_TOTAL = "geoserver-jre-max-memory";
     private final String JRE_MAX = "geoserver-jre-total-memory";
-    
-    
+
+
     private OperatingSystemMXBean operatingSystemMXBean;
 
     private MemoryMXBean memoryMXBean;
 
     private MetricDatumEncoder encoder;
-    
+
+    private Boolean enabled;
+
     public JmxSystemMonitor() {
         operatingSystemMXBean = ManagementFactory.getOperatingSystemMXBean();
         memoryMXBean = ManagementFactory.getMemoryMXBean();
@@ -63,18 +65,14 @@ public class JmxSystemMonitor implements SystemMonitor, MetricProvider{
 
     @Override
     public Collection<MetricDatum> getMetrics() {
-        
-        
-      SystemStatSnapshot snap = this.pollSystemStatSnapshot();
-               
-      List<MetricDatum> jreStats = new ArrayList<>();
-      
-      
-      jreStats.add(encoder.encodeDatum(JRE_HEAP_PCT, snap.getSystemLoadAverage(), MetricDatumEncoder.UOM.Percent));
-      jreStats.add(encoder.encodeDatum(JRE_MAX, new Double(snap.getTotalMemoryMax()), MetricDatumEncoder.UOM.Bytes));
-      jreStats.add(encoder.encodeDatum(JRE_TOTAL, new Double(snap.getTotalMemoryUsage()), MetricDatumEncoder.UOM.Bytes));
-        
-        
+        SystemStatSnapshot snap = this.pollSystemStatSnapshot();
+
+        List<MetricDatum> jreStats = new ArrayList<>();
+
+        jreStats.add(encoder.encodeDatum(JRE_HEAP_PCT, snap.getSystemLoadAverage(), MetricDatumEncoder.UOM.Percent));
+        jreStats.add(encoder.encodeDatum(JRE_MAX, new Double(snap.getTotalMemoryMax()), MetricDatumEncoder.UOM.Bytes));
+        jreStats.add(encoder.encodeDatum(JRE_TOTAL, new Double(snap.getTotalMemoryUsage()), MetricDatumEncoder.UOM.Bytes));
+
         return Collections.unmodifiableCollection(jreStats);
     }
 
@@ -92,4 +90,17 @@ public class JmxSystemMonitor implements SystemMonitor, MetricProvider{
         this.encoder = encoder;
     }
 
+    /**
+     * @return whether the service is enabled
+     */
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    /**
+     * @param whether the service is enabled
+     */
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
+    }
 }

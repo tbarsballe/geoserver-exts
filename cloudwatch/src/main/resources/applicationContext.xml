@@ -13,8 +13,9 @@
 
 
     <bean id="gs-cloudwatch-mde" class="com.boundlessgeo.suite.geoserver.cloudwatch.aws.MetricDatumEncoder">
-        <!--<property name="autoScalingGroupName" value="boundless_geoserver_yas3fs"/>-->
-        <property name="autoScalingGroupName" value="#{ systemEnvironment['AUTOSCALINGGROUPNAME'] ?: 'boundless_geoserver_yas3fs'}"/>
+        <property name="autoScalingGroupName" value="#{ systemEnvironment['GS_CW_AUTOSCALING_GROUP_NAME'] ?: ''}"/>
+        <property name="instanceId" value="#{ systemEnvironment['GS_CW_INSTANCE_ID'] ?: ''}"/>
+        <property name="enablePerInstanceMetrics" value="#{ systemEnvironment['GS_CW_ENABLE_PER_INSTANCE_METRICS'] ?: false}"/>
     </bean>
 
     <bean id="gs-cloudwatch-cs" class="com.boundlessgeo.suite.geoserver.cloudwatch.aws.CloudwatchSender">
@@ -31,7 +32,6 @@
                 <ref bean="wfsServiceInterceptor-instrument" />
                 <ref bean="wcs100ServiceInterceptor-instrument" />
                 <ref bean="wcs111ServiceInterceptor-instrument" />
-
             </list>
         </property>
     </bean>
@@ -41,9 +41,11 @@
 
     <bean id="gs-cloudwatch-jmx" class="com.boundlessgeo.suite.geoserver.cloudwatch.metrics.JmxSystemMonitor">
         <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="enabled" value="#{ systemEnvironment['GS_CW_JMX'] ?: false}"/>
     </bean>
     <bean id="gs-cloudwatch-mmp" class="com.boundlessgeo.suite.geoserver.cloudwatch.metrics.MonitorMetricProvider">
         <property name="encoder" ref="gs-cloudwatch-mde"/>
+        <property name="enabled" value="#{ systemEnvironment['GS_CW_MMP'] ?: false}"/>
     </bean>
 
     <!-- instruments -->
@@ -55,53 +57,61 @@
         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
         <property name="encoder" ref="gs-cloudwatch-mde"/>
         <property name="serviceName" value="wms"/>
+        <property name="enabled" value="#{ systemEnvironment['GS_CW_WATCH_WMS'] ?: false}"/>
     </bean>
     <bean init-method="afterPropertiesSet" id="wfsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
         <property name="encoder" ref="gs-cloudwatch-mde"/>
         <property name="serviceName" value="wfs"/>
+        <property name="enabled" value="#{ systemEnvironment['GS_CW_WATCH_WFS'] ?: false}"/>
     </bean>
     <bean init-method="afterPropertiesSet" id="wcs100ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
         <property name="encoder" ref="gs-cloudwatch-mde"/>
         <property name="serviceName" value="wcs100"/>
+        <property name="enabled" value="#{ systemEnvironment['GS_CW_WATCH_WCS100'] ?: false}"/>
     </bean>
     <bean init-method="afterPropertiesSet" id="wcs111ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
         <property name="encoder" ref="gs-cloudwatch-mde"/>
         <property name="serviceName" value="wcs111"/>
+        <property name="enabled" value="#{ systemEnvironment['GS_CW_WATCH_WCS111'] ?: false}"/>
     </bean>
     <bean init-method="afterPropertiesSet" id="wcs20ServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
         <property name="encoder" ref="gs-cloudwatch-mde"/>
-        <property name="serviceName" value="wcs2"/>
+        <property name="serviceName" value="wcs20"/>
+        <property name="enabled" value="#{ systemEnvironment['GS_CW_WATCH_WCS20'] ?: false}"/>
     </bean>
     <bean init-method="afterPropertiesSet" id="wpsServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
         <property name="encoder" ref="gs-cloudwatch-mde"/>
         <property name="serviceName" value="wps"/>
+        <property name="enabled" value="#{ systemEnvironment['GS_CW_WATCH_WPS'] ?: false}"/>
     </bean>
     <bean init-method="afterPropertiesSet" id="cswServiceInterceptor-instrument" class="com.boundlessgeo.suite.geoserver.intruments.OWSServiceInstrument">
         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
         <property name="encoder" ref="gs-cloudwatch-mde"/>
         <property name="serviceName" value="csw"/>
+        <property name="enabled" value="#{ systemEnvironment['GS_CW_WATCH_CSW'] ?: false}"/>
     </bean>
 
     <!-- Callbacks Stuff Here -->
     <bean id="gs-cloudwatch-callbacks" class="com.boundlessgeo.suite.geoserver.cloudwatch.callbacks.OWSServiceDispatcherCallbacks" init-method="init">
         <property name="encoder" ref="gs-cloudwatch-mde"/>
         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
+        <property name="enabled" value="false"/>
         <property name="allowedMetrics">
             <list>
-                <value>wms</value>
-                <value>wfs</value>
-                <value>wcs111</value>
-                <value>wcs100</value>
-                <value>wcs20</value>
-                <value>wps</value>
-                <value>csw</value>
-                <value>ows</value>
-                </list>
+                <value>#{ {systemEnvironment['GS_CW_WATCH_WPS'] ?: false} ? 'wps' : ''}</value>
+                <value>#{ {systemEnvironment['GS_CW_WATCH_WMS'] ?: false} ? 'wms' : ''}</value>
+                <value>#{ {systemEnvironment['GS_CW_WATCH_WFS'] ?: false} ? 'wfs' : ''}</value>
+                <value>#{ {systemEnvironment['GS_CW_WATCH_WCS111'] ?: false} ? 'wcs111' : ''}</value>
+                <value>#{ {systemEnvironment['GS_CW_WATCH_WCS100'] ?: false} ? 'wcs100' : ''}</value>
+                <value>#{ {systemEnvironment['GS_CW_WATCH_WCS20'] ?: false} ? 'wcs20' : ''}</value>
+                <value>#{ {systemEnvironment['GS_CW_WATCH_CSW'] ?: false} ? 'csw' : ''}</value>
+                <value>#{ {systemEnvironment['GS_CW_WATCH_OWS'] ?: false} ? 'ows' : ''}</value>
+            </list>
         </property>
     </bean>
 
@@ -116,6 +126,6 @@
     <task:scheduler id="scheduler" pool-size="5"/>
 
     <task:scheduled-tasks>
-        <task:scheduled ref="gs-cloudwatch-cs" method="sendAllMetrics" fixed-delay="10000" />
+        <task:scheduled ref="gs-cloudwatch-cs" method="sendAllMetrics" fixed-delay="#{systemEnvironment['GS_CW_INTERVAL'] ?: 10000}" />
     </task:scheduled-tasks>
 </beans>

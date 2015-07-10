@@ -34,10 +34,19 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 //import com.google.common.cache.CacheLoader;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ *
+ * @author tingold@boundlessgeo.com
+ * @author tbattle@boundlessgeo.com
+ */
 public class OWSServiceDispatcherCallbacks implements DispatcherCallback, MetricProvider {
 	   private MetricDatumEncoder encoder;
 	   //private Timer serviceTimer;
 	   private MetricRegistry metricRegistry;
+	   private Boolean enabled;
 	   private List<String> allowedMetrics;
 	   //private final Map<String, Context> timercontextstore = new ConcurrentHashMap();
 	   private final Cache<String, Context> timercontextstore = CacheBuilder.newBuilder()
@@ -60,6 +69,8 @@ public class OWSServiceDispatcherCallbacks implements DispatcherCallback, Metric
 	   private Meter wpsRequestMeter;
 	   private Meter cswRequestMeter;
 	   private Meter owsRequestMeter;
+
+	   private static final Logger logger = LoggerFactory.getLogger(OWSServiceDispatcherCallbacks.class);
 
 
 
@@ -191,6 +202,12 @@ public class OWSServiceDispatcherCallbacks implements DispatcherCallback, Metric
 	public Collection<MetricDatum> getMetrics() {
 		 List<MetricDatum> callbackStats = new ArrayList<>();
 
+		 logger.debug("start");
+		 for(String s: allowedMetrics) {
+		 	logger.debug(s);
+		 }
+		 logger.debug("done");
+
 	     if(allowedMetrics.contains("wms")){
 	    	 callbackStats.add(encoder.encodeDatum("geoserver-ows-wms-timer", wmsTimer.getOneMinuteRate(), MetricDatumEncoder.UOM.Milliseconds));
 	    	 callbackStats.add(encoder.encodeDatum("geoserver-ows-wms-requests", wmsRequestMeter.getOneMinuteRate(), MetricDatumEncoder.UOM.Count_Second));
@@ -227,4 +244,17 @@ public class OWSServiceDispatcherCallbacks implements DispatcherCallback, Metric
 	     return Collections.unmodifiableCollection(callbackStats);
 	}
 
+	/**
+     * @return whether the service is enabled
+     */
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    /**
+     * @param whether the service is enabled
+     */
+    public void setEnabled(Boolean enabled) {
+        this.enabled = enabled;
+    }
 }

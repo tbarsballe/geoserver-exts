@@ -10,13 +10,14 @@ import java.util.Collection;
 
 /**
  *
- * @author tingold
- * 
+ * @author tingold@boundlessgeo.com
+ * @author tbattle@boundlessgeo.com
+ *
  * Simple interface for classes which wish to provide metrics to Cloudwatch
  */
-public interface MetricProvider 
+public interface MetricProvider
 {
 
-    public Collection<MetricDatum> getMetrics() ;
-    
+    public Collection<MetricDatum> getMetrics();
+    public Boolean getEnabled();
 }
