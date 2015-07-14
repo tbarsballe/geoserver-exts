@@ -27,7 +27,6 @@
         <include>jackson-core-*.jar</include>
         <include>jackson-databind-*.jar</include>
         <include>joda-time-*.jar</include>
-        <include>jts-*.jar</include>
         <include>metrics-core-*.jar</include>
       </includes>
     </fileSet>
