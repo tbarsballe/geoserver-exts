@@ -15,5 +15,21 @@
         <exclude>*-sources.jar</exclude>
       </excludes>
     </fileSet>
+    <fileSet>
+      <directory>cloudwatch/target/dependency</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>aws-java*.jar</include>
+        <include>hamcrest-core-*.jar</include>
+        <include>httpclient-*.jar</include>
+        <include>httpcore-*.jar</include>
+        <include>jackson-annotations-*.jar</include>
+        <include>jackson-core-*.jar</include>
+        <include>jackson-databind-*.jar</include>
+        <include>joda-time-*.jar</include>
+        <include>jts-*.jar</include>
+        <include>metrics-core-*.jar</include>
+      </includes>
+    </fileSet>
   </fileSets>
 </assembly>
