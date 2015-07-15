@@ -11,6 +11,7 @@ import com.amazonaws.util.EC2MetadataUtils;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Date;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,12 +43,11 @@ public class MetricDatumEncoder
                 logger.info("Detected AMI ID of {}", amiId);
                 instanceType = EC2MetadataUtils.getInstanceType();
                 logger.info("Detected Instance Type = {}", instanceType);
-                if(instanceId.equals(""))
+                if(StringUtils.isBlank(instanceId))
                     instanceId = EC2MetadataUtils.getInstanceId();
                 logger.info("Detected Instance Id of {}", instanceId);
             }
             setup = true;
-
         }
         catch(Exception ex)
         {
@@ -68,13 +68,13 @@ public class MetricDatumEncoder
 
         List<Dimension> dims = new ArrayList<>();
 
-        if(!instanceId.equals(""))
+        if(StringUtils.isNotBlank(instanceId))
             dims.add(new Dimension().withName("InstanceID").withValue(instanceId));
 
-        if(!instanceType.equals(""))
+        if(StringUtils.isNotBlank(instanceType))
             dims.add(new Dimension().withName("InstanceType").withValue(instanceType));
 
-        if (!autoScalingGroupName.equals(""))
+        if (StringUtils.isNotBlank(autoScalingGroupName))
             dims.add(new Dimension().withName("AutoScalingGroupName").withValue(autoScalingGroupName));
 
         MetricDatum memoryMD = new MetricDatum().withDimensions(dims).withMetricName(name).withTimestamp(new Date()).withUnit(uom.getUnit()).withValue(value);
