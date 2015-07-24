@@ -1,6 +1,6 @@
 package org.geogig.geoserver.rest;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory.REPOSITORY;
@@ -63,6 +63,10 @@ public class GeoGigGeoServerRESTntegrationTest extends CatalogRESTTestSupport {
 
         geogigData.add().commit("Added test features");
 
+        Catalog catalog = getCatalog();
+        CatalogBuilder catalogBuilder = geogigData.newCatalogBuilder(catalog);
+        catalogBuilder.setUpWorkspace("gigws");
+
         // Catalog catalog = getCatalog();
         // CatalogBuilder catalogBuilder = geogigData.newCatalogBuilder(catalog);
         // catalogBuilder.addAllRepoLayers().build();
@@ -117,8 +121,6 @@ public class GeoGigGeoServerRESTntegrationTest extends CatalogRESTTestSupport {
             message = message.replace("${repository}", repository);
 
             Catalog catalog = getCatalog();
-            CatalogBuilder catalogBuilder = geogigData.newCatalogBuilder(catalog);
-            catalogBuilder.setUpWorkspace("gigws");
 
             final String uri = "/rest/workspaces/gigws/datastores";
             MockHttpServletResponse response = postAsServletResponse(uri, message, "text/xml");
@@ -141,6 +143,51 @@ public class GeoGigGeoServerRESTntegrationTest extends CatalogRESTTestSupport {
         }
     }
 
+    /**
+     * Repository does not exist on geoserver nor on disk, use {@code <create>true</code>} to force
+     * creating a new repository at the specified path
+     */
+    @Test
+    public void createDataStoreOldConfigCreatesRepo() throws Exception {
+
+        File targetDirectory = new File(geogigData.tmpFolder().getRoot(), "old_config_new_repo");
+        final String repository = targetDirectory.getAbsolutePath();
+
+        String message = "<dataStore>\n"//
+                + " <name>repo_old_config_new_repo</name>\n"//
+                + " <type>GeoGIG</type>\n"//
+                + " <connectionParameters>\n"//
+                + "   <entry key=\"geogig_repository\">${repository}</entry>\n"//
+                + "   <entry key=\"create\">true</entry>\n"//
+                + " </connectionParameters>\n"//
+                + "</dataStore>\n";
+        message = message.replace("${repository}", repository);
+
+        Catalog catalog = getCatalog();
+
+        final String uri = "/rest/workspaces/gigws/datastores";
+        MockHttpServletResponse response = postAsServletResponse(uri, message, "text/xml");
+
+        assertEquals(201, response.getStatusCode());
+
+        String locationHeader = response.getHeader("Location");
+        assertNotNull(locationHeader);
+        assertTrue(locationHeader.endsWith("/workspaces/gigws/datastores/repo_old_config_new_repo"));
+
+        // DataStoreInfo created, the catalog listener DeprecatedDataStoreConfigFixer should have
+        // forced the creation of the repo and updated the DataStoreInfo connection parameters with
+        // the proper GeoGigDataStoreFactory.RESOLVER_CLASS_NAME
+        assertTrue(targetDirectory.exists());
+
+        DataStoreInfo newDataStore = catalog.getDataStoreByName("repo_old_config_new_repo");
+        assertNotNull(newDataStore);
+
+        DataStore ds = (DataStore) newDataStore.getDataStore(null);
+        assertNotNull(ds);
+
+        checkNewConfig(newDataStore);
+    }
+
     @Test
     public void createDataStoreOldConfigExistingRepo() throws Exception {
 
@@ -160,10 +207,8 @@ public class GeoGigGeoServerRESTntegrationTest extends CatalogRESTTestSupport {
                 + "</dataStore>\n";
         message = message.replace("${repository}", repository);
         Catalog catalog = getCatalog();
-        CatalogBuilder catalogBuilder = geogigData.newCatalogBuilder(catalog);
-        catalogBuilder.setUpWorkspace("gigws2");
 
-        final String uri = "/rest/workspaces/gigws2/datastores";
+        final String uri = "/rest/workspaces/gigws/datastores";
         MockHttpServletResponse response = postAsServletResponse(uri, message, "text/xml");
 
         assertEquals(201, response.getStatusCode());

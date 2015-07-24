@@ -1,6 +1,7 @@
 package org.geogig.geoserver.config;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory.CREATE;
 import static org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory.REPOSITORY;
 import static org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory.RESOLVER_CLASS_NAME;
 
@@ -20,8 +21,11 @@ import org.geoserver.catalog.event.CatalogListener;
 import org.geoserver.catalog.event.CatalogModifyEvent;
 import org.geoserver.catalog.event.CatalogPostModifyEvent;
 import org.geoserver.catalog.event.CatalogRemoveEvent;
+import org.geotools.data.DataAccess;
 import org.geotools.util.logging.Logging;
 import org.locationtech.geogig.geotools.data.GeoGigDataStoreFactory;
+import org.opengis.feature.Feature;
+import org.opengis.feature.type.FeatureType;
 
 /**
  * {@link CatalogListener} to make sure GeoGig datastores are saved with the correct set of
@@ -95,13 +99,28 @@ class DeprecatedDataStoreConfigFixer implements CatalogListener {
                     LOGGER.log(Level.WARNING, msg, e);
                 }
             }
-        } else if (RepositoryManager.isGeogigDirectory(new File(repositoryParam))) {
-            fixConfig(ds, repositoryParam);
         } else {
-            String msg = String
-                    .format("GeoGig DataStore config has repository %s but it couldn't be resolverd to an actual repository",
-                            repositoryParam);
-            LOGGER.log(Level.WARNING, msg);
+            final File repoDirectory = new File(repositoryParam);
+            if (!RepositoryManager.isGeogigDirectory(repoDirectory)) {
+                try {
+                    if (Boolean.TRUE.equals(CREATE.lookUp(params))) {
+                        DataAccess<? extends FeatureType, ? extends Feature> dataStore;
+                        dataStore = ds.getDataStore(null);
+                        dataStore.dispose();
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException("Unable to create repository at "
+                            + repoDirectory.getAbsolutePath(), e);
+                }
+            }
+            if (RepositoryManager.isGeogigDirectory(repoDirectory)) {
+                fixConfig(ds, repositoryParam);
+            } else {
+                String msg = String
+                        .format("GeoGig DataStore config has repository %s but it couldn't be resolverd to an actual repository",
+                                repositoryParam);
+                LOGGER.log(Level.WARNING, msg);
+            }
         }
     }
 
