@@ -23,7 +23,9 @@
             <list>
                 <ref bean="gs-cloudwatch-jmx"/>
                 <ref bean="gs-cloudwatch-mmp"/>
+<!--
                 <ref bean="gs-cloudwatch-callbacks"/>
+-->
 
                 <ref bean="wmsServiceInterceptor-instrument" />
                 <ref bean="cswServiceInterceptor-instrument" />
@@ -97,6 +99,7 @@
     </bean>
 
     <!-- Callbacks Stuff Here -->
+<!--
     <bean id="gs-cloudwatch-callbacks" class="com.boundlessgeo.suite.geoserver.cloudwatch.callbacks.OWSServiceDispatcherCallbacks" init-method="init">
         <property name="encoder" ref="gs-cloudwatch-mde"/>
         <property name="metricRegistry" ref="gs-cloudwatch-metricRegistry"/>
@@ -114,6 +117,7 @@
             </list>
         </property>
     </bean>
+-->
 
     <!-- Metrics stuff below here -->
 
