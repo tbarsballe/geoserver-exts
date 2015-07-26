@@ -20,7 +20,6 @@
       <outputDirectory></outputDirectory>
       <includes>
         <include>aws-java*.jar</include>
-        <include>hamcrest-core-*.jar</include>
         <include>httpclient-*.jar</include>
         <include>httpcore-*.jar</include>
         <include>jackson-annotations-*.jar</include>
