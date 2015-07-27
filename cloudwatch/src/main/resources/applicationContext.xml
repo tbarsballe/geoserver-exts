@@ -126,8 +126,10 @@
 
     <!-- spring timing stuff below here  (need to make interval a config-->
 
+<!--
     <task:executor id="executor" pool-size="5"/>
     <task:scheduler id="scheduler" pool-size="5"/>
+-->
 
     <task:scheduled-tasks>
         <task:scheduled ref="gs-cloudwatch-cs" method="sendAllMetrics" fixed-delay="#{systemEnvironment['GS_CW_INTERVAL'] ?: 10000}" />
