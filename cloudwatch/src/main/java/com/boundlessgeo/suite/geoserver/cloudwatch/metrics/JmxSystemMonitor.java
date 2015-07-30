@@ -26,8 +26,8 @@ public class JmxSystemMonitor implements SystemMonitor, MetricProvider{
     private final String JRE_HEAP_PCT = "geoserver-jre-pct-used";
 
 
-    private final String JRE_TOTAL = "geoserver-jre-max-memory";
-    private final String JRE_MAX = "geoserver-jre-total-memory";
+    private final String JRE_TOTAL = "geoserver-jre-total-memory";
+    private final String JRE_MAX = "geoserver-jre-max-memory";
 
 
     private OperatingSystemMXBean operatingSystemMXBean;
