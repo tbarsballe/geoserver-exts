@@ -37,7 +37,7 @@ public class OWSServiceInstrument extends Instrument {
 
     //counts this particular service
     private Meter serviceRequestMeter;
-    //countrs all OWS services agggragated
+    //counts all OWS services agggragated
     private Meter owsRequestMeter;
     //counts this particular serices errors
     private Meter serviceErrorMeter;
@@ -100,7 +100,7 @@ public class OWSServiceInstrument extends Instrument {
             metrics.add(encoder.encodeDatum(this.owsReqName, owsRequestMeter.getOneMinuteRate(), MetricDatumEncoder.UOM.Count_Second));
             metrics.add(encoder.encodeDatum(this.serviceErrorMeterName, serviceErrorMeter.getOneMinuteRate(), MetricDatumEncoder.UOM.Count_Second));
             metrics.add(encoder.encodeDatum(this.owsErrorName, owsErrorMeter.getOneMinuteRate(), MetricDatumEncoder.UOM.Count_Second));
-            metrics.add(encoder.encodeDatum(this.timerName, serviceTimer.getOneMinuteRate(), MetricDatumEncoder.UOM.Milliseconds));
+            metrics.add(encoder.encodeDatum(this.timerName, serviceTimer.getSnapshot().getMedian(), MetricDatumEncoder.UOM.Microseconds));
         }
         return Collections.unmodifiableCollection(metrics);
     }
