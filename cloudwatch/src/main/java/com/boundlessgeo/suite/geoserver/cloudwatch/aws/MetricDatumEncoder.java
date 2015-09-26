@@ -44,8 +44,12 @@ public class MetricDatumEncoder
                 instanceType = EC2MetadataUtils.getInstanceType();
                 logger.info("Detected Instance Type = {}", instanceType);
                 if(StringUtils.isBlank(instanceId))
+                {
                     instanceId = EC2MetadataUtils.getInstanceId();
-                logger.info("Detected Instance Id of {}", instanceId);
+                    logger.info("Detected Instance Id of {}", instanceId);
+                }
+                else
+                    logger.info("Instance Id overridden with {}", instanceId);
             }
             setup = true;
         }

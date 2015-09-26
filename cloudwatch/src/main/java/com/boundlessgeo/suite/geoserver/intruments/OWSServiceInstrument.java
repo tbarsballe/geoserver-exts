@@ -48,7 +48,7 @@ public class OWSServiceInstrument extends Instrument {
 
 
     public void afterPropertiesSet() {
-        logger.debug("AFTER: {}", this.enabled);
+        logger.debug("{} enabled: {}", this.serviceName, this.enabled);
         serviceRequestMeterName = "geoserver-ows-"+this.serviceName+"-requests";
         serviceErrorMeterName = "geoserver-ows-"+this.serviceName+"-errors";
         timerName = "geoserver-ows-"+this.serviceName+"-timer";
