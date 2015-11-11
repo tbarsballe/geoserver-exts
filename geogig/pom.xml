@@ -16,6 +16,7 @@
 
   <properties>
     <geogig.version>1.0-SNAPSHOT</geogig.version>
+    <jline.version>2.12</jline.version>
   </properties>
 
   <dependencies>
@@ -40,7 +41,11 @@
       <artifactId>guava</artifactId>
       <version>17.0</version>
     </dependency>
-
+	<dependency>
+  		<groupId>jline</groupId>
+  		<artifactId>jline</artifactId>
+  		<version>${jline.version}</version>
+	</dependency>
 
     <!-- 
       The following are geotools dependencies that geogig uses but we declare explicitly
