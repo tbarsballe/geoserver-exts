@@ -167,7 +167,6 @@
         <version>2.3</version>
         <configuration>
           <descriptors>
-            <descriptor>assembly/gsr.xml</descriptor>
             <descriptor>assembly/mapmeter.xml</descriptor>
             <descriptor>assembly/mongodb.xml</descriptor>
             <descriptor>assembly/fgdb.xml</descriptor>
@@ -566,7 +565,6 @@
     <module>mapmeter</module>
     <module>printng</module>
     <module>web</module>
-    <module>gsr</module>
     <module>mongodb</module>
     <module>ysld</module>
     <module>fgdb</module>

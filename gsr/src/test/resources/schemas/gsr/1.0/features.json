@@ -1,8 +1,0 @@
-{
-	"$schema":"http://json-schema.org/draft-03/schema#",
-	
-	"title":"list of features",
-	"type":"array",
-	"items":{
-		"$ref":"feature.json"}
-}
