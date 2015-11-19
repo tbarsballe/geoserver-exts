@@ -52,11 +52,6 @@
   </dependency>
   <dependency>
    <groupId>org.opengeo.geoserver</groupId>
-   <artifactId>cluster</artifactId>
-   <version>${gs.version}</version>
-  </dependency>
-  <dependency>
-   <groupId>org.opengeo.geoserver</groupId>
    <artifactId>metrics-common</artifactId>
    <version>${gs.version}</version>
   </dependency>
