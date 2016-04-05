@@ -17,6 +17,7 @@ import org.geoserver.importer.ImportData;
 import org.geoserver.importer.ImportTask;
 import org.geoserver.importer.VectorFormat;
 import org.geoserver.importer.job.ProgressMonitor;
+import org.geoserver.platform.resource.Resource;
 import org.geotools.data.DataStore;
 import org.geotools.data.FeatureReader;
 import org.geotools.data.FeatureSource;
@@ -76,7 +77,7 @@ public class FGDBFileFormat extends VectorFormat {
         if( factory.isAvailable() ){ 
             if( data instanceof FileData ){
                 FileData fileData = (FileData) data;
-                File file = fileData.getFile();
+                File file = fileData.getFile().file();
                 return file.getName().equalsIgnoreCase("gdb");
             }
         }
@@ -96,7 +97,7 @@ public class FGDBFileFormat extends VectorFormat {
         monitor.started();
         if( data instanceof FileData ){
             FileData fileData = (FileData) data;
-            File file = fileData.getFile();
+            File file = fileData.getFile().file();
             DataStore store = factory.createDataStoreFromFile( file );
             
             List<Name> names = store.getNames();

@@ -9,8 +9,8 @@ import junit.framework.Test;
 import org.geoserver.printng.api.PrintSpec;
 import org.geoserver.test.GeoServerTestSupport;
 import org.restlet.data.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 
-import com.mockrunner.mock.web.MockHttpServletResponse;
 import net.sf.json.JSONObject;
 import org.geoserver.printng.GeoserverSupport;
 
@@ -106,17 +106,17 @@ public class RestEndpointTest extends GeoServerTestSupport {
         path = "/rest/printng/freemarker/foobar.html?msg=BAR";
         contentType = "text/html";
         MockHttpServletResponse resp = runPostTest();
-        assertTrue(resp.getOutputStreamContent().indexOf("BAR") > 0);
+        assertTrue(resp.getContentAsString().indexOf("BAR") > 0);
 
         // and with post body
         path = "/rest/printng/freemarker/foobar.html";
         formData = new String[]{"msg", "BAR"};
         resp = runPostTest();
-        assertTrue(resp.getOutputStreamContent().indexOf("BAR") > 0);
+        assertTrue(resp.getContentAsString().indexOf("BAR") > 0);
     }
 
     private MockHttpServletResponse assertPostResponse(MockHttpServletResponse resp) throws Exception {
-        assertEquals(status, resp.getStatusCode());
+        assertEquals(status, resp.getStatus());
         String type = resp.getContentType();
         // mockrunner (in 0.3.1 and 0.3.6) does mimetypes wrong - this makes
         // the filepublisher return an empty contenttype
@@ -149,10 +149,10 @@ public class RestEndpointTest extends GeoServerTestSupport {
     }
     
     private MockHttpServletResponse assertJSONPostResponse(MockHttpServletResponse resp) throws Exception {
-        assertEquals(status, resp.getStatusCode());
+        assertEquals(status, resp.getStatus());
         String type = resp.getContentType().split(";")[0];
         assertEquals(MediaType.APPLICATION_JSON.toString(), type);
-        JSONObject obj = JSONObject.fromObject(resp.getOutputStreamContent());
+        JSONObject obj = JSONObject.fromObject(resp.getContentAsString());
         String getURL = obj.getString("getURL");
         assertNotNull(getURL);
         assertFalse("invalid path separators", getURL.indexOf('\\') >= 0);

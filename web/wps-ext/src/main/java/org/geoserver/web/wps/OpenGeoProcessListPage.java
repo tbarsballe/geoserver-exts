@@ -14,7 +14,6 @@ import java.util.Map;
 
 import org.apache.wicket.Component;
 import org.apache.wicket.MarkupContainer;
-import org.apache.wicket.PageParameters;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.extensions.ajax.markup.html.modal.ModalWindow;
@@ -28,6 +27,7 @@ import org.apache.wicket.markup.html.list.ListView;
 import org.apache.wicket.markup.html.panel.Fragment;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.PropertyModel;
+import org.apache.wicket.request.mapper.parameter.PageParameters;
 import org.geoserver.ows.URLMangler;
 import org.geoserver.ows.URLMangler.URLType;
 import org.geoserver.ows.util.ResponseUtils;
@@ -53,7 +53,7 @@ public class OpenGeoProcessListPage extends GeoServerBasePage {
 				private static final long serialVersionUID = -9023864236488736961L;
 
 				@Override
-				protected Component getComponentForProperty(String id, IModel itemModel, Property<ProcessDescriptor> property) {
+				protected Component getComponentForProperty(String id, IModel<ProcessDescriptor> itemModel, Property<ProcessDescriptor> property) {
 					if (property == OpenGeoProcessProvider.NAME) { 
 						return new Label(id, property.getModel(itemModel));
 					} else if (property == OpenGeoProcessProvider.DESCRIPTION) {
