@@ -123,7 +123,7 @@
             <exclude>${test.exclude.pattern}</exclude>
           </excludes>
           <forkMode>once</forkMode>
-          <argLine>-Xmx${test.maxHeapSize} -XX:MaxPermSize=${test.maxPermSize} -enableassertions -Djava.awt.headless=${java.awt.headless}</argLine>
+          <argLine>-Xmx${test.maxHeapSize} -enableassertions -Djava.awt.headless=${java.awt.headless}</argLine>
           <printSummary>true</printSummary>
           <testFailureIgnore>${allow.test.failure.ignore}</testFailureIgnore>
         </configuration>
@@ -582,7 +582,6 @@
     <build.profile></build.profile>
     <build.revision>${project.version}</build.revision>
     <test.maxHeapSize>512M</test.maxHeapSize>
-    <test.maxPermSize>128M</test.maxPermSize>
     <test.exclude.pattern>none</test.exclude.pattern>
     <jvm.opts></jvm.opts>
   </properties>
