@@ -410,6 +410,11 @@
       <version>${gt.version}</version>
     </dependency>
     <dependency>
+      <groupId>org.geoserver.community</groupId>
+      <artifactId>gs-ysld</artifactId>
+      <version>${gs.version}</version>
+    </dependency>
+    <dependency>
       <groupId>org.geotools</groupId>
       <artifactId>gt-opengis</artifactId>
       <version>${gt.version}</version>
@@ -564,7 +569,6 @@
     <module>printng</module>
     <module>web</module>
     <module>mongodb</module>
-    <module>ysld</module>
     <module>fgdb</module>
     <module>cloudwatch</module>
   </modules>

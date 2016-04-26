@@ -61,7 +61,7 @@
    <version>${gs.version}</version>
   </dependency>
   <dependency>
-   <groupId>org.opengeo</groupId>
+   <groupId>org.geoserver.community</groupId>
    <artifactId>gs-ysld</artifactId>
    <version>${gs.version}</version>
   </dependency>
