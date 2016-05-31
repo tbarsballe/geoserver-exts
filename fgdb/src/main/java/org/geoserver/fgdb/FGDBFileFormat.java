@@ -77,7 +77,7 @@ public class FGDBFileFormat extends VectorFormat {
         if( factory.isAvailable() ){ 
             if( data instanceof FileData ){
                 FileData fileData = (FileData) data;
-                File file = fileData.getFile().file();
+                File file = fileData.getFile();
                 return file.getName().equalsIgnoreCase("gdb");
             }
         }
@@ -97,7 +97,7 @@ public class FGDBFileFormat extends VectorFormat {
         monitor.started();
         if( data instanceof FileData ){
             FileData fileData = (FileData) data;
-            File file = fileData.getFile().file();
+            File file = fileData.getFile();
             DataStore store = factory.createDataStoreFromFile( file );
             
             List<Name> names = store.getNames();
