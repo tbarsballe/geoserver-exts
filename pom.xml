@@ -9,7 +9,7 @@
   <artifactId>geoserver-exts</artifactId>
   <packaging>pom</packaging>
   <version>2.9-SNAPSHOT</version>
-  <name>OpenGeo GeoServer Extensions</name>
+  <name>Boundless GeoServer Extensions</name>
 
   <organization>
     <name>Boundless</name>
@@ -26,7 +26,7 @@
       <name>End User License Agreement</name>
       <url>http://boundlessgeo.com/site-map/legal/opengeo-suite-eula/</url>
       <distribution>manual</distribution>
-      <comments>License Agreement for OpenGeo Suite customers using binary distribution</comments>
+      <comments>License Agreement for Boundless Suite customers using binary distribution</comments>
     </license>
   </licenses>
 

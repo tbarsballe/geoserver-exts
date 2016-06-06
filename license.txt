@@ -1,4 +1,4 @@
-The OpenGeo Suite: The premiere open source geospatial stack for data sharing, mapping, and online editing.
+The Boundless Suite: The premiere open source geospatial stack for data sharing, mapping, and online editing.
 
 Copyright (C) 2009-2012 OpenPlans
 Copyright (C) 2013-2014 Boundless
